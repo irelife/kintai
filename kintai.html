@@ -32,6 +32,9 @@
   }
   #kintai-view *{box-sizing:border-box;}
   #kintai-view h1{font-size:1.3rem;font-weight:700;letter-spacing:.04em;margin:0 0 2px;}
+  #kintai-view h1#kt-title{cursor:pointer;user-select:none;display:inline-block;transition:opacity .15s;}
+  #kintai-view h1#kt-title:active{opacity:.5;}
+  #kintai-view h1#kt-title.kt-title-sync{opacity:.4;}
   #kintai-view .kt-sub{color:var(--kt-muted);font-size:.8rem;margin-bottom:20px;}
   #kintai-view .kt-save-status{
     display:inline-block;margin-left:10px;padding:2px 10px;border-radius:999px;
@@ -109,7 +112,7 @@
   #kintai-view .kt-delone{color:#fff;background:var(--kt-warn,#e44);cursor:pointer;font-size:.75rem;line-height:1;border:none;border-radius:4px;padding:3px 6px;flex:none;font-weight:700;}
   </style>
 
-  <h1>勤怠管理</h1>
+  <h1 id="kt-title" title="タップで最新情報を取り込む">勤怠管理</h1>
   <div class="kt-sub">打刻制・出退勤のみ／月単位でCSV出力
     <span id="kt-save-status" class="kt-save-status">✓ 自動保存されます</span>
   </div>
@@ -316,6 +319,9 @@
   function setSyncUrl(u){ try{ localStorage.setItem(SYNC_URL_KEY, u||""); }catch(e){} }
 
   function setSyncState(s, text){
+    // タイトルにも取り込み中の見た目を反映
+    const title=document.getElementById("kt-title");
+    if(title){ title.classList.toggle("kt-title-sync", s==="syncing"); }
     const el=document.getElementById("kt-syncState");
     if(!el) return;
     el.dataset.s = s||"";
@@ -398,6 +404,21 @@
       };
     }
     if(btnNow){ btnNow.onclick=()=>{ if(getSyncUrl()) syncNow(); }; }
+
+    // タイトル「勤怠管理」タップで最新情報を取り込む
+    const title=document.getElementById("kt-title");
+    if(title){
+      title.onclick=()=>{
+        if(getSyncUrl()){
+          syncNow();
+        } else {
+          // 未設定なら同期設定欄を開いて知らせる
+          const det=document.getElementById("kt-sync");
+          if(det){ det.open=true; det.scrollIntoView({behavior:"smooth", block:"center"}); }
+          setSyncState("", "同期URLを設定してください");
+        }
+      };
+    }
   }
 
   // ===== 打刻の更新・削除ヘルパー(必ず _t を刻む / 削除はトゥームストーン) =====
@@ -491,14 +512,25 @@
     </table>`;
 
     wrap.querySelectorAll('input[type=time]').forEach(inp=>{
-      const apply=()=>{
+      const apply=(deferRender)=>{
         const k=inp.dataset.k, f=inp.dataset.f;
         setField(k, f, inp.value);
-        save(data); render(); refreshTodayStatus();
+        // 即座にrenderするとピッカー操作中のinputが作り直されて
+        // iOSの「リセット」確定が取りこぼされることがある。
+        // 少し遅延させ、ピッカーが閉じてから反映する。
+        save(data);
+        if(deferRender){
+          setTimeout(()=>{ render(); refreshTodayStatus(); }, 60);
+        } else {
+          render(); refreshTodayStatus();
+        }
       };
-      // change: 通常の確定時。input: iOSタイムピッカーの「リセット」で値が空になる場合に拾う。
-      inp.onchange=apply;
-      inp.oninput=()=>{ if(inp.value==="") apply(); };
+      // change: 通常の確定時(iOSのリセットもここで空値が飛ぶ)。
+      inp.onchange=()=>apply(true);
+      // input: 入力途中。空になった瞬間(リセット)もここで拾う(保険)。
+      inp.oninput=()=>{ if(inp.value===""){ apply(true); } };
+      // blur: ピッカーを閉じたとき、値が空ならクリアを確定(最後の保険)。
+      inp.onblur=()=>{ if(inp.value===""){ apply(true); } };
     });
     wrap.querySelectorAll('[data-del]').forEach(b=>{
       b.onclick=()=>{ delDay(b.dataset.del); save(data); buildMonths(); render(); refreshTodayStatus(); };
