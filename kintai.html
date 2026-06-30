@@ -26,7 +26,7 @@
   #kintai-view{
     --kt-ink:#1f2421; --kt-paper:#f7f5ef; --kt-line:#d9d4c7;
     --kt-accent:#3f6b4c; --kt-accent-soft:#e6efe7; --kt-muted:#7c776b; --kt-warn:#a14a3a;
-    max-width:760px; margin:0 auto; padding:20px 20px 60px;
+    max-width:1100px; margin:0 auto; padding:20px 20px 60px;
     color:var(--kt-ink); line-height:1.6;
     font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
   }
@@ -48,6 +48,7 @@
     padding:22px;text-align:center;margin-bottom:18px;
   }
   #kintai-view .kt-now-date{font-size:.9rem;color:var(--kt-muted);}
+  #kintai-view .kt-now-person{font-size:1.4rem;font-weight:700;color:var(--kt-accent);margin-bottom:4px;}
   #kintai-view .kt-now-time{font-size:2.6rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em;}
   #kintai-view .kt-btns{display:flex;gap:12px;margin-top:16px;}
   #kintai-view .kt-btns button{
@@ -57,8 +58,25 @@
   #kintai-view .kt-btns button:active{transform:scale(.97);}
   #kintai-view .kt-btn-in{background:var(--kt-accent);color:#fff;}
   #kintai-view .kt-btn-out{background:#fff;color:var(--kt-accent);border:1.5px solid var(--kt-accent);}
+  #kintai-view .kt-btn-abs{background:#fff;color:#8a6d3b;border:1.5px solid #c9b079;}
   #kintai-view .kt-btns button:disabled{opacity:.38;cursor:not-allowed;}
+  #kintai-view .kt-person{
+    display:flex;align-items:center;gap:10px;margin-bottom:14px;
+    background:#fff;border:1px solid var(--kt-line);border-radius:12px;padding:12px 16px;
+  }
+  #kintai-view .kt-person label{font-size:.9rem;color:var(--kt-muted);font-weight:600;}
+  #kintai-view .kt-person select{
+    flex:1;padding:10px 12px;border:1.5px solid var(--kt-accent);border-radius:9px;
+    font-size:1.05rem;font-weight:700;font-family:inherit;color:var(--kt-accent);background:#fff;cursor:pointer;
+  }
   #kintai-view .kt-today-status{margin-top:12px;font-size:.85rem;color:var(--kt-muted);}
+  #kintai-view tr.kt-absent .kt-abs-cell{text-align:center;color:#8a6d3b;font-weight:700;background:#fbf6ec;letter-spacing:.1em;}
+  #kintai-view .kt-rowbtns{display:flex;gap:6px;align-items:center;justify-content:center;}
+  #kintai-view .kt-rowabs{
+    border:1px solid #c9b079;background:#fff;color:#8a6d3b;border-radius:7px;
+    padding:5px 9px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;
+  }
+  #kintai-view .kt-rowabs:active{transform:scale(.96);}
   #kintai-view .kt-bar{display:flex;align-items:center;gap:10px;margin:18px 0 10px;}
   #kintai-view .kt-bar h2{font-size:1rem;font-weight:700;}
   #kintai-view .kt-bar select,#kintai-view .kt-bar button{
@@ -76,6 +94,25 @@
   #kintai-view tr.kt-sat td:first-child{color:#3a6ea1;}
   #kintai-view tr.kt-sun td:first-child{color:var(--kt-warn);}
   #kintai-view .kt-work{font-variant-numeric:tabular-nums;}
+  /* 2人並び表 */
+  #kintai-view #kt-tableWrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #kintai-view table.kt-two{width:100%;min-width:0;font-size:.85rem;table-layout:fixed;}
+  #kintai-view table.kt-two input[type=time]{width:100%;max-width:90px;}
+  #kintai-view table.kt-two th,#kintai-view table.kt-two td{padding:10px 6px;}
+  #kintai-view table.kt-two .kt-datecol{width:52px;}
+  #kintai-view table.kt-two .kt-vsep{width:2px;min-width:2px;}
+  #kintai-view .kt-grp-h{background:#e7f0fb !important;color:#185FA5 !important;font-size:.9rem !important;}
+  #kintai-view .kt-grp-o{background:#fbeede !important;color:#9a6a16 !important;font-size:.9rem !important;}
+  #kintai-view .kt-vsep{background:#d8d4c8;padding:0 !important;width:2px;min-width:2px;border-bottom:none;}
+  #kintai-view .kt-datecol{background:#f6f4ee;font-weight:700;white-space:nowrap;}
+  #kintai-view tr.kt-today .kt-datecol{background:#fff4d6;}
+  #kintai-view .kt-grouphead th{border-bottom:1px solid var(--kt-line);}
+  #kintai-view .kt-grphd{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
+  #kintai-view .kt-punch{display:inline-flex;gap:6px;}
+  #kintai-view .kt-punch button{border:none;border-radius:7px;padding:6px 12px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;}
+  #kintai-view .kt-punch button:active{transform:scale(.96);}
+  #kintai-view .kt-punch-in{background:#2e9e6b;}
+  #kintai-view .kt-punch-out{background:#c2693c;}
   #kintai-view tfoot td{background:#efece3;font-weight:700;}
   #kintai-view .kt-note{color:var(--kt-muted);font-size:.74rem;margin-top:12px;line-height:1.5;}
   /* ===== 同期UI ===== */
@@ -108,8 +145,8 @@
   #kintai-view .kt-sync button:active{transform:scale(.97);}
   #kintai-view .kt-sync .kt-sync-hint{font-size:.72rem;color:var(--kt-muted);margin-top:8px;line-height:1.5;}
   #kintai-view .kt-del{color:var(--kt-warn);cursor:pointer;font-size:.95rem;border:none;background:none;}
-  #kintai-view .kt-cell{display:flex;align-items:center;gap:6px;justify-content:center;}
-  #kintai-view .kt-delone{color:#fff;background:var(--kt-warn,#e44);cursor:pointer;font-size:.75rem;line-height:1;border:none;border-radius:4px;padding:3px 6px;flex:none;font-weight:700;}
+  #kintai-view .kt-cell{display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap;}
+  #kintai-view .kt-delone{color:#fff;background:var(--kt-warn,#e44);cursor:pointer;font-size:.7rem;line-height:1;border:none;border-radius:50%;width:18px;height:18px;padding:0;flex:none;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
   </style>
 
   <h1 id="kt-title" title="タップで最新情報を取り込む">勤怠管理</h1>
@@ -133,11 +170,7 @@
   <div class="kt-clock">
     <div class="kt-now-date" id="kt-nowDate"></div>
     <div class="kt-now-time" id="kt-nowTime">--:--:--</div>
-    <div class="kt-btns">
-      <button class="kt-btn-in" id="kt-btnIn">出勤</button>
-      <button class="kt-btn-out" id="kt-btnOut">退勤</button>
-    </div>
-    <div class="kt-today-status" id="kt-todayStatus"></div>
+    <div class="kt-today-status" id="kt-todayStatus">原田・大石の勤怠は下の表で打刻・編集できます</div>
   </div>
 
   <div class="kt-bar">
@@ -273,18 +306,49 @@
     return out;
   }
 
-  // メインとバックアップを時刻優先でマージ(削除マーカーを尊重)。
-  // どちらかが空でも、もう片方から自動復元する自己修復ロード。
+  // ===== 2名対応(原田/大石) =====
+  // localStorage には2人分をまとめた形 { harada:{...}, oishi:{...} } で保存する。
+  // ただしアプリ内の data 変数は「選択中の1人分」だけを指す(既存ロジックをそのまま活かすため)。
+  const PERSONS = ["harada","oishi"];
+  const PERSON_LABEL = { harada:"原田", oishi:"大石" };
+  const CUR_PERSON_KEY = "kintai_cur_person_v1";   // 「今どっちを見ているか」は端末ごとに保存(同期しない)
+  function getCurPerson(){
+    try{ const p=localStorage.getItem(CUR_PERSON_KEY); return PERSONS.includes(p)?p:"harada"; }
+    catch(e){ return "harada"; }
+  }
+  function setCurPerson(p){ try{ if(PERSONS.includes(p)) localStorage.setItem(CUR_PERSON_KEY, p); }catch(e){} }
+  let curPerson = getCurPerson();
+
+  // 生の保存値を2人分の入れ物 { harada:{}, oishi:{} } に正規化する。
+  // 旧形式(1人分の素データ {"2026-06-01":{...}})なら、それを原田の分として引き継ぐ。
+  function _toContainer(raw){
+    const obj = _parse(raw);
+    if(obj && typeof obj==='object' && (obj.harada || obj.oishi)){
+      return { harada: obj.harada||{}, oishi: obj.oishi||{} };  // 既に2人分形式
+    }
+    // 旧形式(1人分) → 原田へ移行。中身が日付キーのデータならそのまま原田に入れる。
+    return { harada: obj||{}, oishi: {} };
+  }
+  // 2人分の入れ物をメイン/バックアップからマージして読み込む(人ごとに時刻優先マージ)。
+  function loadContainer(){
+    const main=_toContainer(localStorage.getItem(KEY));
+    const bak =_toContainer(localStorage.getItem(BAK));
+    const cont={};
+    PERSONS.forEach(p=>{
+      let merged = mergeKintaiObj(_normalizeKeys(main[p]||{}), _normalizeKeys(bak[p]||{}));
+      merged = _gcTombstones(merged);
+      cont[p]=merged;
+    });
+    const js=JSON.stringify(cont);
+    // localStorageの生の値と直接比較し、旧形式や不一致なら2人分の入れ物で上書きする
+    if(localStorage.getItem(KEY)!==js){ try{ localStorage.setItem(KEY, js); }catch(e){} }
+    if(localStorage.getItem(BAK)!==js){ try{ localStorage.setItem(BAK, js); }catch(e){} }
+    return cont;
+  }
+  // 選択中の人の勤怠だけを返す(既存の data として使う)
   function load(){
-    const main=_normalizeKeys(_parse(localStorage.getItem(KEY)));
-    const bak =_normalizeKeys(_parse(localStorage.getItem(BAK)));
-    let merged = mergeKintaiObj(main, bak);
-    merged = _gcTombstones(merged);
-    // メイン/バックアップを最新で揃えておく(再読み込みで消えた状態を治す)
-    const js=JSON.stringify(merged);
-    if(JSON.stringify(main)!==js){ try{ localStorage.setItem(KEY, js); }catch(e){} }
-    if(JSON.stringify(bak)!==js){ try{ localStorage.setItem(BAK, js); }catch(e){} }
-    return merged;
+    const cont=loadContainer();
+    return cont[curPerson]||{};
   }
   let _ktSaveTimer=null;
   function setSaveStatus(state){
@@ -297,9 +361,11 @@
       _ktSaveTimer=setTimeout(()=>{ el.dataset.state=""; el.textContent="✓ 自動保存されます"; }, 1600);
     }
   }
-  function save(d){
+  // 2人分の入れ物(cont)をそのまま保存する。引数省略時はグローバルdataを使う。
+  function save(cont){
     setSaveStatus("saving");
-    const js=JSON.stringify(d);
+    const c = cont || data;
+    const js=JSON.stringify(c);
     localStorage.setItem(KEY, js);
     localStorage.setItem(BAK, js);   // 二重保存(保険)
     // 独立版のクラウド同期(設定済みのときだけ動く)
@@ -350,26 +416,25 @@
     _syncInFlight = true;
     setSyncState("syncing");
     try{
-      const localData = load();   // 自己修復込みの現在データ(トゥームストーン含む)
+      const localCont = loadContainer();   // 2人分 { harada:{...}, oishi:{...} }
       // 1) サーバーの最新を取得
-      let serverData = {};
+      let serverCont = {};
       try{
         const r = await _postGas(url, { action:"load" });
-        if(r && r.ok && r.payload){ serverData = r.payload.kintai || {}; }
+        if(r && r.ok && r.payload){ serverCont = _normalizeCont(r.payload.kintai); }
       }catch(e){ /* loadに失敗してもsaveを試みる */ }
-      // 2) ローカルとサーバーをマージ(時刻優先・削除尊重)
-      let merged = mergeKintaiObj(localData, serverData);
-      merged = _gcTombstones(merged);
-      // 3) マージ結果をサーバーへ送信(サーバー側でも再マージされる)
-      const sres = await _postGas(url, { action:"save", payload:{ kintai: merged } });
+      // 2) 人ごとにローカルとサーバーをマージ(時刻優先・削除尊重)
+      let mergedCont = _mergeCont(localCont, serverCont);
+      // 3) マージ結果をサーバーへ送信(2人分の入れ物ごと保存)
+      const sres = await _postGas(url, { action:"save", payload:{ kintai: mergedCont } });
       if(sres && sres.ok && sres.payload && sres.payload.kintai){
-        merged = sres.payload.kintai;   // サーバー確定版を採用
+        mergedCont = _mergeCont(mergedCont, _normalizeCont(sres.payload.kintai));   // サーバー確定版と再マージ
       }
       // 4) ローカルへ反映(saveを介さず直接書き、無限ループを防ぐ)
-      const js = JSON.stringify(merged);
+      const js = JSON.stringify(mergedCont);
       localStorage.setItem(KEY, js);
       localStorage.setItem(BAK, js);
-      data = merged;
+      data = mergedCont;   // 2人分の入れ物をそのまま表示用dataへ
       if(document.getElementById("kt-monthSel")){ buildMonths(); render(); refreshTodayStatus(); }
       setSyncState("ok");
     }catch(e){
@@ -378,6 +443,25 @@
       _syncInFlight = false;
       if(_syncPending){ _syncPending = false; setTimeout(syncNow, 300); }
     }
+  }
+
+  // サーバー/ローカルの保存値を必ず2人分の入れ物に正規化(旧1人分形式は原田へ)
+  function _normalizeCont(v){
+    if(v && typeof v==='object' && (v.harada || v.oishi)){
+      return { harada: v.harada||{}, oishi: v.oishi||{} };
+    }
+    return { harada: v||{}, oishi: {} };  // 旧形式(1人分) → 原田扱い
+  }
+  // 2人分の入れ物を人ごとにマージ
+  function _mergeCont(a, b){
+    a=_normalizeCont(a); b=_normalizeCont(b);
+    const out={};
+    PERSONS.forEach(p=>{
+      let m = mergeKintaiObj(a[p]||{}, b[p]||{});
+      m = _gcTombstones(m);
+      out[p]=m;
+    });
+    return out;
   }
 
   // 打刻のたびに少し待ってまとめて同期(連打対策)
@@ -421,23 +505,36 @@
     }
   }
 
-  // ===== 打刻の更新・削除ヘルパー(必ず _t を刻む / 削除はトゥームストーン) =====
+  // ===== 打刻の更新・削除ヘルパー(person指定 / 必ず _t を刻む / 削除はトゥームストーン) =====
+  // data は2人分の入れ物 { harada:{...}, oishi:{...} }。person は "harada"|"oishi"。
+  function _pdata(person){ if(!data[person]) data[person]={}; return data[person]; }
   // 1フィールド(in/out)をセット。空文字ならそのフィールドを削除。
-  function setField(k, f, val){
-    let rec = data[k];
-    if(_isDeleted(rec) || !rec || typeof rec!=='object'){ rec = {}; }  // 削除済みを編集したら復活(新規扱い)
+  function setField(person, k, f, val){
+    const pd=_pdata(person);
+    let rec = pd[k];
+    if(_isDeleted(rec) || _isAbsent(rec) || !rec || typeof rec!=='object'){ rec = {}; }  // 削除/欠勤を編集したら通常に戻す
     if(val) rec[f]=val; else delete rec[f];
-    if(!rec.in && !rec.out){ data[k] = { __del: _nowMs() }; }          // 中身ゼロ → 削除マーカー化
-    else { rec._t = _nowMs(); data[k] = rec; }
+    if(!rec.in && !rec.out){ pd[k] = { __del: _nowMs() }; }          // 中身ゼロ → 削除マーカー化
+    else { rec._t = _nowMs(); pd[k] = rec; }
   }
   // 1日分を丸ごと削除(トゥームストーンを残す)
-  function delDay(k){ data[k] = { __del: _nowMs() }; }
+  function delDay(person, k){ _pdata(person)[k] = { __del: _nowMs() }; }
 
-  // data shape: { "2026-06-11": {in:"09:02", out:"18:30", _t:170...}, ... }
-  let data = load();
+  // 欠勤の設定/解除。欠勤日は {abs:1, _t} で記録(in/outは持たない)。
+  function setAbsence(person, k, on){
+    const pd=_pdata(person);
+    if(on){ pd[k] = { abs:1, _t:_nowMs() }; }
+    else { pd[k] = { __del:_nowMs() }; }
+  }
+  function _isAbsent(rec){ return !!(rec && typeof rec==='object' && rec.abs && !rec.__del); }
+
+  // data shape: { harada:{ "2026-06-11":{in,out,_t}, ... }, oishi:{...} }
+  let data = loadContainer();
 
   function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${PAD(d.getMonth()+1)}-${PAD(d.getDate())}`; }
   function nowHM(){ const d=new Date(); return `${PAD(d.getHours())}:${PAD(d.getMinutes())}`; }
+
+  function updatePersonLabel(){ /* 旧プルダウン廃止のため何もしない */ }
 
   function tickClock(){
     const nd=document.getElementById("kt-nowDate"), nt=document.getElementById("kt-nowTime");
@@ -447,13 +544,15 @@
     nt.textContent = `${PAD(d.getHours())}:${PAD(d.getMinutes())}:${PAD(d.getSeconds())}`;
   }
 
+  function _todaySummary(person){
+    const _tr=(data[person]||{})[todayKey()];
+    if(_isAbsent(_tr)) return `${PERSON_LABEL[person]}：欠勤`;
+    const t=_isDeleted(_tr)?{}:(_tr||{});
+    return `${PERSON_LABEL[person]}：${t.in?`出勤 ${t.in}`:"出勤 未"} ／ ${t.out?`退勤 ${t.out}`:"退勤 未"}`;
+  }
   function refreshTodayStatus(){
-    const _tr = data[todayKey()]; const t = _isDeleted(_tr) ? {} : (_tr||{});
     const st=document.getElementById("kt-todayStatus");
-    if(st) st.textContent = `本日：${t.in?`出勤 ${t.in}`:"出勤 未"} ／ ${t.out?`退勤 ${t.out}`:"退勤 未"}`;
-    const bi=document.getElementById("kt-btnIn"), bo=document.getElementById("kt-btnOut");
-    if(bi) bi.disabled = !!t.in;
-    if(bo) bo.disabled = !t.in || !!t.out;
+    if(st){ st.textContent = `本日　${_todaySummary("harada")}　｜　${_todaySummary("oishi")}`; }
   }
 
   function workMinutes(inHM,outHM){
@@ -466,7 +565,8 @@
   function fmtWork(mins){ if(mins==null) return "—"; return `${Math.floor(mins/60)}:${PAD(mins%60)}`; }
 
   function monthKeys(){
-    const set=new Set(Object.keys(_visible(data)).map(k=>k.slice(0,7)));
+    const set=new Set();
+    PERSONS.forEach(p=>{ Object.keys(_visible(data[p]||{})).forEach(k=>set.add(k.slice(0,7))); });
     set.add(todayKey().slice(0,7));
     return [...set].sort().reverse();
   }
@@ -483,41 +583,74 @@
   }
   function daysInMonth(ym){ const [y,m]=ym.split("-").map(Number); return new Date(y,m,0).getDate(); }
 
+  // 1人分のセル群(出勤/退勤/勤務/操作)のHTMLを返す
+  function personCells(person, k){
+    const pd=data[person]||{};
+    const recRaw=pd[k];
+    const absent=_isAbsent(recRaw);
+    const rec=_isDeleted(recRaw) ? {} : (recRaw||{});
+    const mins=absent?null:workMinutes(rec.in,rec.out);
+    if(absent){
+      return { mins:null, html:
+        `<td colspan="3" class="kt-abs-cell">欠勤</td>
+         <td><button class="kt-del" data-p="${person}" data-del="${k}" title="欠勤を取り消す">×</button></td>` };
+    }
+    return { mins, html:
+      `<td><div class="kt-cell"><input type="time" value="${rec.in||""}" data-p="${person}" data-k="${k}" data-f="in">${rec.in?`<button class="kt-delone" data-p="${person}" data-delf="${k}" data-delfield="in" title="出勤時刻を削除">×</button>`:""}</div></td>
+       <td><div class="kt-cell"><input type="time" value="${rec.out||""}" data-p="${person}" data-k="${k}" data-f="out">${rec.out?`<button class="kt-delone" data-p="${person}" data-delf="${k}" data-delfield="out" title="退勤時刻を削除">×</button>`:""}</div></td>
+       <td class="kt-work">${fmtWork(mins)}</td>
+       <td><div class="kt-rowbtns"><button class="kt-rowabs" data-p="${person}" data-abs="${k}" title="この日を欠勤にする">欠勤</button>${(rec.in||rec.out)?`<button class="kt-del" data-p="${person}" data-del="${k}">×</button>`:""}</div></td>` };
+  }
+
   function render(){
     const sel=document.getElementById("kt-monthSel"); if(!sel) return;
     const ym=sel.value || todayKey().slice(0,7);
     const [y,m]=ym.split("-").map(Number);
     const dim=daysInMonth(ym);
-    let rows="", total=0;
+    let rows="", totalH=0, totalO=0;
+    const todayK=todayKey();
     for(let d=1; d<=dim; d++){
       const k=`${ym}-${PAD(d)}`;
       const wd=new Date(y,m-1,d).getDay();
-      const rec=_isDeleted(data[k]) ? {} : (data[k]||{});
-      const mins=workMinutes(rec.in,rec.out);
-      if(mins!=null) total+=mins;
-      const cls = wd===0?"kt-sun":(wd===6?"kt-sat":"");
+      const cH=personCells("harada", k);
+      const cO=personCells("oishi", k);
+      if(cH.mins!=null) totalH+=cH.mins;
+      if(cO.mins!=null) totalO+=cO.mins;
+      const cls = (wd===0?"kt-sun":(wd===6?"kt-sat":"")) + (k===todayK?" kt-today":"");
       rows+=`<tr class="${cls}">
-        <td>${m}/${d}<br><span style="font-size:.7rem">(${WD[wd]})</span></td>
-        <td><div class="kt-cell"><input type="time" value="${rec.in||""}" data-k="${k}" data-f="in">${rec.in?`<button class="kt-delone" data-delf="${k}" data-delfield="in" title="出勤時刻を削除">削除</button>`:""}</div></td>
-        <td><div class="kt-cell"><input type="time" value="${rec.out||""}" data-k="${k}" data-f="out">${rec.out?`<button class="kt-delone" data-delf="${k}" data-delfield="out" title="退勤時刻を削除">削除</button>`:""}</div></td>
-        <td class="kt-work">${fmtWork(mins)}</td>
-        <td>${(rec.in||rec.out)?`<button class="kt-del" data-del="${k}">×</button>`:""}</td>
+        <td class="kt-datecol">${m}/${d}<br><span style="font-size:.7rem">(${WD[wd]})</span></td>
+        ${cH.html}
+        <td class="kt-vsep"></td>
+        ${cO.html}
       </tr>`;
     }
     const wrap=document.getElementById("kt-tableWrap");
-    wrap.innerHTML=`<table>
-      <thead><tr><th>日付</th><th>出勤</th><th>退勤</th><th>勤務</th><th></th></tr></thead>
+    wrap.innerHTML=`<table class="kt-two">
+      <thead>
+        <tr class="kt-grouphead">
+          <th rowspan="2" class="kt-datecol">日付</th>
+          <th colspan="4" class="kt-grp-h"><div class="kt-grphd"><span>原田</span><span class="kt-punch"><button class="kt-punch-in" data-punch="in" data-pp="harada">出勤</button><button class="kt-punch-out" data-punch="out" data-pp="harada">退勤</button></span></div></th>
+          <th rowspan="2" class="kt-vsep"></th>
+          <th colspan="4" class="kt-grp-o"><div class="kt-grphd"><span>大石</span><span class="kt-punch"><button class="kt-punch-in" data-punch="in" data-pp="oishi">出勤</button><button class="kt-punch-out" data-punch="out" data-pp="oishi">退勤</button></span></div></th>
+        </tr>
+        <tr>
+          <th>出勤</th><th>退勤</th><th>勤務</th><th></th>
+          <th>出勤</th><th>退勤</th><th>勤務</th><th></th>
+        </tr>
+      </thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="3">合計勤務時間</td><td class="kt-work">${fmtWork(total)}</td><td></td></tr></tfoot>
+      <tfoot><tr>
+        <td>合計</td>
+        <td colspan="2">原田</td><td class="kt-work">${fmtWork(totalH)}</td><td></td>
+        <td class="kt-vsep"></td>
+        <td colspan="2">大石</td><td class="kt-work">${fmtWork(totalO)}</td><td></td>
+      </tr></tfoot>
     </table>`;
 
     wrap.querySelectorAll('input[type=time]').forEach(inp=>{
       const apply=(deferRender)=>{
-        const k=inp.dataset.k, f=inp.dataset.f;
-        setField(k, f, inp.value);
-        // 即座にrenderするとピッカー操作中のinputが作り直されて
-        // iOSの「リセット」確定が取りこぼされることがある。
-        // 少し遅延させ、ピッカーが閉じてから反映する。
+        const p=inp.dataset.p, k=inp.dataset.k, f=inp.dataset.f;
+        setField(p, k, f, inp.value);
         save(data);
         if(deferRender){
           setTimeout(()=>{ render(); refreshTodayStatus(); }, 60);
@@ -525,22 +658,29 @@
           render(); refreshTodayStatus();
         }
       };
-      // change: 通常の確定時(iOSのリセットもここで空値が飛ぶ)。
       inp.onchange=()=>apply(true);
-      // input: 入力途中。空になった瞬間(リセット)もここで拾う(保険)。
       inp.oninput=()=>{ if(inp.value===""){ apply(true); } };
-      // blur: ピッカーを閉じたとき、値が空ならクリアを確定(最後の保険)。
       inp.onblur=()=>{ if(inp.value===""){ apply(true); } };
     });
     wrap.querySelectorAll('[data-del]').forEach(b=>{
-      b.onclick=()=>{ delDay(b.dataset.del); save(data); buildMonths(); render(); refreshTodayStatus(); };
+      b.onclick=()=>{ delDay(b.dataset.p, b.dataset.del); save(data); buildMonths(); render(); refreshTodayStatus(); };
+    });
+    wrap.querySelectorAll('[data-abs]').forEach(b=>{
+      b.onclick=()=>{ setAbsence(b.dataset.p, b.dataset.abs, true); save(data); buildMonths(); render(); refreshTodayStatus(); };
     });
     wrap.querySelectorAll('[data-delf]').forEach(b=>{
       b.onclick=()=>{
-        const k=b.dataset.delf, f=b.dataset.delfield;
-        const cur=_isDeleted(data[k]) ? {} : (data[k]||{});
-        setField(k, f, "");  // 指定フィールドを空に → in/out両方空なら自動でトゥームストーン化
-        void cur;
+        const p=b.dataset.p, k=b.dataset.delf, f=b.dataset.delfield;
+        setField(p, k, f, "");  // 指定フィールドを空に → in/out両方空なら自動でトゥームストーン化
+        save(data); buildMonths(); render(); refreshTodayStatus();
+      };
+    });
+    wrap.querySelectorAll('[data-punch]').forEach(b=>{
+      b.onclick=()=>{
+        const p=b.dataset.pp, f=b.dataset.punch, k=todayKey();
+        const pd=data[p]||{}; const cur=(_isDeleted(pd[k])||_isAbsent(pd[k]))?{}:(pd[k]||{});
+        if(f==="out" && !cur.in){ setField(p, k, "in", nowHM()); }  // 退勤だけ押されたら出勤も補完
+        setField(p, k, f, nowHM());
         save(data); buildMonths(); render(); refreshTodayStatus();
       };
     });
@@ -550,35 +690,41 @@
     const ym=document.getElementById("kt-monthSel").value;
     const [y,m]=ym.split("-").map(Number);
     const dim=daysInMonth(ym);
-    let csv="\uFEFF日付,曜日,出勤,退勤,勤務時間\n", total=0;
+    let csv="\uFEFF日付,曜日,原田 出勤,原田 退勤,原田 勤務,原田 備考,大石 出勤,大石 退勤,大石 勤務,大石 備考\n";
+    let totH=0, totO=0;
+    function cellFor(person, k){
+      const recRaw=(data[person]||{})[k];
+      const absent=_isAbsent(recRaw);
+      const rec=_isDeleted(recRaw)?{}:(recRaw||{});
+      const mins=absent?null:workMinutes(rec.in,rec.out);
+      return { mins, in:absent?"":(rec.in||""), out:absent?"":(rec.out||""),
+               work:fmtWork(mins)==="—"?"":fmtWork(mins), note:absent?"欠勤":"" };
+    }
     for(let d=1; d<=dim; d++){
       const k=`${ym}-${PAD(d)}`;
       const wd=new Date(y,m-1,d).getDay();
-      const rec=_isDeleted(data[k]) ? {} : (data[k]||{});
-      const mins=workMinutes(rec.in,rec.out);
-      if(mins!=null) total+=mins;
-      csv+=`${y}/${m}/${d},${WD[wd]},${rec.in||""},${rec.out||""},${fmtWork(mins)==="—"?"":fmtWork(mins)}\n`;
+      const h=cellFor("harada",k), o=cellFor("oishi",k);
+      if(h.mins!=null) totH+=h.mins;
+      if(o.mins!=null) totO+=o.mins;
+      csv+=`${y}/${m}/${d},${WD[wd]},${h.in},${h.out},${h.work},${h.note},${o.in},${o.out},${o.work},${o.note}\n`;
     }
-    csv+=`合計,,,,"${fmtWork(total)}"\n`;
+    csv+=`合計,,,, "${fmtWork(totH)}",,,, "${fmtWork(totO)}",\n`;
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
     const a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
-    a.download=`勤怠_${y}年${PAD(m)}月.csv`;
+    a.download=`勤怠_原田大石_${y}年${PAD(m)}月.csv`;
     a.click();
   }
 
   let _booted=false, _clockTimer=null;
   function bind(){
-    const bi=document.getElementById("kt-btnIn"), bo=document.getElementById("kt-btnOut");
-    if(bi) bi.onclick=()=>{ const k=todayKey(); setField(k,'in',nowHM()); save(data); buildMonths(); render(); refreshTodayStatus(); };
-    if(bo) bo.onclick=()=>{ const k=todayKey(); const cur=_isDeleted(data[k])?{}:(data[k]||{}); setField(k,'in',cur.in||nowHM()); setField(k,'out',nowHM()); save(data); render(); refreshTodayStatus(); };
     const sel=document.getElementById("kt-monthSel"); if(sel) sel.onchange=render;
     const csv=document.getElementById("kt-btnCsv"); if(csv) csv.onclick=exportCsv;
   }
 
   // タブが開かれたとき / 初回表示時に呼ぶ
   function activate(){
-    data = load(); // クラウド復元等で更新されている場合に追従
+    data = loadContainer(); // クラウド復元等で更新されている場合に追従(2人分の入れ物)
     if(!_booted){ bind(); bindSync(); _booted=true; }
     if(!_clockTimer){ _clockTimer=setInterval(tickClock,1000); }
     tickClock(); buildMonths(); render(); refreshTodayStatus();
@@ -589,9 +735,9 @@
   // クラウド/バックアップ復元後に外部から呼べるよう公開
   window.KT = {
     activate,
-    reload(){ data = load(); if(document.getElementById("kt-monthSel")){ buildMonths(); render(); refreshTodayStatus(); } },
-    heal(){ data = load(); if(document.getElementById("kt-monthSel") && document.body.classList.contains('tab-kintai')){ buildMonths(); render(); refreshTodayStatus(); } },
-    getData(){ return load(); }
+    reload(){ data = loadContainer(); if(document.getElementById("kt-monthSel")){ buildMonths(); render(); refreshTodayStatus(); } },
+    heal(){ data = loadContainer(); if(document.getElementById("kt-monthSel") && document.body.classList.contains('tab-kintai')){ buildMonths(); render(); refreshTodayStatus(); } },
+    getData(){ return loadContainer(); }
   };
 
   // 保険: 起動直後にクラウド取込がメインキーを空で上書きしても、
