@@ -21,6 +21,11 @@
 </head>
 <body>
 
+<div class="app-tabs">
+  <button class="app-tab on" id="tab-kintai">勤怠</button>
+  <button class="app-tab" id="tab-clean">清掃報告<span class="badge" id="tab-clean-badge" style="display:none">0</span></button>
+</div>
+
 <div id="kintai-view">
   <style>
   #kintai-view{
@@ -70,7 +75,8 @@
     font-size:1.05rem;font-weight:700;font-family:inherit;color:var(--kt-accent);background:#fff;cursor:pointer;
   }
   #kintai-view .kt-today-status{margin-top:12px;font-size:.85rem;color:var(--kt-muted);}
-  #kintai-view tr.kt-absent .kt-abs-cell{text-align:center;color:#8a6d3b;font-weight:700;background:#fbf6ec;letter-spacing:.1em;}
+  #kintai-view td.kt-abs-cell,#kintai-view td.kt-abs-x{background:#fdecef;}
+  #kintai-view td.kt-abs-cell{text-align:center;color:#b5546a;font-weight:700;letter-spacing:.1em;}
   #kintai-view .kt-rowbtns{display:flex;gap:6px;align-items:center;justify-content:center;}
   #kintai-view .kt-rowabs{
     border:1px solid #c9b079;background:#fff;color:#8a6d3b;border-radius:7px;
@@ -95,6 +101,10 @@
   #kintai-view tr.kt-sun td:first-child{color:var(--kt-warn);}
   #kintai-view .kt-work{font-variant-numeric:tabular-nums;}
   /* 2人並び表 */
+  #kintai-view .kt-scroll-hint{display:none;}
+  @media (max-width:640px){
+    #kintai-view .kt-scroll-hint{display:block;text-align:center;font-size:.74rem;color:#a49e8c;padding:4px 0 8px;}
+  }
   #kintai-view #kt-tableWrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #kintai-view table.kt-two{width:100%;min-width:0;font-size:.85rem;table-layout:fixed;}
   #kintai-view table.kt-two input[type=time]{width:100%;max-width:90px;}
@@ -147,6 +157,118 @@
   #kintai-view .kt-del{color:var(--kt-warn);cursor:pointer;font-size:.95rem;border:none;background:none;}
   #kintai-view .kt-cell{display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap;}
   #kintai-view .kt-delone{color:#fff;background:var(--kt-warn,#e44);cursor:pointer;font-size:.7rem;line-height:1;border:none;border-radius:50%;width:18px;height:18px;padding:0;flex:none;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+
+  /* ===== スマホ表示の最適化（時刻が潰れないように） ===== */
+  @media (max-width:640px){
+    /* 表を本来の幅で描き、横スクロールで見る（固定幅で潰さない） */
+    #kintai-view table.kt-two{table-layout:auto;min-width:560px;font-size:1rem;}
+    #kintai-view table.kt-two th,#kintai-view table.kt-two td{padding:12px 6px;}
+    /* 時刻と×を縦積みにして重なりを解消。時刻は大きくはっきり */
+    #kintai-view .kt-cell{flex-direction:column;gap:3px;}
+    #kintai-view table.kt-two input[type=time]{
+      width:78px;max-width:78px;font-size:1.02rem;font-weight:700;
+      padding:6px 4px;border:1px solid #d5cfbe;border-radius:8px;background:#fff;
+      text-align:center;color:#33302a;
+    }
+    #kintai-view .kt-delone{width:22px;height:22px;font-size:.82rem;}
+    #kintai-view table.kt-two .kt-datecol{width:46px;}
+    #kintai-view .kt-work{font-size:.95rem;}
+    /* 欠勤ボタンも押しやすく */
+    #kintai-view .kt-rowabs{font-size:.82rem;padding:6px 10px;}
+    /* 横スクロールできることを示すヒント */
+    #kintai-view #kt-tableWrap{position:relative;}
+  }
+
+  /* ===== タブ切替（勤怠 / 清掃報告） ===== */
+  .app-tabs{max-width:1100px;margin:0 auto 14px;display:flex;gap:8px;}
+  .app-tab{flex:1;font-family:inherit;font-size:.95rem;font-weight:800;padding:12px 8px;border:1.5px solid #cdc6b4;border-radius:12px;background:#fbf9f2;color:#7a7566;cursor:pointer;transition:.15s;}
+  .app-tab.on{background:#2f6b4f;border-color:#2f6b4f;color:#fff;box-shadow:0 2px 8px rgba(47,107,79,.25);}
+  .app-tab .badge{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:10px;background:#e44;color:#fff;font-size:.75rem;font-weight:800;}
+  .app-tab.on .badge{background:#fff;color:#e44;}
+  #cl-app{display:none;max-width:1100px;margin:0 auto;}
+  body.tab-clean #kintai-view{display:none;}
+  body.tab-clean #cl-app{display:block;}
+
+  /* ===== 清掃報告 ===== */
+  #cl-app *{box-sizing:border-box;}
+  #cl-app h1{font-size:1.35rem;color:#2f6b4f;margin-bottom:2px;letter-spacing:.02em;}
+  #cl-app .cl-sub{font-size:.8rem;color:#7a7566;margin-bottom:14px;}
+  #cl-app .cl-pref{display:flex;gap:8px;margin-bottom:12px;}
+  #cl-app .cl-pref-btn{flex:1;font-family:inherit;font-size:.88rem;font-weight:800;padding:10px 8px;border:1.5px solid #cdc6b4;border-radius:10px;background:#fbf9f2;color:#7a7566;cursor:pointer;transition:.15s;}
+  #cl-app .cl-pref-btn.on{background:#2f6b4f;border-color:#2f6b4f;color:#fff;}
+  #cl-app .cl-pref-btn:active{transform:scale(.97);}
+  #cl-app .cl-card{background:#fff;border:1px solid #e4ded0;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  #cl-app .cl-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  #cl-app .cl-bar h2{font-size:1.05rem;color:#3a3630;}
+  #cl-app .cl-spacer{flex:1;}
+  #cl-app label{font-size:.8rem;color:#5a5648;font-weight:700;display:block;margin-bottom:4px;}
+  #cl-app select,#cl-app input[type=date],#cl-app input[type=text],#cl-app textarea{
+    font-family:inherit;font-size:.92rem;padding:9px 11px;border:1.5px solid #d5cfbe;border-radius:9px;background:#fbfaf6;width:100%;color:#3a3630;}
+  #cl-app textarea{resize:vertical;min-height:56px;line-height:1.5;}
+  #cl-app button{font-family:inherit;cursor:pointer;}
+  #cl-app .cl-btn{font-size:.86rem;font-weight:800;padding:9px 16px;border:1.5px solid #2f6b4f;border-radius:9px;background:#eaf3ee;color:#2f6b4f;}
+  #cl-app .cl-btn.primary{background:#2f6b4f;color:#fff;}
+  #cl-app .cl-btn.ghost{border-color:#c9c2b0;background:#f6f4ec;color:#6a6656;}
+  #cl-app .cl-btn.danger{border-color:#e44;background:#fdecec;color:#c33;}
+  #cl-app .cl-btn:active{transform:scale(.97);}
+
+  /* アラート（未解決の宿題） */
+  #cl-app .cl-alert{background:#fff4e5;border:1.5px solid #eab04c;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+  #cl-app .cl-alert.hide{display:none;}
+  #cl-app .cl-alert .cl-alert-h{font-weight:800;color:#b5721a;font-size:.95rem;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+  #cl-app .cl-alert-item{background:#fff;border:1px solid #f0d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:.85rem;color:#5a4a30;display:flex;gap:8px;align-items:flex-start;}
+  #cl-app .cl-alert-item .go{margin-left:auto;font-size:.78rem;font-weight:800;color:#2f6b4f;background:#eaf3ee;border:1px solid #b8d6c5;border-radius:7px;padding:4px 10px;white-space:nowrap;}
+  #cl-app .cl-alert-item b{color:#3a3630;}
+
+  /* チェック項目 */
+  #cl-app .cl-item{border:1px solid #e7e1d2;border-radius:12px;padding:12px;margin-bottom:12px;background:#fcfbf6;}
+  #cl-app .cl-item.ng{border-color:#eab04c;background:#fffaf0;}
+  #cl-app .cl-item.done0{}
+  #cl-app .cl-item-h{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  #cl-app .cl-item-h .num{width:24px;height:24px;flex:none;border-radius:50%;background:#2f6b4f;color:#fff;font-size:.8rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  #cl-app .cl-item-h .ttl{font-weight:800;color:#33302a;font-size:.98rem;}
+  #cl-app .cl-item-guide{font-size:.8rem;color:#6a6656;line-height:1.55;margin:2px 0 10px 32px;}
+  #cl-app .cl-item-guide .do{color:#b5721a;font-weight:700;}
+  #cl-app .cl-status{display:flex;gap:8px;margin:0 0 10px 32px;flex-wrap:wrap;}
+  #cl-app .cl-status button{font-size:.82rem;font-weight:800;padding:7px 14px;border-radius:20px;border:1.5px solid #cdc6b4;background:#fff;color:#8a8574;}
+  #cl-app .cl-status button.sel-ok{background:#2f6b4f;border-color:#2f6b4f;color:#fff;}
+  #cl-app .cl-status button.sel-ng{background:#e88a1a;border-color:#e88a1a;color:#fff;}
+  #cl-app .cl-status button.sel-na{background:#9a9484;border-color:#9a9484;color:#fff;}
+  #cl-app .cl-photo-row{margin:0 0 10px 32px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+  #cl-app .cl-photo{width:96px;height:96px;border-radius:10px;border:1.5px dashed #c9c2b0;background:#f4f1e8;display:flex;align-items:center;justify-content:center;color:#a49e8c;font-size:.72rem;text-align:center;cursor:pointer;overflow:hidden;position:relative;flex:none;}
+  #cl-app .cl-photo img{width:100%;height:100%;object-fit:cover;}
+  #cl-app .cl-photo .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:.8rem;line-height:1;cursor:pointer;}
+  #cl-app .cl-photo-add{border:1.5px dashed #7fae95;background:#eef6f0;color:#2f6b4f;font-weight:700;}
+  #cl-app .cl-photo-hint{font-size:.74rem;color:#9a9484;align-self:center;}
+  #cl-app .cl-todo{margin:0 0 0 32px;}
+  #cl-app .cl-todo textarea{background:#fff;}
+  #cl-app .cl-todo .cl-todo-open{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  #cl-app .cl-todo .cl-todo-open label{display:flex;align-items:center;gap:6px;margin:0;font-size:.82rem;color:#c33;font-weight:800;cursor:pointer;}
+  #cl-app .cl-todo .cl-todo-open input{width:auto;}
+  #cl-app .cl-item.na .cl-photo-row,#cl-app .cl-item.na .cl-todo{opacity:.4;pointer-events:none;}
+
+  /* 物件管理 */
+  #cl-app .cl-plist{max-height:320px;overflow:auto;border:1px solid #e4ded0;border-radius:10px;}
+  #cl-app .cl-prow{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #efe9db;font-size:.85rem;}
+  #cl-app .cl-prow:last-child{border-bottom:none;}
+  #cl-app .cl-prow .nm{font-weight:700;color:#33302a;}
+  #cl-app .cl-prow .ad{color:#8a8574;font-size:.76rem;}
+  #cl-app .cl-prow .rm{margin-left:auto;color:#c33;background:#fdecec;border:1px solid #f0c0c0;border-radius:7px;padding:4px 10px;font-size:.78rem;font-weight:800;}
+  #cl-app .cl-add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  #cl-app .cl-add-row input{flex:1;min-width:120px;}
+  #cl-app .cl-hist{font-size:.85rem;}
+  #cl-app .cl-hist .hrow{display:flex;gap:8px;align-items:center;padding:9px 10px;border:1px solid #e7e1d2;border-radius:9px;margin-bottom:7px;background:#fcfbf6;}
+  #cl-app .cl-hist .hrow .hd{font-weight:800;color:#2f6b4f;}
+  #cl-app .cl-hist .hrow .hng{color:#c33;font-weight:800;font-size:.8rem;}
+  #cl-app .cl-hist .hrow .hok{color:#2f6b4f;font-size:.8rem;}
+  #cl-app .cl-hist .hrow .go{margin-left:auto;font-size:.78rem;font-weight:800;color:#2f6b4f;background:#eaf3ee;border:1px solid #b8d6c5;border-radius:7px;padding:5px 12px;}
+  #cl-app .cl-muted{color:#9a9484;font-size:.82rem;text-align:center;padding:16px;}
+  #cl-app .cl-item-del{margin-left:auto;font-size:.74rem;font-weight:800;color:#c33;background:#fdecec;border:1px solid #f0c0c0;border-radius:7px;padding:4px 10px;cursor:pointer;}
+  #cl-app .cl-item-del:active{transform:scale(.96);}
+  #cl-app .cl-photo.flagged{border:2.5px solid #e44;}
+  #cl-app .cl-photo .pflag{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.55);border-radius:6px;padding:1px 5px 1px 3px;display:flex;align-items:center;gap:2px;cursor:pointer;}
+  #cl-app .cl-photo .pflag input{width:13px;height:13px;margin:0;accent-color:#e44;}
+  #cl-app .cl-photo .pflag span{color:#fff;font-size:.66rem;font-weight:800;}
   </style>
 
   <h1 id="kt-title" title="タップで最新情報を取り込む">勤怠管理</h1>
@@ -186,6 +308,68 @@
     ※ 出勤・退勤を押すと現在時刻が記録されます。押し忘れたときは表の時刻を直接編集できます。<br>
     ※ データはこの端末のブラウザ内に保存され、PIVOTのバックアップにも含まれます。CSVは選択中の月の全日を出力します。
   </div>
+</div><!-- /#kintai-view -->
+
+<!-- ===== 清掃報告 ===== -->
+<div id="cl-app">
+  <h1>定期清掃報告</h1>
+  <div class="cl-sub">物件を選ぶと入力画面が開きます。上から順に「良好・清掃済／要対応」を押して写真を撮ってください。<b>「要対応」にすると、備考に書いた内容がそのまま上部のアラートに出続けます（良好に戻すと消えます）。</b>ない設備は項目右上の「削除」で外せます。</div>
+
+  <!-- 未解決アラート -->
+  <div class="cl-alert hide" id="cl-alert">
+    <div class="cl-alert-h">⚠️ 未解決の宿題（処理が終わっていない箇所）<span id="cl-alert-count"></span></div>
+    <div id="cl-alert-list"></div>
+  </div>
+
+  <!-- 報告フォーム -->
+  <div class="cl-card">
+    <div class="cl-pref" id="cl-pref">
+      <button class="cl-pref-btn on" data-pref="">すべて</button>
+      <button class="cl-pref-btn" data-pref="広島県">広島県</button>
+      <button class="cl-pref-btn" data-pref="岡山県">岡山県</button>
+    </div>
+    <div class="cl-bar">
+      <div style="flex:1;min-width:160px;">
+        <label>物件</label>
+        <select id="cl-prop"></select>
+      </div>
+      <div style="width:150px;">
+        <label>清掃日</label>
+        <input type="date" id="cl-date">
+      </div>
+      <div class="cl-spacer"></div>
+      <button class="cl-btn primary" id="cl-open">開く／新規</button>
+    </div>
+    <div id="cl-form"></div>
+  </div>
+
+  <!-- 履歴 -->
+  <div class="cl-card">
+    <div class="cl-bar"><h2>報告履歴</h2><div class="cl-spacer"></div>
+      <button class="cl-btn ghost" id="cl-hist-filter">未解決のみ表示</button>
+    </div>
+    <div id="cl-hist"></div>
+  </div>
+
+  <!-- 物件管理 -->
+  <details class="cl-card" id="cl-propmgr">
+    <summary style="font-weight:800;color:#3a3630;cursor:pointer;">🏢 対象物件の追加・削除（清掃する物件だけ残す）</summary>
+    <div style="margin-top:12px;">
+      <div class="cl-muted" style="text-align:left;padding:0 0 8px;">清掃対象でない物件は「削除」で消せます。必要な物件は下から手入力で追加できます。</div>
+      <div class="cl-plist" id="cl-plist"></div>
+      <div class="cl-add-row">
+        <input type="text" id="cl-add-name" placeholder="物件名（例：カルムコート）">
+        <input type="text" id="cl-add-addr" placeholder="所在地（任意）">
+        <button class="cl-btn primary" id="cl-add-btn">追加</button>
+      </div>
+    </div>
+  </details>
+
+  <div class="kt-note" style="max-width:1100px;margin:0 auto;color:#9a9484;font-size:.74rem;line-height:1.6;">
+    ※ 写真とデータはこの端末のブラウザ内に保存されます。同期設定をすると他の端末とも共有されます。<br>
+    ※ 「要対応」を選んで宿題にチェックを入れると、処理が終わるまで上部と起動時に警告が出続けます。処理後に宿題を「解決済み」にすると消えます。
+  </div>
+</div><!-- /#cl-app -->
 
 <script>
 /* ===== KINTAI (勤怠管理 / namespaced) ===== */
@@ -593,7 +777,7 @@
     if(absent){
       return { mins:null, html:
         `<td colspan="3" class="kt-abs-cell">欠勤</td>
-         <td><button class="kt-del" data-p="${person}" data-del="${k}" title="欠勤を取り消す">×</button></td>` };
+         <td class="kt-abs-x"><button class="kt-del" data-p="${person}" data-del="${k}" title="欠勤を取り消す">×</button></td>` };
     }
     return { mins, html:
       `<td><div class="kt-cell"><input type="time" value="${rec.in||""}" data-p="${person}" data-k="${k}" data-f="in">${rec.in?`<button class="kt-delone" data-p="${person}" data-delf="${k}" data-delfield="in" title="出勤時刻を削除">×</button>`:""}</div></td>
@@ -625,7 +809,7 @@
       </tr>`;
     }
     const wrap=document.getElementById("kt-tableWrap");
-    wrap.innerHTML=`<table class="kt-two">
+    wrap.innerHTML=`<div class="kt-scroll-hint">← 横にスクロールできます →</div><table class="kt-two">
       <thead>
         <tr class="kt-grouphead">
           <th rowspan="2" class="kt-datecol">日付</th>
@@ -758,5 +942,708 @@
   } else { boot(); }
 })();
 </script>
+
+<script>
+/* 清掃報告：対象物件の初期データ（建物一覧より。画面から追加・削除可） */
+const CL_SEED_PROPS=[{name:"アイディール",addr:"広島県福山市今津町６丁目18-17",mno:"0019"},
+{name:"アシンプトート",addr:"広島県福山市明神町２丁目８-２６",mno:"0041"},
+{name:"アプリシティ",addr:"広島県福山市曙町６丁目２-28",mno:"0007"},
+{name:"アミティー山崎",addr:"岡山県岡山市中区山崎14-1",mno:"0212"},
+{name:"アメリア",addr:"広島県福山市駅家町大字倉光１１０-１",mno:"0015"},
+{name:"アルカディア",addr:"広島県福山市大門町３丁目２７-６",mno:"0026"},
+{name:"アルカンシェル",addr:"広島県福山市大門町５丁目２０－１０",mno:"0037"},
+{name:"アルスアイパワー",addr:"岡山県倉敷市宮前352-1",mno:"0217"},
+{name:"アルデバラン",addr:"広島県福山市曙町３丁目24-10-1",mno:"0117"},
+{name:"アルトゥーラ",addr:"岡山県倉敷市平田47-3",mno:"0183"},
+{name:"アルファステイツ福山駅前Ⅱ",addr:"広島県福山市三之丸町4-8",mno:"0114"},
+{name:"アルヴィータ",addr:"広島県福山市神辺町字道上2983-1",mno:"0039"},
+{name:"アロモント",addr:"広島県福山市南今津町９７",mno:"0055"},
+{name:"アンブルネージュ",addr:"岡山県倉敷市安江588-5",mno:"0206"},
+{name:"ウィステリア",addr:"岡山県岡山市南区西市505-8",mno:"0144"},
+{name:"エクラス",addr:"岡山県岡山市中区平井１丁目16-38",mno:"0150"},
+{name:"S place bld.",addr:"岡山県総社市駅前１丁目3-43",mno:"0119"},
+{name:"エスリードホウセン",addr:"岡山県岡山市南区芳泉２丁目7-12",mno:"0151"},
+{name:"エルキュール",addr:"広島県福山市東手城町３丁目２９-３０",mno:"0043"},
+{name:"オルカアネックス",addr:"岡山県岡山市中区雄町456-3",mno:"0148"},
+{name:"オルタナ",addr:"岡山県岡山市北区奥田南町4-8",mno:"0152"},
+{name:"オンワード",addr:"岡山県岡山市北区奥田西町3-15",mno:"0146"},
+{name:"KASUGAエコパティオ",addr:"広島県福山市春日町浦上1948-5",mno:"0087"},
+{name:"カルムコート",addr:"広島県福山市草戸町５丁目６-１０-２",mno:"0017"},
+{name:"カルムプロムナード",addr:"岡山県岡山市北区辛川市場655-1",mno:"0201"},
+{name:"カーサアンフルール",addr:"岡山県岡山市北区高松原古才609-1",mno:"0158"},
+{name:"カーサグランデ学南町",addr:"岡山県岡山市北区学南町１丁目1-11",mno:"0153"},
+{name:"ガーデンヒルズ",addr:"広島県福山市大門町２丁目１８−３",mno:"0033"},
+{name:"ガーデンヒルズ東手城",addr:"広島県福山市東手城町１丁目３４−１７−５",mno:"0034"},
+{name:"キッキーエーカー",addr:"岡山県倉敷市北畝３丁目5-4",mno:"0194"},
+{name:"キャシュリーココ",addr:"岡山県倉敷市片島町113",mno:"0210"},
+{name:"クラリス",addr:"広島県福山市草戸町４丁目２７-１１",mno:"0016"},
+{name:"クレアコート",addr:"岡山県岡山市南区青江６丁目6-32",mno:"0173"},
+{name:"クレアール",addr:"岡山県岡山市南区千鳥町13-8",mno:"0193"},
+{name:"クレスト",addr:"岡山県岡山市東区宍甘61-1",mno:"0137"},
+{name:"クロスロードツー",addr:"岡山県岡山市東区宍甘159-2",mno:"0202"},
+{name:"グランエール",addr:"広島県福山市大門町４丁目２３−１４",mno:"0049"},
+{name:"グランフルール庭瀬",addr:"岡山県岡山市北区庭瀬130-1",mno:"0191"},
+{name:"グロリオサ",addr:"広島県福山市東町３丁目４-２９",mno:"0001"},
+{name:"ココライズ",addr:"岡山県倉敷市福田町古新田916-4",mno:"0185"},
+{name:"サブライム",addr:"岡山県総社市総社862-5",mno:"0186"},
+{name:"サンサリーレ富原",addr:"岡山県岡山市北区富原720-1",mno:"0218"},
+{name:"サントーシャ",addr:"広島県福山市千田町２丁目48-15",mno:"0008"},
+{name:"シエスタ",addr:"岡山県岡山市中区四御神85-6",mno:"0149"},
+{name:"シティハイツみどり",addr:"広島県福山市手城町３丁目7-13",mno:"0113"},
+{name:"シャトー秋桜",addr:"岡山県倉敷市生坂133-1",mno:"0197"},
+{name:"シャンティ",addr:"広島県福山市伊勢丘４丁目４−１０",mno:"0009"},
+{name:"シャンティーコア",addr:"岡山県倉敷市連島中央４丁目13-4",mno:"0214"},
+{name:"シルヴィア",addr:"岡山県岡山市南区新福２丁目5-24",mno:"0159"},
+{name:"シンティランテ",addr:"広島県福山市瀬戸町大字長和１０６６ー7",mno:"0014"},
+{name:"ジャロウ",addr:"岡山県総社市駅南１丁目8-47",mno:"0188"},
+{name:"スカイヴィスタ",addr:"岡山県岡山市中区四御神700-47",mno:"0163"},
+{name:"スパーブコート",addr:"広島県福山市千田町３丁目５５-１９",mno:"0057"},
+{name:"スピネルデュオ",addr:"広島県福山市千田町2丁目44-2",mno:"0092"},
+{name:"スリジエ",addr:"岡山県倉敷市酒津2754",mno:"0190"},
+{name:"スーマ",addr:"岡山県岡山市北区宿513-1",mno:"0154"},
+{name:"セシリア",addr:"岡山県岡山市東区瀬戸町瀬戸234-2",mno:"0162"},
+{name:"セレナーデ",addr:"岡山県岡山市東区西大寺中２丁目",mno:"0164"},
+{name:"セントラルスティード",addr:"岡山県岡山市東区瀬戸町下433-2",mno:"0143"},
+{name:"ソアヴィータ",addr:"広島県福山市瀬戸町大字長和２０６-１",mno:"0036"},
+{name:"操南ハイツ",addr:"岡山県岡山市中区倉田488-2",mno:"0216"},
+{name:"創和ハイツ",addr:"岡山県岡山市北区京町1-20",mno:"0213"},
+{name:"ソルトグラス",addr:"広島県福山市千田町３丁目14-1",mno:"0046"},
+{name:"ソレイユ",addr:"広島県福山市千田町大字千田3055",mno:"0024"},
+{name:"タストフル",addr:"岡山県岡山市北区田益1325-1",mno:"0157"},
+{name:"タリスヴィータ",addr:"岡山県倉敷市玉島乙島6850-2",mno:"0093"},
+{name:"チュールベール",addr:"岡山県倉敷市連島町連島142-321",mno:"0195"},
+{name:"ティアラ新倉敷",addr:"岡山県倉敷市玉島八島892-1",mno:"0199"},
+{name:"テタンジェ",addr:"岡山県倉敷市玉島乙島7128-1",mno:"0078"},
+{name:"テラストリア",addr:"広島県尾道市高須町4840-6",mno:"0120"},
+{name:"ディアレスト",addr:"広島県福山市大門町４丁目5-1",mno:"0021"},
+{name:"デルニエ",addr:"岡山県岡山市中区長岡513-1",mno:"0139"},
+{name:"ドルセットセブン",addr:"広島県福山市大門町大門４９３−１",mno:"0050"},
+{name:"ドルチェヴィータ",addr:"岡山県岡山市中区平井６丁目16-3",mno:"0140"},
+{name:"ナチュラルプラン",addr:"岡山県倉敷市中畝４丁目10-18",mno:"0198"},
+{name:"ナディア",addr:"岡山県倉敷市中畝７丁目7-15",mno:"0129"},
+{name:"ナビータ",addr:"岡山県岡山市中区長岡554",mno:"0203"},
+{name:"ナルサス",addr:"岡山県倉敷市中畝５丁目3-12",mno:"0184"},
+{name:"ニューアーク",addr:"岡山県岡山市中区西川原148-16",mno:"0147"},
+{name:"ネクサス",addr:"岡山県岡山市中区中井３丁目9-3",mno:"0142"},
+{name:"ノブリス",addr:"広島県福山市奈良津町３丁目１２−4",mno:"0022"},
+{name:"ハイクレア",addr:"岡山県倉敷市東塚５丁目11-23",mno:"0189"},
+{name:"ハイサニー",addr:"広島県福山市水呑町3305-1",mno:"0090"},
+{name:"ハイツ福居",addr:"岡山県岡山市北区津島福居１丁目5-8",mno:"0127"},
+{name:"ハルモニア",addr:"広島県福山市引野町南１丁目１０-３-３",mno:"0020"},
+{name:"ハーベスト",addr:"岡山県岡山市中区浜１丁目14-27",mno:"0141"},
+{name:"ハーベストムーン",addr:"岡山県岡山市中区浜１丁目2-3",mno:"0165"},
+{name:"パイクプレイス",addr:"岡山県岡山市中区浜２丁目6-15",mno:"0166"},
+{name:"パシフィコ",addr:"岡山県岡山市中区土田198-3",mno:"0169"},
+{name:"ヒラリアス",addr:"広島県福山市引野町４丁目12-10",mno:"0110"},
+{name:"ヒーストン",addr:"岡山県倉敷市東塚３丁目",mno:"0192"},
+{name:"ビラ芳翠",addr:"広島県福山市南松永町２丁目15-12-5",mno:"0135"},
+{name:"フェリックス",addr:"広島県福山市引野町３丁目１９-１４",mno:"0002"},
+{name:"プティメゾン",addr:"広島県福山市新涯町４丁目12-14",mno:"0069"},
+{name:"ヘスティア",addr:"広島県福山市引野町２丁目13-7",mno:"0138"},
+{name:"ヘリオス",addr:"岡山県岡山市中区平井７丁目27-5",mno:"0174"},
+{name:"ベラカーササウス",addr:"岡山県倉敷市老松町３丁目6-39",mno:"0111"},
+{name:"ベラカーサノース",addr:"岡山県倉敷市老松町３丁目7-20",mno:"0112"},
+{name:"松永町AP3",addr:"広島県福山市松永町４丁目17-6",mno:"0222"},
+{name:"マロウ",addr:"岡山県倉敷市宮前458-5",mno:"0196"},
+{name:"マースフル",addr:"広島県福山市南蔵王町６丁目21-20",mno:"0134"},
+{name:"マートル",addr:"広島県福山市松永町４丁目32-11",mno:"0176"},
+{name:"マーベラス",addr:"広島県福山市南今津町２５",mno:"0003"},
+{name:"ミステール",addr:"広島県福山市松永町487-1",mno:"0126"},
+{name:"ミラヴィルタス",addr:"広島県福山市千田町３丁目１７-４",mno:"0005"},
+{name:"ミルドレッド",addr:"広島県福山市南松永町２丁目15-3",mno:"0125"},
+{name:"ミーティア",addr:"広島県福山市水呑町3443-1",mno:"0030"},
+{name:"メゾンドリヴァージュ",addr:"広島県福山市南本庄５丁目５-２０",mno:"0010"},
+{name:"メリッサ",addr:"広島県福山市南手城町１丁目8-18",mno:"0121"},
+{name:"メルヴェイユ",addr:"広島県福山市南手城町２丁目27-10",mno:"0178"},
+{name:"モノリス番長",addr:"岡山県岡山市北区番町２丁目13-3",mno:"0145"},
+{name:"ラコリーヌ",addr:"広島県福山市伊勢丘５丁目6-28",mno:"0060"},
+{name:"ラナンキュラス",addr:"広島県福山市大門町野々浜２２９−１",mno:"0047"},
+{name:"ラピスラズリ",addr:"岡山県倉敷市稲荷町8-28",mno:"0211"},
+{name:"リドレイ",addr:"岡山県岡山市北区辛川市場287",mno:"0208"},
+{name:"リーフガーデン",addr:"岡山県岡山市北区西辛川482-1",mno:"0167"},
+{name:"ルミエール静",addr:"広島県福山市沖野上町５丁目２５－７",mno:"0012"},
+{name:"ルミナス",addr:"広島県福山市西新涯町２丁目１１−２４",mno:"0052"},
+{name:"レッジェーロ",addr:"岡山県倉敷市林240-1",mno:"0204"},
+{name:"レパント",addr:"岡山県岡山市東区宍甘198-4",mno:"0168"},
+{name:"ローレルコート",addr:"広島県福山市曙町５丁目29-45-1",mno:"0182"},
+{name:"ワイエスエヌスタイル",addr:"岡山県総社市真壁1179-3",mno:"0187"},
+{name:"ヴァンヴェール",addr:"岡山県岡山市南区西市448",mno:"0156"},
+{name:"ヴィラソレイル",addr:"岡山県倉敷市八王寺町263-27",mno:"0205"},
+{name:"アルバ",addr:"広島県福山市曙町２丁目19-12-2",mno:"0073"},
+{name:"アンティカベラカーサ",addr:"岡山県倉敷市老松町１丁目2-30",mno:"0067"},
+{name:"エバーグリーン福山西町",addr:"広島県福山市西町１丁目3-30",mno:"0118"},
+{name:"カルコーサ",addr:"広島県福山市神村町50-4",mno:"0123"},
+{name:"ガーデンヒルズ長者町",addr:"広島県福山市長者町1-9",mno:"0099"},
+{name:"シティハイツ暁の星",addr:"広島県福山市西深津町１丁目７ー８",mno:"0061"},
+{name:"スピネル",addr:"広島県福山市千田町２丁目44-5",mno:"0079"},
+{name:"セラータ",addr:"広島県福山市千田町２丁目31-2",mno:"0072"},
+{name:"ソフィア",addr:"広島県福山市千田町３丁目４７-２",mno:"0058"},
+{name:"タラッサ",addr:"岡山県倉敷市玉島乙島7172-11",mno:"0066"},
+{name:"フレンディア常光",addr:"広島県福山市引野町２丁目19-7",mno:"0063"},
+{name:"プレジール高橋",addr:"広島県福山市今津町６丁目2-34",mno:"0076"},
+{name:"ベラカーサフェリーチェ",addr:"岡山県倉敷市老松町３丁目12-23",mno:"0068"},
+{name:"ペルシュ城山",addr:"岡山県笠岡市笠岡2388番地58",mno:"0082"},
+{name:"マジェステ",addr:"広島県福山市南松永町３丁目10-23",mno:"0080"},
+{name:"マルヴィナ",addr:"広島県福山市南松永町３丁目9-17",mno:"0124"},
+{name:"モデルノ",addr:"広島県福山市南手城町２丁目15-6",mno:"0071"},
+{name:"ローレルコート霞町",addr:"広島県福山市霞町１丁目9-14",mno:"0084"}];
+</script>
+
+<script>
+/* ===== 清掃報告モジュール（勤怠とは独立） ===== */
+(function(){
+  "use strict";
+  const PAD = n => String(n).padStart(2,"0");
+  const WD = ["日","月","火","水","木","金","土"];
+
+  // ---- チェック項目定義（西澤くん向け：どこを・何を見て・あったらどう処理するか） ----
+  // photo:false は写真不要（動物の糞・死骸）
+  const ITEMS = [
+    {key:"entrance", label:"エントランス", photo:true,
+     guide:"床・扉まわり・郵便受け前を掃く／拭く。", do:"チラシやゴミが散乱していたら回収して処分。"},
+    {key:"parking", label:"駐車場", photo:true,
+     guide:"区画内・車路の落ち葉やゴミを除去。オイル染みがないか見る。", do:"油漏れ跡があれば撮影して報告＋拭き取り。"},
+    {key:"elevator", label:"エレベーター（あれば）", photo:true, optional:true,
+     guide:"かご内の床・鏡・操作盤を拭く。異音・扉の動きを確認。", do:"動きがおかしければ止めずに撮影・すぐ連絡。"},
+    {key:"common", label:"共用部分（ホール・階段）", photo:true,
+     guide:"階段・踊り場・手すりを掃く／拭く。照明が切れていないか。", do:"電球切れは玉番を控えて報告→交換手配。"},
+    {key:"corridor", label:"共用廊下", photo:true,
+     guide:"各階の廊下を端から端まで掃く。排水溝の詰まりを見る。", do:"詰まりがあれば除去。私物がはみ出していたら住戸番号を控える。"},
+    {key:"weed", label:"草刈り・植栽", photo:true,
+     guide:"敷地内の雑草を抜く／刈る。植栽が伸びきって歩行や視界を妨げていないか。", do:"伸びすぎは剪定。手に負えない量なら範囲を撮影して報告。"},
+    {key:"garbage", label:"ゴミ庫・ゴミ置場", photo:true,
+     guide:"庫内を掃く。臭い・液だれ・カラス対策ネットの状態。回収されず残っているゴミ。", do:"ルール外ゴミが放置されていたら撮影して報告。"},
+    {key:"sign", label:"管理会社の看板", photo:true,
+     guide:"看板の文字が薄くなっていないか、剥がれ・傾き・汚れがないか。", do:"色あせ・剥がれは全体が写るように撮影して報告（交換要否を判断する）。"},
+    {key:"exterior", label:"外観", photo:true,
+     guide:"建物外壁・共用扉・郵便受け・掲示板の破損や落書き。", do:"破損・落書きは撮影して報告。"},
+    {key:"equip", label:"設備の破損確認", photo:true,
+     guide:"マンホール（マス）・浄化槽のモーター音・消防設備（消火器/誘導灯）を目視。", do:"異音・破損・消火器の期限切れは撮影して即報告。止めない・触らない。"},
+    {key:"bike", label:"放置自転車", photo:true,
+     guide:"使われていない・埃をかぶった自転車がないか。", do:"あれば撮影＋警告札を貼る。台数と場所を備考に記録し、撤去手配まで追う。"},
+    {key:"abandoned", label:"放置物", photo:true,
+     guide:"粗大ゴミ・家具・段ボール等が共用部に放置されていないか。", do:"撮影して報告。住戸が特定できれば番号を控える。"},
+    {key:"delivery", label:"宅配BOX", photo:true,
+     guide:"扉の開閉・施錠・庫内の忘れ物や不着荷物。", do:"故障・長期滞留物は撮影して報告。"},
+    {key:"animal", label:"動物の糞・死骸", photo:false,
+     guide:"敷地内に動物の糞や死骸がないか（写真は不要）。", do:"あれば衛生手袋で除去・清掃。処理した旨を備考に記録。"}
+  ];
+  const ITEM_BY_KEY = {}; ITEMS.forEach(it=>ITEM_BY_KEY[it.key]=it);
+
+  // ---- 保存キー ----
+  const PROPS_KEY = "clean_props_v1";
+  const REPORTS_KEY = "clean_reports_v1";
+  const PROPS_BAK = "clean_props_v1_bak";
+  const REPORTS_BAK = "clean_reports_v1_bak";
+
+  function _parse(s,def){ try{ const v=JSON.parse(s); return v==null?def:v; }catch(e){ return def; } }
+
+  // ---- 物件リスト ----
+  const PROPS_SEEDVER_KEY = "clean_props_seedver";
+  const PROPS_SEEDVER = "v2_142";   // A/B棟統合＋戸建・事務所・倉庫・駐車場を除外した142件
+  function loadProps(){
+    let p=_parse(localStorage.getItem(PROPS_KEY), null);
+    if(!Array.isArray(p)){ p=_parse(localStorage.getItem(PROPS_BAK), null); }
+    const appliedVer = (function(){ try{ return localStorage.getItem(PROPS_SEEDVER_KEY); }catch(e){ return null; } })();
+    if(!Array.isArray(p)){
+      // 初回：整理済みリストを初期投入
+      p = (typeof CL_SEED_PROPS!=="undefined") ? CL_SEED_PROPS.slice() : [];
+      saveProps(p);
+      try{ localStorage.setItem(PROPS_SEEDVER_KEY, PROPS_SEEDVER); }catch(e){}
+    } else if(appliedVer!==PROPS_SEEDVER && typeof CL_SEED_PROPS!=="undefined"){
+      // 旧・初期リスト(208件)からの一度きりの入れ替え。
+      // ただしユーザーが手入力で追加した物件(mnoが空)は残す。
+      const userAdded = p.filter(x=>!x.mno);
+      const merged = CL_SEED_PROPS.slice();
+      userAdded.forEach(u=>{ if(!merged.some(m=>m.name===u.name)) merged.push(u); });
+      p = merged;
+      saveProps(p);
+      try{ localStorage.setItem(PROPS_SEEDVER_KEY, PROPS_SEEDVER); }catch(e){}
+    }
+    return p;
+  }
+  function saveProps(list){
+    const js=JSON.stringify(list);
+    localStorage.setItem(PROPS_KEY, js);
+    localStorage.setItem(PROPS_BAK, js);
+  }
+
+  // ---- 報告データ ----
+  // reports: { "物件名␟YYYY-MM-DD": { prop, date, items:{key:{status,photo,note,todo,todoDone,todoTs}} , ts } }
+  const SEP = "\u241f";
+  function reportId(prop,date){ return prop+SEP+date; }
+  function loadReports(){
+    let r=_parse(localStorage.getItem(REPORTS_KEY), null);
+    if(r==null || typeof r!=="object"){ r=_parse(localStorage.getItem(REPORTS_BAK), {}); }
+    return (r && typeof r==="object") ? r : {};
+  }
+  function saveReports(obj){
+    const js=JSON.stringify(obj);
+    localStorage.setItem(REPORTS_KEY, js);
+    localStorage.setItem(REPORTS_BAK, js);
+    setCleanSyncDirty();
+  }
+
+  let reports = loadReports();
+  let props = loadProps();
+  let cur = { prop:"", date:"" };   // 現在フォームで開いている報告
+  let histUnresolvedOnly = false;
+  let prefFilter = "";   // 県フィルタ（""=すべて / "広島県" / "岡山県"）
+
+  // ===== 未解決の宿題を集約 =====
+  // 宿題 = status==="ng"（要対応）の項目すべて。備考(note)の内容をそのままアラートに出す。
+  // 「良好・清掃済」に切り替えると自動的に消える。
+  function collectTodos(){
+    const out=[];
+    Object.keys(reports).forEach(id=>{
+      const rep=reports[id]; if(!rep||!rep.items) return;
+      Object.keys(rep.items).forEach(k=>{
+        const it=rep.items[k];
+        if(it && it.status==="ng"){
+          const note=(it.note && String(it.note).trim()) ? String(it.note).trim() : "（内容未記入：備考に状況を書いてください）";
+          out.push({ id, prop:rep.prop, date:rep.date, key:k,
+                     label:(ITEM_BY_KEY[k]?ITEM_BY_KEY[k].label:k), todo:note, ts:it.ts||0 });
+        }
+      });
+    });
+    out.sort((a,b)=> (a.date<b.date?-1:a.date>b.date?1:0));
+    return out;
+  }
+
+  function renderAlert(){
+    const todos=collectTodos();
+    const box=document.getElementById("cl-alert");
+    const list=document.getElementById("cl-alert-list");
+    const cnt=document.getElementById("cl-alert-count");
+    const badge=document.getElementById("tab-clean-badge");
+    if(!box) return;
+    if(todos.length===0){
+      box.classList.add("hide");
+      if(badge){ badge.style.display="none"; }
+      return;
+    }
+    box.classList.remove("hide");
+    if(cnt) cnt.textContent = "（"+todos.length+"件）";
+    if(badge){ badge.style.display="inline-block"; badge.textContent=todos.length; }
+    list.innerHTML = todos.map(t=>{
+      const [y,m,d]=t.date.split("-");
+      return `<div class="cl-alert-item">
+        <div><b>${esc(t.prop)}</b>／${esc(t.label)}<br><span style="color:#8a6a30">${m}/${d}：${esc(t.todo)}</span></div>
+        <button class="go" data-goto="${encodeURIComponent(t.id)}">対応する</button>
+      </div>`;
+    }).join("");
+    list.querySelectorAll("[data-goto]").forEach(b=>{
+      b.onclick=()=>{ const id=decodeURIComponent(b.dataset.goto); openReportById(id); };
+    });
+  }
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  // 写真を配列で取り出す。各要素は {src, flag} に正規化（旧：単一photo文字列／文字列配列も吸収）
+  function photosOf(rec){
+    if(!rec) return [];
+    let arr;
+    if(Array.isArray(rec.photos)) arr=rec.photos;
+    else if(rec.photo){ arr=[rec.photo]; delete rec.photo; }
+    else arr=[];
+    // 文字列要素を {src,flag:false} に正規化
+    let changed=false;
+    for(let i=0;i<arr.length;i++){
+      if(typeof arr[i]==="string"){ arr[i]={src:arr[i],flag:false}; changed=true; }
+      else if(arr[i]&&arr[i].src==null&&arr[i].flag==null){ /* 想定外 */ }
+    }
+    rec.photos=arr;
+    return arr;
+  }
+
+  // ===== 物件ごとの非表示項目（無い設備を消す。次回以降も消えたまま） =====
+  const HIDDEN_KEY="clean_hidden_v1";
+  function loadHidden(){ return _parse(localStorage.getItem(HIDDEN_KEY), {}) || {}; }
+  function getHidden(prop){ const h=loadHidden(); return Array.isArray(h[prop])?h[prop]:[]; }
+  function setHidden(prop, arr){ const h=loadHidden(); h[prop]=arr; localStorage.setItem(HIDDEN_KEY, JSON.stringify(h)); }
+  function hideItem(prop, key){ const a=getHidden(prop); if(a.indexOf(key)<0){ a.push(key); setHidden(prop,a); } }
+  function unhideAll(prop){ setHidden(prop, []); }
+
+  // ===== 起動時ポップアップ警告（解決するまで毎回） =====
+  function startupAlert(){
+    const todos=collectTodos();
+    if(todos.length===0) return;
+    const lines=todos.slice(0,8).map(t=>{
+      const [,m,d]=t.date.split("-");
+      return `・${t.prop}／${t.label}（${m}/${d}）：${t.todo}`;
+    }).join("\n");
+    const more = todos.length>8 ? `\n…ほか${todos.length-8}件` : "";
+    alert(`⚠️ 未解決の宿題が ${todos.length}件 あります。\n処理が終わるまで消えません。\n\n${lines}${more}\n\n「清掃報告」タブで対応してください。`);
+  }
+
+  // ===== 物件プルダウン =====
+  function fillPropSelect(){
+    const sel=document.getElementById("cl-prop"); if(!sel) return;
+    const keep=sel.value;
+    const list = prefFilter ? props.filter(p=>(p.addr||"").indexOf(prefFilter)===0) : props;
+    const cntLabel = prefFilter ? `― ${prefFilter}の物件を選ぶ（${list.length}件）―` : "― 物件を選ぶ ―";
+    sel.innerHTML = `<option value="">${esc(cntLabel)}</option>` + list.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join("");
+    if(keep && list.some(p=>p.name===keep)) sel.value=keep;
+  }
+
+  // ===== 報告フォーム描画 =====
+  function ensureReport(prop,date){
+    const id=reportId(prop,date);
+    if(!reports[id]){
+      reports[id]={ prop, date, items:{}, ts:Date.now() };
+    }
+    return reports[id];
+  }
+
+  function openReport(prop,date){
+    if(!prop||!date){ return; }
+    cur={prop,date};
+    const rep=ensureReport(prop,date);
+    // 旧形式(単一photo)の項目を配列photosへ移行してから保存に反映
+    let migrated=false;
+    Object.keys(rep.items||{}).forEach(k=>{ const it=rep.items[k];
+      if(it && !Array.isArray(it.photos)){ photosOf(it); migrated=true; }
+    });
+    if(migrated){ try{ saveReports(reports); }catch(e){} }
+    renderForm();
+  }
+  function openReportById(id){
+    const rep=reports[id]; if(!rep) return;
+    // 清掃タブへ切替
+    switchTab("clean");
+    const psel=document.getElementById("cl-prop"); if(psel) psel.value=rep.prop;
+    const dsel=document.getElementById("cl-date"); if(dsel) dsel.value=rep.date;
+    openReport(rep.prop, rep.date);
+    setTimeout(()=>{ const el=document.getElementById("cl-form"); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },80);
+  }
+
+  function renderForm(){
+    const wrap=document.getElementById("cl-form"); if(!wrap) return;
+    if(!cur.prop||!cur.date){ wrap.innerHTML=`<div class="cl-muted">物件を選ぶと、この場所の入力画面が開きます。</div>`; return; }
+    const rep=ensureReport(cur.prop,cur.date);
+    const hidden=getHidden(cur.prop);
+    const [y,m,d]=cur.date.split("-"); const wd=WD[new Date(+y,+m-1,+d).getDay()];
+    let html=`<div style="font-weight:800;color:#2f6b4f;margin:6px 0 4px;font-size:1.02rem;">${esc(cur.prop)}　${y}/${m}/${d}（${wd}）の報告</div>`;
+    // 過去の同物件報告の件数（蓄積の目安）
+    const pastCount=Object.keys(reports).filter(id=>reports[id].prop===cur.prop).length;
+    html+=`<div style="font-size:.78rem;color:#9a9484;margin-bottom:12px;">この物件の報告：${pastCount}件（下の「報告履歴」に蓄積されます）</div>`;
+
+    const visibleItems=ITEMS.filter(it=>hidden.indexOf(it.key)<0);
+    if(hidden.length){
+      html+=`<div style="font-size:.78rem;color:#b5721a;margin-bottom:10px;">この物件で非表示にした項目：${hidden.map(k=>ITEM_BY_KEY[k]?ITEM_BY_KEY[k].label:k).join("、")}　<button class="cl-btn ghost" id="cl-unhide" style="padding:4px 10px;font-size:.76rem;">全部戻す</button></div>`;
+    }
+
+    html += visibleItems.map((it,idx)=>{
+      const rec = rep.items[it.key] || {status:"",photos:[],note:"",todo:"",todoDone:false};
+      const st = rec.status||"";
+      const cls = st==="ng" ? "ng" : (st==="na"?"na":"");
+      const naBtn = it.optional ? `<button data-st="na" data-k="${it.key}" class="${st==="na"?"sel-na":""}">無し</button>` : "";
+      const photos = photosOf(rec);
+      const photoCell = it.photo ? `
+        <div class="cl-photo-row">
+          ${photos.map((ph,pi)=>{ const src=(ph&&ph.src!=null)?ph.src:ph; const fl=!!(ph&&ph.flag);
+            return `<div class="cl-photo ${fl?'flagged':''}">
+              <img src="${src}">
+              <button class="rm" data-rmphoto="${it.key}" data-pi="${pi}">×</button>
+              <label class="pflag" title="要対応の写真に印"><input type="checkbox" data-flag="${it.key}" data-pi="${pi}" ${fl?"checked":""}><span>要</span></label>
+            </div>`; }).join("")}
+          <div class="cl-photo cl-photo-add" data-photo="${it.key}">📷<br>写真を追加</div>
+          <div class="cl-photo-hint">${photos.length?`${photos.length}枚／タップで追加`:"タップで撮影／選択（何枚でも）"}</div>
+        </div>` : `<div class="cl-photo-row"><div class="cl-photo-hint">※ この項目は写真不要</div></div>`;
+      const noteCell = `
+        <div class="cl-todo">
+          <label>備考・現況${st==="ng"?`　<span style="color:#c33;">← 要対応。ここに書いた内容がそのままアラートに出ます</span>`:""}</label>
+          <textarea data-note="${it.key}" placeholder="例：放置自転車2台、東側駐輪場。警告札を貼付。撤去手配中。">${esc(rec.note||"")}</textarea>
+          ${st==="ng"?`<div style="font-size:.78rem;color:#b5721a;margin-top:6px;">この項目は「要対応」です。処理が終わったら「良好・清掃済」に切り替えるとアラートから消えます。</div>`:""}
+        </div>`;
+      return `<div class="cl-item ${cls}" data-item="${it.key}">
+        <div class="cl-item-h"><span class="num">${idx+1}</span><span class="ttl">${esc(it.label)}</span>
+          <button class="cl-item-del" data-delitem="${it.key}" title="この設備が無い場合は削除">削除</button>
+        </div>
+        <div class="cl-item-guide">${esc(it.guide)}<br><span class="do">▶ 異常時：${esc(it.do)}</span></div>
+        <div class="cl-status">
+          <button data-st="ok" data-k="${it.key}" class="${st==="ok"?"sel-ok":""}">良好・清掃済</button>
+          <button data-st="ng" data-k="${it.key}" class="${st==="ng"?"sel-ng":""}">要対応</button>
+          ${naBtn}
+        </div>
+        ${photoCell}
+        ${noteCell}
+      </div>`;
+    }).join("");
+    html += `<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">
+      <button class="cl-btn primary" id="cl-save">保存する</button>
+      <button class="cl-btn danger" id="cl-delrep">この報告を削除</button>
+    </div>`;
+    wrap.innerHTML=html;
+    bindForm();
+  }
+
+  function bindForm(){
+    const wrap=document.getElementById("cl-form"); if(!wrap) return;
+    const rep=ensureReport(cur.prop,cur.date);
+    function rec(k){ if(!rep.items[k]) rep.items[k]={status:"",photos:[],note:"",todo:"",todoDone:false}; return rep.items[k]; }
+
+    // 状態ボタン（要対応/良好/無し）
+    wrap.querySelectorAll("[data-st]").forEach(b=>{
+      b.onclick=()=>{
+        const k=b.dataset.k, st=b.dataset.st;
+        const r=rec(k);
+        r.status = (r.status===st)? "" : st;   // トグル
+        saveCur(); renderForm(); renderAlert(); renderHist();
+      };
+    });
+    // 項目削除（無い設備を消す。物件単位で次回も非表示）
+    wrap.querySelectorAll("[data-delitem]").forEach(b=>{
+      b.onclick=()=>{
+        const k=b.dataset.delitem; const lbl=ITEM_BY_KEY[k]?ITEM_BY_KEY[k].label:k;
+        if(!confirm(`「${lbl}」を${cur.prop}の点検項目から外しますか？\n（この物件の今後の報告でも表示されなくなります。「全部戻す」で復活できます）`)) return;
+        hideItem(cur.prop, k);
+        // 既存レコードも消しておく（不要データ削減）
+        if(rep.items[k]) delete rep.items[k];
+        saveCur(); renderForm(); renderAlert(); renderHist();
+      };
+    });
+    // 非表示を全部戻す
+    const unhide=document.getElementById("cl-unhide");
+    if(unhide) unhide.onclick=()=>{ unhideAll(cur.prop); renderForm(); };
+    // 写真追加
+    wrap.querySelectorAll("[data-photo]").forEach(cell=>{
+      cell.onclick=(e)=>{
+        if(e.target && e.target.closest && (e.target.closest("[data-rmphoto]")||e.target.closest(".pflag"))) return;
+        const k=cell.dataset.photo; pickPhoto(k);
+      };
+    });
+    // 写真削除
+    wrap.querySelectorAll("[data-rmphoto]").forEach(b=>{
+      b.onclick=(e)=>{ e.stopPropagation();
+        const k=b.dataset.rmphoto, pi=+b.dataset.pi;
+        const arr=photosOf(rec(k));
+        if(pi>=0 && pi<arr.length){ arr.splice(pi,1); }
+        saveCur(); renderForm();
+      };
+    });
+    // 写真ごとの「要対応」チェック
+    wrap.querySelectorAll("[data-flag]").forEach(c=>{
+      c.onchange=(e)=>{ e.stopPropagation();
+        const k=c.dataset.flag, pi=+c.dataset.pi;
+        const arr=photosOf(rec(k));
+        if(arr[pi]){ arr[pi].flag=c.checked; }
+        saveCur(); renderForm();
+      };
+    });
+    // 備考（入力するたびにアラート内容も更新）
+    wrap.querySelectorAll("[data-note]").forEach(t=>{
+      t.oninput=()=>{ rec(t.dataset.note).note=t.value; };
+      t.onblur=()=>{ saveCur(); renderAlert(); renderHist(); };
+    });
+    const sv=document.getElementById("cl-save");
+    if(sv) sv.onclick=()=>{ saveCur(); renderAlert(); renderHist(); flash("保存しました"); };
+    const del=document.getElementById("cl-delrep");
+    if(del) del.onclick=()=>{
+      if(!confirm(`${cur.prop}／${cur.date} の報告を削除しますか？`)) return;
+      delete reports[reportId(cur.prop,cur.date)];
+      saveReports(reports);
+      renderForm(); renderAlert(); renderHist();
+    };
+  }
+
+  function saveCur(){
+    const rep=reports[reportId(cur.prop,cur.date)];
+    if(rep){ rep.ts=Date.now(); }
+    saveReports(reports);
+  }
+
+  // 写真取得（カメラ/選択・複数可）→ 圧縮してbase64で配列に追加
+  function pickPhoto(key){
+    const inp=document.createElement("input");
+    inp.type="file"; inp.accept="image/*"; inp.capture="environment"; inp.multiple=true;
+    inp.onchange=()=>{
+      const files=Array.from(inp.files||[]); if(!files.length) return;
+      const rep=ensureReport(cur.prop,cur.date);
+      if(!rep.items[key]) rep.items[key]={status:"",photos:[],note:"",todo:"",todoDone:false};
+      const arr=photosOf(rep.items[key]);
+      let done=0, failed=false;
+      files.forEach(f=>{
+        const rd=new FileReader();
+        rd.onload=()=>{
+          const img=new Image();
+          img.onload=()=>{
+            const max=1000; let w=img.width,h=img.height;
+            if(w>h && w>max){ h=Math.round(h*max/w); w=max; }
+            else if(h>=w && h>max){ w=Math.round(w*max/h); h=max; }
+            const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+            cv.getContext("2d").drawImage(img,0,0,w,h);
+            let data;
+            try{ data=cv.toDataURL("image/jpeg",0.7); }catch(e){ data=rd.result; }
+            arr.push({src:data, flag:false});
+            done++;
+            if(done===files.length){
+              try{ saveCur(); }catch(e){ failed=true; }
+              if(failed){ alert("写真の保存に失敗しました（容量オーバーの可能性）。不要な写真や古い報告を削除してください。"); }
+              renderForm();
+            }
+          };
+          img.src=rd.result;
+        };
+        rd.readAsDataURL(f);
+      });
+    };
+    inp.click();
+  }
+
+  // ===== 履歴 =====
+  function renderHist(){
+    const wrap=document.getElementById("cl-hist"); if(!wrap) return;
+    let ids=Object.keys(reports);
+    // 各報告の未解決件数
+    function unresolvedCount(rep){ let n=0; Object.keys(rep.items||{}).forEach(k=>{ if(rep.items[k].status==="ng") n++; }); return n; }
+    function ngCount(rep){ let n=0; Object.keys(rep.items||{}).forEach(k=>{ if(rep.items[k].status==="ng") n++; }); return n; }
+    function okCount(rep){ let n=0; Object.keys(rep.items||{}).forEach(k=>{ if(rep.items[k].status==="ok") n++; }); return n; }
+    let rows = ids.map(id=>({id,rep:reports[id]})).filter(x=>x.rep);
+    if(histUnresolvedOnly) rows=rows.filter(x=>unresolvedCount(x.rep)>0);
+    rows.sort((a,b)=> (a.rep.date<b.rep.date?1:a.rep.date>b.rep.date?-1:0));
+    if(rows.length===0){ wrap.innerHTML=`<div class="cl-muted">${histUnresolvedOnly?"未解決の報告はありません。":"まだ報告がありません。"}</div>`; return; }
+    wrap.innerHTML = rows.map(({id,rep})=>{
+      const [y,m,d]=rep.date.split("-"); const wd=WD[new Date(+y,+m-1,+d).getDay()];
+      const ng=ngCount(rep), ok=okCount(rep);
+      return `<div class="hrow">
+        <div><span class="hd">${esc(rep.prop)}</span>　<span style="color:#8a8574">${m}/${d}(${wd})</span><br>
+          <span class="hok">清掃済 ${ok}</span>　${ng?`<span class="hng">要対応 ${ng}</span>`:""}
+        </div>
+        <button class="go" data-open="${encodeURIComponent(id)}">開く</button>
+      </div>`;
+    }).join("");
+    wrap.querySelectorAll("[data-open]").forEach(b=>{
+      b.onclick=()=>openReportById(decodeURIComponent(b.dataset.open));
+    });
+  }
+
+  // ===== 物件管理 =====
+  function renderPlist(){
+    const wrap=document.getElementById("cl-plist"); if(!wrap) return;
+    if(props.length===0){ wrap.innerHTML=`<div class="cl-muted">物件がありません。下から追加してください。</div>`; return; }
+    wrap.innerHTML = props.map((p,i)=>`<div class="cl-prow">
+      <div><div class="nm">${esc(p.name)}</div>${p.addr?`<div class="ad">${esc(p.addr)}</div>`:""}</div>
+      <button class="rm" data-rmprop="${i}">削除</button>
+    </div>`).join("");
+    wrap.querySelectorAll("[data-rmprop]").forEach(b=>{
+      b.onclick=()=>{
+        const i=+b.dataset.rmprop; const nm=props[i]?props[i].name:"";
+        if(!confirm(`「${nm}」を清掃対象から削除しますか？（この物件の過去の報告は残ります）`)) return;
+        props.splice(i,1); saveProps(props); renderPlist(); fillPropSelect();
+      };
+    });
+  }
+
+  function flash(msg){
+    let el=document.getElementById("cl-flash");
+    if(!el){ el=document.createElement("div"); el.id="cl-flash";
+      el.style.cssText="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#2f6b4f;color:#fff;padding:10px 20px;border-radius:22px;font-weight:800;font-size:.9rem;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transition:.2s;";
+      document.body.appendChild(el); }
+    el.textContent=msg; el.style.opacity="1";
+    clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.opacity="0"; },1400);
+  }
+
+  // ===== タブ切替 =====
+  function switchTab(which){
+    const kt=document.getElementById("tab-kintai"), cl=document.getElementById("tab-clean");
+    if(which==="clean"){
+      document.body.classList.add("tab-clean");
+      if(kt) kt.classList.remove("on"); if(cl) cl.classList.add("on");
+    } else {
+      document.body.classList.remove("tab-clean");
+      if(cl) cl.classList.remove("on"); if(kt) kt.classList.add("on");
+      if(window.KT && KT.reload) { try{ KT.reload(); }catch(e){} }
+    }
+  }
+
+  // ===== 同期相乗り（勤怠GASに清掃データも載せる場合のフック） =====
+  let _clDirty=false;
+  function setCleanSyncDirty(){ _clDirty=true; }
+  // KT側の同期があれば、そのpayloadに clean を混ぜられるよう公開
+  window.CLEAN = {
+    exportData(){ return { props, reports, hidden:loadHidden() }; },
+    importData(obj){
+      if(obj && Array.isArray(obj.props)) { props=obj.props; saveProps(props); }
+      if(obj && obj.reports && typeof obj.reports==="object"){ reports=mergeReports(reports,obj.reports); saveReports(reports); }
+      if(obj && obj.hidden && typeof obj.hidden==="object"){ localStorage.setItem(HIDDEN_KEY, JSON.stringify(obj.hidden)); }
+      refreshAll();
+    },
+    refresh(){ refreshAll(); }
+  };
+  // 報告のマージ（新しいtsを採用）
+  function mergeReports(a,b){
+    const out=Object.assign({},a);
+    Object.keys(b||{}).forEach(id=>{
+      if(!out[id] || (b[id].ts||0) > (out[id].ts||0)) out[id]=b[id];
+    });
+    return out;
+  }
+
+  function refreshAll(){ fillPropSelect(); renderForm(); renderAlert(); renderHist(); renderPlist(); }
+
+  // ===== 初期化 =====
+  function initClean(){
+    props=loadProps(); reports=loadReports();
+    // 日付デフォルト＝今日
+    const dsel=document.getElementById("cl-date");
+    if(dsel && !dsel.value){ const t=new Date(); dsel.value=`${t.getFullYear()}-${PAD(t.getMonth()+1)}-${PAD(t.getDate())}`; }
+    fillPropSelect();
+    const psel=document.getElementById("cl-prop");
+    function autoOpen(){
+      const p=psel.value;
+      const d=document.getElementById("cl-date").value;
+      if(!p){ cur={prop:"",date:""}; renderForm(); return; }
+      if(!d){ const t=new Date(); document.getElementById("cl-date").value=`${t.getFullYear()}-${PAD(t.getMonth()+1)}-${PAD(t.getDate())}`; }
+      openReport(psel.value, document.getElementById("cl-date").value);
+      setTimeout(()=>{ const el=document.getElementById("cl-form"); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:"smooth",block:"start"}); },60);
+    }
+    if(psel) psel.onchange=autoOpen;
+    const dsel2=document.getElementById("cl-date");
+    if(dsel2) dsel2.onchange=()=>{ if(psel.value) autoOpen(); };
+    const openBtn=document.getElementById("cl-open");
+    if(openBtn) openBtn.onclick=autoOpen;
+    const hf=document.getElementById("cl-hist-filter");
+    if(hf) hf.onclick=()=>{ histUnresolvedOnly=!histUnresolvedOnly; hf.textContent=histUnresolvedOnly?"すべて表示":"未解決のみ表示"; renderHist(); };
+    const addBtn=document.getElementById("cl-add-btn");
+    if(addBtn) addBtn.onclick=()=>{
+      const n=document.getElementById("cl-add-name").value.trim();
+      const a=document.getElementById("cl-add-addr").value.trim();
+      if(!n){ alert("物件名を入れてください。"); return; }
+      if(props.some(p=>p.name===n)){ alert("同じ名前の物件が既にあります。"); return; }
+      props.push({name:n,addr:a,mno:""}); saveProps(props);
+      document.getElementById("cl-add-name").value=""; document.getElementById("cl-add-addr").value="";
+      renderPlist(); fillPropSelect(); flash("追加しました");
+    };
+    // タブボタン
+    const kt=document.getElementById("tab-kintai"), cl=document.getElementById("tab-clean");
+    if(kt) kt.onclick=()=>switchTab("kintai");
+    if(cl) cl.onclick=()=>switchTab("clean");
+
+    // 県フィルタ
+    const prefBox=document.getElementById("cl-pref");
+    if(prefBox){
+      prefBox.querySelectorAll("[data-pref]").forEach(b=>{
+        b.onclick=()=>{
+          prefFilter=b.dataset.pref||"";
+          prefBox.querySelectorAll("[data-pref]").forEach(x=>x.classList.toggle("on", x===b));
+          fillPropSelect();
+          // 選択中の物件が県外になったらフォームを閉じる
+          const sel=document.getElementById("cl-prop");
+          if(sel && !sel.value){ cur={prop:"",date:""}; renderForm(); }
+        };
+      });
+    }
+
+    refreshAll();
+    // 起動時ポップアップ警告（未解決があれば）
+    setTimeout(startupAlert, 400);
+  }
+
+  if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded", initClean); }
+  else { initClean(); }
+})();
+</script>
+
 </body>
 </html>
