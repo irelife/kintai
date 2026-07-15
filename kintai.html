@@ -124,6 +124,102 @@
   #kintai-view .kt-punch.absent .who{color:#b0aca0;}
   #kintai-view .kt-punch.absent .state{color:#b0aca0;font-weight:800;}
   #kintai-view .kt-punch.done{background:#fbfaf7;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  /* ===== 出勤欠勤簿（独立・同期しない） ===== */
+  #kintai-view .kb-card{
+    background:#fff;border:2px solid #1c1b18;border-radius:18px;margin:0 0 12px;overflow:hidden;
+    box-shadow:0 2px 4px rgba(0,0,0,.05), 0 10px 26px rgba(0,0,0,.09);
+  }
+  #kintai-view .kb-head{display:flex;align-items:center;gap:10px;padding:14px 18px 10px;flex-wrap:wrap;}
+  #kintai-view .kb-title{font-size:1.25rem;font-weight:800;letter-spacing:.02em;}
+  #kintai-view .kb-badge{
+    font-size:.66rem;font-weight:800;color:#54514a;background:#f0efe9;
+    border:1px solid #e2e0d7;border-radius:999px;padding:3px 10px;margin-left:auto;
+  }
+  #kintai-view .kb-rows{padding:0 12px;}
+  #kintai-view .kb-row{
+    display:flex;align-items:center;gap:14px;padding:14px 6px;border-top:1px solid #eeece5;flex-wrap:wrap;
+  }
+  #kintai-view .kb-row:first-child{border-top:none;}
+  #kintai-view .kb-who{font-size:1.35rem;font-weight:800;flex:none;min-width:64px;}
+  #kintai-view .kb-state{font-size:.9rem;color:#6b675c;flex:1;min-width:100px;}
+  #kintai-view .kb-state.none{color:#a8a496;}
+  #kintai-view .kb-state b{font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums;color:#1c1b18;}
+  #kintai-view .kb-state b.late{color:#b91c1c;}
+  #kintai-view .kb-state .lt{font-size:.68rem;font-weight:800;color:#b91c1c;background:#fef2f2;border-radius:5px;padding:2px 6px;margin-left:7px;}
+  #kintai-view .kb-acts2{display:flex;gap:8px;flex:none;}
+  #kintai-view .kb-b{
+    border:none;border-radius:11px;padding:13px 24px;font-family:inherit;
+    font-size:.95rem;font-weight:800;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .08s,box-shadow .15s;flex:none;
+  }
+  #kintai-view .kb-b:active{transform:scale(.97);}
+  #kintai-view .kb-b.in{background:#1c1b18;color:#fff;}
+  #kintai-view .kb-b.in:hover{background:#000;box-shadow:0 4px 12px rgba(0,0,0,.22);}
+  #kintai-view .kb-b.abs{background:#fff;color:#8d8879;border:1.5px solid #e2e0d7;padding:13px 16px;font-size:.86rem;}
+  #kintai-view .kb-b.abs:hover{background:#f0efe9;border-color:#b8b4a6;color:#54514a;}
+  #kintai-view .kb-b.undo{background:#fff;color:#8d8879;border:1.5px solid #e2e0d7;font-size:.82rem;padding:10px 15px;}
+  #kintai-view .kb-b.undo:hover{background:#f0efe9;border-color:#b8b4a6;color:#1c1b18;}
+  #kintai-view .kb-row.absent{background:#f6f5f1;}
+  #kintai-view .kb-row.absent .kb-who{color:#b0aca0;}
+  #kintai-view .kb-row.absent .kb-state{color:#b0aca0;font-weight:800;font-size:1.1rem;}
+  #kintai-view .kb-foot{display:flex;align-items:center;gap:10px;padding:11px 18px 14px;border-top:1px solid #eeece5;background:#faf9f6;flex-wrap:wrap;}
+  #kintai-view .kb-note{font-size:.76rem;color:#8d8879;flex:1;min-width:120px;transition:color .2s;}
+  #kintai-view .kb-note.hit{color:#1c1b18;font-weight:800;}
+  #kintai-view .kb-btn{
+    border:1.5px solid #d9d6ca;background:#fff;color:#1c1b18;border-radius:10px;
+    padding:9px 15px;font-family:inherit;font-size:.8rem;font-weight:800;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  #kintai-view .kb-btn:hover{border-color:#1c1b18;background:#f0efe9;}
+  #kintai-view .kb-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  #kintai-view .kb-bar select{
+    font-family:inherit;font-size:.9rem;font-weight:700;padding:9px 12px;
+    border:1.5px solid #e2e0d7;border-radius:10px;background:#fff;color:#1c1b18;cursor:pointer;
+  }
+  #kintai-view .kb-bar select:hover{border-color:#1c1b18;}
+  #kintai-view .kb-stats{margin-bottom:12px;}
+  #kintai-view .kb-stat{background:#faf9f6;border:1px solid #eeece5;border-radius:10px;padding:10px 13px;margin-bottom:8px;}
+  #kintai-view .kb-stat-h{font-size:1.1rem;font-weight:800;margin-bottom:5px;}
+  #kintai-view .kb-stat-h span{font-size:.78rem;font-weight:400;color:#8d8879;margin-left:9px;}
+  #kintai-view .kb-kpis{display:flex;gap:24px;flex-wrap:wrap;align-items:baseline;}
+  #kintai-view .kb-kpi{display:inline-flex;align-items:baseline;gap:7px;}
+  #kintai-view .kb-kpi i{font-style:normal;font-size:.74rem;color:#8d8879;}
+  #kintai-view .kb-kpi em{font-style:normal;font-weight:800;font-size:1.5rem;color:#1c1b18;font-variant-numeric:tabular-nums;}
+  #kintai-view .kb-kpi.late em{color:#b91c1c;}
+  #kintai-view .kb-kpi.rate em{font-size:2rem;}
+  #kintai-view .kb-kpi.rate.mid em{color:#8a6d3b;}
+  #kintai-view .kb-kpi.rate.bad em{color:#b91c1c;}
+  #kintai-view .kb-empty{color:#a8a496;font-size:.86rem;padding:12px;text-align:center;}
+  #kintai-view table.kb-tbl{width:100%;border-collapse:collapse;}
+  #kintai-view table.kb-tbl th,#kintai-view table.kb-tbl td{border:1px solid #e2e0d7;padding:9px 6px;text-align:center;}
+  #kintai-view table.kb-tbl thead th{background:#1c1b18;color:#fff;font-size:1.05rem;font-weight:800;padding:11px 6px;}
+  #kintai-view table.kb-tbl .kb-d{background:#faf9f6;font-weight:800;font-size:.86rem;white-space:nowrap;width:62px;}
+  #kintai-view table.kb-tbl .kb-d span{display:block;font-size:.68rem;color:#a8a496;font-weight:600;}
+  #kintai-view table.kb-tbl tr.sun .kb-d{color:#b91c1c;}
+  #kintai-view table.kb-tbl tr.today td{background:#f0efe9;}
+  #kintai-view table.kb-tbl tbody tr:hover td{background:#f6f5f1;}
+  #kintai-view .kb-t{font-size:1.3rem;font-weight:800;font-variant-numeric:tabular-nums;}
+  #kintai-view .kb-t.late{color:#b91c1c;}
+  #kintai-view td.kb-abs{color:#8d8879;font-weight:800;background:#f4f3ef;}
+  #kintai-view td.kb-none{background:#fff;}
+  #kintai-view .kb-x{
+    border:none;background:transparent;color:#c9c5b7;font-size:.85rem;cursor:pointer;
+    margin-left:6px;padding:2px 4px;border-radius:5px;transition:color .15s,background .15s;
+  }
+  #kintai-view .kb-x:hover{color:#b91c1c;background:#fef2f2;}
+  #kintai-view .kb-mini{
+    border:1px solid #e2e0d7;background:#fff;color:#a8a496;border-radius:7px;
+    padding:5px 9px;font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer;margin:0 2px;
+    transition:border-color .15s,background .15s,color .15s;
+  }
+  #kintai-view .kb-mini:hover{border-color:#1c1b18;color:#1c1b18;background:#f0efe9;}
+  #kintai-view table.kb-tbl tfoot td{background:#f0efe9;font-weight:800;font-size:1.5rem;padding:12px 6px;}
+  #kintai-view table.kb-tbl tfoot td.kb-d{font-size:.82rem;color:#8d8879;}
+  @media(max-width:560px){
+    #kintai-view .kb-row{flex-direction:column;align-items:stretch;}
+    #kintai-view .kb-acts2{width:100%;}
+    #kintai-view .kb-b.in{flex:1;}
+    #kintai-view .kb-kpi{flex-direction:column;align-items:flex-start;gap:1px;}
+    #kintai-view .kb-kpis{gap:14px 20px;}
+  }
   /* 折りたたみ */
   #kintai-view .kt-fold{
     margin-top:12px;padding:16px 4px;display:flex;align-items:center;gap:11px;
@@ -717,6 +813,33 @@
   </div>
 
   <div id="kt-punch"></div>
+
+  <!-- ===== 出勤欠勤簿（同期を一切通さない独立記録） ===== -->
+  <div class="kb-card" id="kb-card">
+    <div class="kb-head">
+      <div class="kb-title">出勤欠勤簿</div>
+      <div class="kb-badge">この端末だけに保存 ・ 同期しません</div>
+    </div>
+    <div class="kb-rows" id="kb-rows"></div>
+    <div class="kb-foot">
+      <div class="kb-note" id="kb-note">　</div>
+      <div class="kb-acts">
+        <button class="kb-btn" id="kb-pdf">PDFで出す</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="kt-fold" data-kf="kb-log-body"><div class="ico">▤</div><div class="lbl" id="kb-log-lbl">出勤欠勤簿の記録</div><div class="arrow">▸</div></div>
+  <div class="kt-foldbody" id="kb-log-body">
+    <div class="kt-panel">
+      <div class="kb-bar">
+        <select id="kb-monthSel"></select>
+        <div class="kt-spacer"></div>
+      </div>
+      <div id="kb-stats" class="kb-stats"></div>
+      <div id="kb-table"></div>
+    </div>
+  </div>
 
   <div class="kt-fold" data-kf="kt-log-body"><div class="ico">▤</div><div class="lbl" id="kt-log-lbl">今月の記録</div><div class="arrow">▸</div></div>
   <div class="kt-foldbody" id="kt-log-body">
@@ -1860,6 +1983,282 @@
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', boot);
   } else { boot(); }
+})();
+
+/* ============================================================
+   出勤欠勤簿（KB）— 完全に独立した記録
+   ・保存先は専用キー kintai_book_v1。勤怠の同期(KEY/BAK)とは別。
+   ・サーバーとのマージを一切行わないため、押した記録が消えることはない。
+   ・データ形式は素直に { "YYYY-MM-DD": { harada:"in"|"abs", oishi:... } }
+   ============================================================ */
+(function(){
+  const KB_KEY = "kintai_book_v1";
+  const KB_PERSONS = ["harada","oishi"];
+  const KB_LABEL = { harada:"原田", oishi:"大石" };
+  const KB_WD = ["日","月","火","水","木","金","土"];
+  const KB_START = 9*60;              // 出勤基準 9:00（9:00ちょうどはセーフ）
+  const P2 = n => String(n).padStart(2,"0");
+
+  function kbLoad(){
+    try{ const o=JSON.parse(localStorage.getItem(KB_KEY)||"{}"); return (o&&typeof o==="object")?o:{}; }
+    catch(e){ return {}; }
+  }
+  function kbSave(o){
+    try{ localStorage.setItem(KB_KEY, JSON.stringify(o)); return true; }
+    catch(e){ alert("保存できませんでした。ブラウザの空き容量をご確認ください。"); return false; }
+  }
+  let kb = kbLoad();
+
+  const kbToday = () => { const d=new Date(); return `${d.getFullYear()}-${P2(d.getMonth()+1)}-${P2(d.getDate())}`; };
+  const kbNowHM = () => { const d=new Date(); return `${P2(d.getHours())}:${P2(d.getMinutes())}`; };
+  const kbMin = hm => { const m=/^(\d{1,2}):(\d{2})$/.exec(hm||""); return m ? (+m[1])*60+(+m[2]) : null; };
+  const kbLate = hm => { const t=kbMin(hm); return t!=null && t>KB_START; };
+  const kbEsc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  function kbGet(day, person){ const d=kb[day]; return (d && d[person]) ? d[person] : null; }
+  function kbSet(day, person, rec){
+    if(!kb[day]) kb[day]={};
+    if(rec==null) delete kb[day][person]; else kb[day][person]=rec;
+    if(Object.keys(kb[day]).length===0) delete kb[day];
+    kbSave(kb);
+  }
+
+  // ===== 今日の打刻カード =====
+  function kbRenderRows(){
+    const box=document.getElementById("kb-rows"); if(!box) return;
+    const day=kbToday();
+    box.innerHTML = KB_PERSONS.map(p=>{
+      const r=kbGet(day,p);
+      const name=KB_LABEL[p];
+      if(r && r.abs){
+        return `<div class="kb-row absent">
+          <div class="kb-who">${name}</div>
+          <div class="kb-state">欠勤</div>
+          <button class="kb-b undo" data-kbundo="${p}">取り消す</button>
+        </div>`;
+      }
+      if(r && r.in){
+        return `<div class="kb-row done">
+          <div class="kb-who">${name}</div>
+          <div class="kb-state"><b class="${kbLate(r.in)?"late":""}">${kbEsc(r.in)}</b> 出勤${kbLate(r.in)?'<span class="lt">9時すぎ</span>':""}</div>
+          <button class="kb-b undo" data-kbundo="${p}">取り消す</button>
+        </div>`;
+      }
+      return `<div class="kb-row">
+        <div class="kb-who">${name}</div>
+        <div class="kb-state none">まだ記録がありません</div>
+        <div class="kb-acts2">
+          <button class="kb-b abs" data-kbabs="${p}">欠勤</button>
+          <button class="kb-b in" data-kbin="${p}">出勤</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    box.querySelectorAll("[data-kbin]").forEach(b=>{
+      b.onclick=()=>{ kbSet(day, b.dataset.kbin, { in:kbNowHM(), t:Date.now() }); kbRenderAll(); kbFlash(`${KB_LABEL[b.dataset.kbin]} を ${kbNowHM()} で記録しました`); };
+    });
+    box.querySelectorAll("[data-kbabs]").forEach(b=>{
+      b.onclick=()=>{ kbSet(day, b.dataset.kbabs, { abs:1, t:Date.now() }); kbRenderAll(); kbFlash(`${KB_LABEL[b.dataset.kbabs]} を欠勤で記録しました`); };
+    });
+    box.querySelectorAll("[data-kbundo]").forEach(b=>{
+      b.onclick=()=>{ kbSet(day, b.dataset.kbundo, null); kbRenderAll(); };
+    });
+
+    const note=document.getElementById("kb-note");
+    if(note){
+      const d=new Date();
+      note.textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${KB_WD[d.getDay()]}）の記録`;
+    }
+  }
+  function kbFlash(msg){
+    const n=document.getElementById("kb-note"); if(!n) return;
+    const prev=n.textContent;
+    n.textContent=msg; n.classList.add("hit");
+    clearTimeout(n._t);
+    n._t=setTimeout(()=>{ n.classList.remove("hit"); kbRenderRows(); }, 1600);
+  }
+
+  // ===== 月の一覧 =====
+  function kbMonths(){
+    const set=new Set(Object.keys(kb).map(k=>k.slice(0,7)));
+    set.add(kbToday().slice(0,7));
+    return [...set].sort().reverse();
+  }
+  function kbBuildMonths(){
+    const sel=document.getElementById("kb-monthSel"); if(!sel) return;
+    const cur=sel.value;
+    const ms=kbMonths();
+    sel.innerHTML=ms.map(m=>`<option value="${m}">${m.slice(0,4)}年${+m.slice(5,7)}月</option>`).join("");
+    sel.value = (cur && ms.indexOf(cur)>=0) ? cur : (ms[0]||kbToday().slice(0,7));
+  }
+  function kbStats(ym, person){
+    let days=0, absent=0, onTime=0, late=0, sum=0, cnt=0;
+    Object.keys(kb).forEach(day=>{
+      if(day.indexOf(ym)!==0) return;
+      const r=kbGet(day, person); if(!r) return;
+      if(r.abs){ absent++; return; }
+      if(r.in){
+        days++; cnt++; sum+=kbMin(r.in)||0;
+        if(kbLate(r.in)) late++; else onTime++;
+      }
+    });
+    const rate = cnt ? Math.round(onTime/cnt*1000)/10 : null;
+    const avg = cnt ? Math.round(sum/cnt) : null;
+    return { days, absent, onTime, late, rate, avg };
+  }
+  function kbHM(min){ return `${Math.floor(min/60)}:${P2(min%60)}`; }
+  function kbRenderStats(){
+    const box=document.getElementById("kb-stats"); if(!box) return;
+    const sel=document.getElementById("kb-monthSel");
+    const ym=(sel&&sel.value)||kbToday().slice(0,7);
+    box.innerHTML = KB_PERSONS.map(p=>{
+      const a=kbStats(ym,p);
+      if(!a.days && !a.absent) return "";
+      const rateTxt = a.rate==null ? "—" : `${a.rate}%`;
+      const cls = a.rate==null ? "" : (a.rate>=90?"ok":(a.rate>=70?"mid":"bad"));
+      return `<div class="kb-stat">
+        <div class="kb-stat-h">${KB_LABEL[p]}<span>出勤${a.days}日${a.absent?` ・ 欠勤${a.absent}日`:""}${a.avg!=null?` ・ 平均 ${kbHM(a.avg)}`:""}</span></div>
+        <div class="kb-kpis">
+          <span class="kb-kpi"><i>9時までに出勤</i><em>${a.onTime}件</em></span>
+          <span class="kb-kpi late"><i>9時を過ぎた</i><em>${a.late}件</em></span>
+          <span class="kb-kpi rate ${cls}"><i>正着率</i><em>${rateTxt}</em></span>
+        </div>
+      </div>`;
+    }).filter(Boolean).join("") || `<div class="kb-empty">この月の記録はまだありません。</div>`;
+  }
+  function kbRenderTable(){
+    const wrap=document.getElementById("kb-table"); if(!wrap) return;
+    const sel=document.getElementById("kb-monthSel");
+    const ym=(sel&&sel.value)||kbToday().slice(0,7);
+    const y=+ym.slice(0,4), m=+ym.slice(5,7);
+    const dim=new Date(y,m,0).getDate();
+    const today=kbToday();
+    let rows="";
+    for(let d=1; d<=dim; d++){
+      const day=`${ym}-${P2(d)}`;
+      const wd=new Date(y,m-1,d).getDay();
+      const cls=[wd===0?"sun":(wd===6?"sat":""), day===today?"today":""].filter(Boolean).join(" ");
+      const cell=p=>{
+        const r=kbGet(day,p);
+        if(r && r.abs) return `<td class="kb-abs">欠勤<button class="kb-x" data-kbdel="${day}|${p}">×</button></td>`;
+        if(r && r.in)  return `<td><span class="kb-t ${kbLate(r.in)?"late":""}">${kbEsc(r.in)}</span><button class="kb-x" data-kbdel="${day}|${p}">×</button></td>`;
+        return `<td class="kb-none">
+          <button class="kb-mini in" data-kbmark="${day}|${p}|in">出勤</button>
+          <button class="kb-mini abs" data-kbmark="${day}|${p}|abs">欠勤</button>
+        </td>`;
+      };
+      rows+=`<tr class="${cls}"><td class="kb-d">${m}/${d}<span>${KB_WD[wd]}</span></td>${cell("harada")}${cell("oishi")}</tr>`;
+    }
+    const sH=kbStats(ym,"harada"), sO=kbStats(ym,"oishi");
+    wrap.innerHTML=`<table class="kb-tbl">
+      <thead><tr><th class="kb-d">日付</th><th>原田</th><th>大石</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td class="kb-d">出勤日数</td><td>${sH.days}日</td><td>${sO.days}日</td></tr></tfoot>
+    </table>`;
+    wrap.querySelectorAll("[data-kbdel]").forEach(b=>{
+      b.onclick=()=>{ const [day,p]=b.dataset.kbdel.split("|"); kbSet(day,p,null); kbRenderAll(); };
+    });
+    wrap.querySelectorAll("[data-kbmark]").forEach(b=>{
+      b.onclick=()=>{
+        const [day,p,kind]=b.dataset.kbmark.split("|");
+        if(kind==="abs"){ kbSet(day,p,{abs:1,t:Date.now()}); }
+        else {
+          const v=prompt(`${KB_LABEL[p]} の ${day} の出勤時刻を入力してください（例 08:45）`, "09:00");
+          if(v===null) return;
+          if(!/^\d{1,2}:\d{2}$/.test(v.trim())){ alert("「08:45」の形式で入力してください。"); return; }
+          kbSet(day,p,{in:v.trim(),t:Date.now()});
+        }
+        kbRenderAll();
+      };
+    });
+  }
+  function kbRenderAll(){ kb=kbLoad(); kbBuildMonths(); kbRenderRows(); kbRenderStats(); kbRenderTable(); kbRenderLabel(); }
+  function kbRenderLabel(){
+    const el=document.getElementById("kb-log-lbl"); if(!el) return;
+    const ym=kbToday().slice(0,7);
+    let n=0;
+    Object.keys(kb).forEach(day=>{ if(day.indexOf(ym)===0) n+=Object.keys(kb[day]||{}).length; });
+    el.innerHTML=`出勤欠勤簿の記録${n?` ・ <b>${n}件</b>`:""}`;
+  }
+
+  // ===== PDF =====
+  function kbPdf(){
+    const sel=document.getElementById("kb-monthSel");
+    const ym=(sel&&sel.value)||kbToday().slice(0,7);
+    const y=+ym.slice(0,4), m=+ym.slice(5,7);
+    const dim=new Date(y,m,0).getDate();
+    let rows="";
+    for(let d=1; d<=dim; d++){
+      const day=`${ym}-${P2(d)}`, wd=new Date(y,m-1,d).getDay();
+      const c=p=>{ const r=kbGet(day,p);
+        if(r&&r.abs) return `<td class="ab">欠勤</td>`;
+        if(r&&r.in)  return `<td class="${kbLate(r.in)?"lt":""}">${r.in}</td>`;
+        return `<td></td>`; };
+      rows+=`<tr class="${wd===0||wd===6?"we":""}"><td>${m}/${d}</td><td>${KB_WD[wd]}</td>${c("harada")}${c("oishi")}</tr>`;
+    }
+    const st=KB_PERSONS.map(p=>{
+      const a=kbStats(ym,p);
+      if(!a.days && !a.absent) return "";
+      const rateTxt=a.rate==null?"—":`${a.rate}%`;
+      return `<div class="c"><b>${KB_LABEL[p]}</b>　出勤${a.days}日${a.absent?`　欠勤${a.absent}日`:""}
+        <span class="k">9時までに出勤 <em>${a.onTime}件</em></span>
+        <span class="k">9時を過ぎた <em class="r">${a.late}件</em></span>
+        <span class="k">正着率 <em class="big">${rateTxt}</em></span></div>`;
+    }).filter(Boolean).join("");
+    const html=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>出勤欠勤簿 ${y}年${m}月</title><style>
+      @page{size:A4 portrait;margin:12mm;}
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;color:#1c1b18;font-size:9pt;}
+      h1{font-size:15pt;font-weight:800;}
+      .sub{font-size:7.5pt;color:#8d8879;margin:2px 0 8px;}
+      .cmp{border:1px solid #e2e0d7;border-radius:5px;padding:6px 9px;margin-bottom:8px;background:#faf9f6;}
+      .cmp .c{font-size:8pt;line-height:1.9;padding:2pt 0;}
+      .cmp .k{margin-left:10pt;color:#8d8879;font-size:7.5pt;}
+      .cmp em{font-style:normal;font-weight:800;color:#1c1b18;font-size:10pt;}
+      .cmp em.r{color:#b91c1c;} .cmp em.big{font-size:12pt;}
+      table{width:100%;border-collapse:collapse;page-break-inside:avoid;}
+      th,td{border:.5pt solid #ddd9cc;padding:2pt 3pt;text-align:center;font-size:8pt;line-height:1.3;}
+      thead th{background:#1c1b18;color:#fff;font-size:8pt;padding:4pt 3pt;}
+      tr.we td{background:#faf9f6;}
+      td.lt{color:#b91c1c;font-weight:800;}
+      td.ab{color:#8d8879;font-weight:700;}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+    </style></head><body>
+      <h1>出勤欠勤簿　${y}年${m}月</h1>
+      <div class="sub">IREライフ株式会社　／　出勤基準 09:00（ちょうどは正着）　／　出力日 ${new Date().toLocaleDateString("ja-JP")}</div>
+      ${st?`<div class="cmp">${st}</div>`:""}
+      <table><thead><tr><th>日</th><th>曜</th><th>原田</th><th>大石</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </body></html>`;
+    const w=window.open("","_blank");
+    if(!w){ alert("ポップアップがブロックされました。ブラウザの設定で許可してください。"); return; }
+    w.document.write(html); w.document.close();
+    w.onload=()=>{ try{ w.focus(); w.print(); }catch(e){} };
+    setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 400);
+  }
+
+  function kbBind(){
+    const sel=document.getElementById("kb-monthSel");
+    if(sel) sel.onchange=()=>{ kbRenderStats(); kbRenderTable(); };
+    const pdf=document.getElementById("kb-pdf");
+    if(pdf) pdf.onclick=kbPdf;
+    document.querySelectorAll('#kintai-view .kt-fold[data-kf="kb-log-body"]').forEach(f=>{
+      f.onclick=()=>{
+        const b=document.getElementById("kb-log-body");
+        const open=f.classList.toggle("open");
+        if(b) b.classList.toggle("on", open);
+        if(open){ kbRenderStats(); kbRenderTable(); }
+      };
+    });
+  }
+
+  function kbBoot(){
+    if(!document.getElementById("kb-rows")) return;
+    kbBind(); kbRenderAll();
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', kbBoot); }
+  else { kbBoot(); }
+  window.KB = { render:kbRenderAll, data:()=>kbLoad() };
 })();
 </script>
 
