@@ -244,7 +244,7 @@
   #kintai-view td input[type=time]:focus{border-color:var(--kt-accent);outline:none;background:#fff;}
   #kintai-view tr.kt-sat td:first-child{color:#8d8879;}
   #kintai-view tr.kt-sun td:first-child{color:var(--kt-warn);}
-  #kintai-view .kt-work{font-variant-numeric:tabular-nums;}
+  #kintai-view .kt-work{font-variant-numeric:tabular-nums;font-weight:800;}
   /* 2人並び表 */
   #kintai-view .kt-scroll-hint{display:none;}
   @media (max-width:640px){
@@ -255,10 +255,10 @@
      table-layout:fixed のままだと時刻が押し潰されて見切れる。 */
   #kintai-view table.kt-two{width:100%;min-width:0;font-size:.85rem;table-layout:auto;}
   #kintai-view table.kt-two th,#kintai-view table.kt-two td{padding:10px 6px;}
-  #kintai-view table.kt-two .kt-datecol{width:52px;}
+  #kintai-view table.kt-two .kt-datecol{width:58px;font-size:.9rem;}
   #kintai-view table.kt-two .kt-vsep{width:2px;min-width:2px;}
-  #kintai-view .kt-grp-h{background:#1c1b18 !important;color:#fff !important;font-size:.9rem !important;}
-  #kintai-view .kt-grp-o{background:#54514a !important;color:#fff !important;font-size:.9rem !important;}
+  #kintai-view .kt-grp-h{background:#1c1b18 !important;color:#fff !important;font-size:1.15rem !important;font-weight:800;letter-spacing:.04em;padding:12px 6px !important;}
+  #kintai-view .kt-grp-o{background:#54514a !important;color:#fff !important;font-size:1.15rem !important;font-weight:800;letter-spacing:.04em;padding:12px 6px !important;}
   #kintai-view .kt-vsep{background:#e2e0d7;padding:0 !important;width:2px;min-width:2px;border-bottom:none;}
   #kintai-view .kt-datecol{background:#faf9f6;font-weight:700;white-space:nowrap;}
   #kintai-view tr.kt-today .kt-datecol{background:#fff4d6;}
@@ -269,7 +269,9 @@
   #kintai-view .kt-punch button:active{transform:scale(.96);}
   #kintai-view .kt-punch-in{background:#1c1b18;}
   #kintai-view .kt-punch-out{background:#fff;color:#1c1b18;border:1.5px solid #d9d6ca;}
-  #kintai-view tfoot td{background:#f0efe9;font-weight:700;}
+  #kintai-view tfoot td{background:#f0efe9;font-weight:800;padding:14px 6px;}
+  #kintai-view tfoot td:first-child{font-size:.86rem;color:#8d8879;letter-spacing:.04em;white-space:nowrap;}
+  #kintai-view tfoot td.kt-work{font-size:1.7rem;color:#1c1b18;letter-spacing:-.01em;}
   #kintai-view .kt-note{color:var(--kt-muted);font-size:.74rem;margin-top:12px;line-height:1.5;}
   /* ===== 同期UI ===== */
   #kintai-view .kt-sync{
@@ -330,7 +332,8 @@
     #kintai-view table.kt-two input[type=time].kt-late{color:#b91c1c;border-color:#e8b4b4;}
     #kintai-view .kt-delone{width:22px;height:22px;font-size:.82rem;}
     #kintai-view table.kt-two .kt-datecol{width:46px;}
-    #kintai-view .kt-work{font-size:.95rem;}
+    #kintai-view tfoot td.kt-work{font-size:1.45rem;}
+    #kintai-view tfoot td:first-child{font-size:.78rem;}
     /* 欠勤ボタンも押しやすく */
     #kintai-view .kt-rowabs{font-size:.82rem;padding:6px 10px;}
     /* 横スクロールできることを示すヒント */
@@ -973,10 +976,14 @@
   const TOMB_TTL = 60*24*60*60*1000;  // 60日経過した削除マーカーは完全消去(肥大化防止)
   // 同じミリ秒内に2回操作すると _t が同値になり、マージで勝敗がつかなくなる。
   // 「欠勤にする → 取り消す」を素早く行っても必ず後の操作が勝つよう、単調増加させる。
+  // ただし実時刻から離れすぎると「未来の記録」になり、同期時に永遠に勝ち続けてしまうため、
+  // 進めるのは実時刻から最大1秒までに制限する。
   let _lastMs = 0;
   function _nowMs(){
-    let t = Date.now();
+    const real = Date.now();
+    let t = real;
     if(t <= _lastMs) t = _lastMs + 1;
+    if(t > real + 1000) t = real + 1000;   // 未来へ暴走させない
     _lastMs = t;
     return t;
   }
@@ -988,6 +995,23 @@
     return out;
   }
   // 古い削除マーカーを掃除(TTL超過分のみ完全削除)
+  // 未来の時刻を持つ記録を実時刻へ引き戻す。
+  // 時計のズレ等で紛れ込んだ「未来の削除マーカー」は、放置すると
+  // 同期のたびに新しい打刻を消し続けるため、読み込んだ時点で直す。
+  function _fixFuture(obj){
+    const now=Date.now();
+    const limit=now+120000;   // 2分以上先は異常とみなす
+    let fixed=0;
+    Object.keys(obj||{}).forEach(k=>{
+      const r=obj[k];
+      if(!r || typeof r!=='object') return;
+      if(r.__del && Number(r.__del) > limit){ r.__del = now; fixed++; }
+      if(r._t   && Number(r._t)   > limit){ r._t   = now; fixed++; }
+    });
+    if(fixed) try{ console.warn("勤怠：未来の時刻を持つ記録を"+fixed+"件修正しました"); }catch(e){}
+    return obj;
+  }
+
   function _gcTombstones(obj){
     const now=_nowMs();
     Object.keys(obj||{}).forEach(k=>{
@@ -1048,12 +1072,19 @@
     a=_normalizeKeys(a||{}); b=_normalizeKeys(b||{});
     const out={};
     const keys=new Set([...Object.keys(a),...Object.keys(b)]);
+    // 端末ごとの時計ズレ等で「未来の時刻」を持つ記録が紛れ込むと、
+    // それが永遠に勝ち続けて新しい打刻を消してしまう。未来の時刻は信用しない。
+    const FUTURE_OK = Date.now() + 120000;   // 2分先までは許容（わずかなズレは許す）
+    const _t = rec => {
+      const t=_recTime(rec);
+      return (t > FUTURE_OK) ? 0 : t;        // 未来すぎる時刻は「時刻なし」扱いに降格
+    };
     keys.forEach(day=>{
       const ra=a[day], rb=b[day];
       if(ra && !rb){ out[day]=ra; }
       else if(!ra && rb){ out[day]=rb; }
       else {
-        const ta=_recTime(ra), tb=_recTime(rb);
+        const ta=_t(ra), tb=_t(rb);
         if(ta!==tb){ out[day] = (tb>ta) ? rb : ra; }       // 時刻が有る → 新しい方が勝つ(削除含む)
         else {
           // 時刻が同点。片方が削除なら削除を優先する。
@@ -1219,7 +1250,8 @@
     a=_normalizeCont(a); b=_normalizeCont(b);
     const out={};
     PERSONS.forEach(p=>{
-      let m = mergeKintaiObj(a[p]||{}, b[p]||{});
+      // マージ前に「未来の時刻」を直す。放置すると永遠に勝ち続けて打刻を消してしまう。
+      let m = mergeKintaiObj(_fixFuture(a[p]||{}), _fixFuture(b[p]||{}));
       m = _gcTombstones(m);
       out[p]=m;
     });
