@@ -812,7 +812,7 @@
     <div class="kt-head-time" id="kt-nowTime">--:--</div>
   </div>
 
-  <div id="kt-punch"></div>
+  <!-- 旧・打刻カードは廃止（下の「出勤欠勤簿」に一本化。押す場所が2つあると迷うため） -->
 
   <!-- ===== 出勤欠勤簿（同期を一切通さない独立記録） ===== -->
   <div class="kb-card" id="kb-card">
@@ -841,17 +841,14 @@
     </div>
   </div>
 
-  <div class="kt-fold" data-kf="kt-log-body"><div class="ico">▤</div><div class="lbl" id="kt-log-lbl">今月の記録</div><div class="arrow">▸</div></div>
-  <div class="kt-foldbody" id="kt-log-body">
-    <div class="kt-panel">
-      <div class="kt-bar">
-        <select id="kt-monthSel"></select>
-        <div class="kt-spacer"></div>
-        <button class="kt-btn-csv" id="kt-btnPdf">PDFで出す</button>
-      </div>
-      <div id="kt-compare" class="kt-compare"></div>
-      <div id="kt-tableWrap"></div>
-    </div>
+  <!-- 旧「今月の記録」は廃止（中身は出勤欠勤簿へ取り込み済み）。
+       既存コードが参照する要素だけ、非表示で残しておく（削除すると render() 等が壊れるため）。 -->
+  <div id="kt-legacy" hidden aria-hidden="true" style="display:none">
+    <select id="kt-monthSel"></select>
+    <button id="kt-btnPdf"></button>
+    <div id="kt-compare"></div>
+    <div id="kt-tableWrap"></div>
+    <div id="kt-log-lbl"></div>
   </div>
 
   <div class="kt-fold" data-kf="kt-sync-body"><div class="ico">⚙</div><div class="lbl">同期の設定<span class="kt-sync-state" id="kt-syncState" data-s="">未設定</span></div><div class="arrow">▸</div></div>
@@ -2252,13 +2249,57 @@
     });
   }
 
+  // ===== 旧・勤怠データからの取り込み（1回だけ） =====
+  // 旧データ kintai_standalone_v1 { harada:{ "YYYY-MM-DD":{in,out}|{abs:1}|{__del} }, oishi:{...} }
+  // を出勤欠勤簿へ移す。既に欠勤簿に入っている日は絶対に上書きしない。
+  const KB_MIGRATED = "kintai_book_migrated_v1";
+  function kbMigrateOnce(){
+    try{
+      if(localStorage.getItem(KB_MIGRATED)) return 0;   // 済み → 二重取り込みしない
+      let raw=null;
+      try{ raw=JSON.parse(localStorage.getItem("kintai_standalone_v1")||"null"); }catch(e){ raw=null; }
+      if(!raw || typeof raw!=="object"){ localStorage.setItem(KB_MIGRATED,"1"); return 0; }
+      // 旧形式(1人分)なら原田扱い
+      const cont = (raw.harada || raw.oishi) ? raw : { harada: raw, oishi: {} };
+      const book = kbLoad();
+      let moved=0;
+      KB_PERSONS.forEach(p=>{
+        const src = cont[p] || {};
+        Object.keys(src).forEach(day=>{
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+          const r = src[day];
+          if(!r || typeof r!=="object") return;
+          if(r.__del) return;                              // 削除済みは移さない
+          if(book[day] && book[day][p]) return;            // 既に欠勤簿にある → 触らない
+          let rec=null;
+          if(r.abs) rec = { abs:1, t:Number(r._t)||Date.now() };
+          else if(r.in) rec = { in:String(r.in), t:Number(r._t)||Date.now() };
+          if(!rec) return;
+          if(!book[day]) book[day]={};
+          book[day][p]=rec;
+          moved++;
+        });
+      });
+      if(moved) kbSave(book);
+      localStorage.setItem(KB_MIGRATED,"1");
+      if(moved) try{ console.info("出勤欠勤簿：旧データから"+moved+"件を取り込みました"); }catch(e){}
+      return moved;
+    }catch(e){ return 0; }
+  }
+
   function kbBoot(){
     if(!document.getElementById("kb-rows")) return;
+    const moved = kbMigrateOnce();     // 旧データを取り込んでから描画
     kbBind(); kbRenderAll();
+    if(moved){
+      const n=document.getElementById("kb-note");
+      if(n){ n.textContent=`以前の記録 ${moved}件を取り込みました`; n.classList.add("hit");
+             setTimeout(()=>{ n.classList.remove("hit"); kbRenderRows(); }, 3000); }
+    }
   }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', kbBoot); }
   else { kbBoot(); }
-  window.KB = { render:kbRenderAll, data:()=>kbLoad() };
+  window.KB = { render:kbRenderAll, data:()=>kbLoad(), migrate:kbMigrateOnce };
 })();
 </script>
 
