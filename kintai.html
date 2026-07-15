@@ -146,6 +146,16 @@
   }
   /* 先月比 */
   #kintai-view .kt-compare{margin-bottom:12px;}
+  #kintai-view .kt-cmp-card{background:#faf9f6;border:1px solid #eeece5;border-radius:10px;margin-bottom:8px;padding:2px 0;}
+  #kintai-view .kt-cmp-card .kt-cmp-row{background:transparent;border:none;margin:0;}
+  #kintai-view .kt-kpis{display:flex;gap:18px;padding:2px 11px 10px;flex-wrap:wrap;}
+  #kintai-view .kt-kpi{display:inline-flex;align-items:baseline;gap:6px;}
+  #kintai-view .kt-kpi i{font-style:normal;font-size:.68rem;color:#8d8879;}
+  #kintai-view .kt-kpi em{font-style:normal;font-weight:800;font-size:1.05rem;color:#1c1b18;font-variant-numeric:tabular-nums;}
+  #kintai-view .kt-kpi.late em{color:#b91c1c;}
+  #kintai-view .kt-kpi.rate em{font-size:1.3rem;}
+  #kintai-view .kt-kpi.rate.mid em{color:#8a6d3b;}
+  #kintai-view .kt-kpi.rate.bad em{color:#b91c1c;}
   #kintai-view .kt-cmp-row{
     font-size:.8rem;color:#6b675c;line-height:1.9;padding:9px 11px;background:#faf9f6;
     border:1px solid #eeece5;border-radius:10px;margin-bottom:6px;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;
@@ -214,6 +224,8 @@
   #kintai-view td input[type=time]::-webkit-calendar-picker-indicator:hover{opacity:1;}
   /* 未入力（--:--）は控えめに。読むべきは入っている時刻。 */
   #kintai-view td input[type=time].kt-empty{color:#c9c5b7;font-weight:600;font-size:.95rem;}
+  /* 9時を過ぎた打刻は赤字。色の意味は「遅れ」ひとつだけ。 */
+  #kintai-view td input[type=time].kt-late{color:#b91c1c;}
   #kintai-view td input[type=time]:hover{border-color:var(--kt-line);}
   #kintai-view td input[type=time]:focus{border-color:var(--kt-accent);outline:none;background:#fff;}
   #kintai-view tr.kt-sat td:first-child{color:#8d8879;}
@@ -301,6 +313,7 @@
       text-align:center;color:#1c1b18;box-sizing:content-box;
     }
     #kintai-view table.kt-two input[type=time].kt-empty{font-size:1rem;font-weight:600;color:#c9c5b7;background:#fbfaf7;}
+    #kintai-view table.kt-two input[type=time].kt-late{color:#b91c1c;border-color:#e8b4b4;}
     #kintai-view .kt-delone{width:22px;height:22px;font-size:.82rem;}
     #kintai-view table.kt-two .kt-datecol{width:46px;}
     #kintai-view .kt-work{font-size:.95rem;}
@@ -1346,7 +1359,7 @@
   // ===== 先月との比較（数字で1行） =====
   function monthStats(person, ym){
     const src=data[person]||{};
-    let days=0, absent=0, inSum=0, inCnt=0, workSum=0;
+    let days=0, absent=0, inSum=0, inCnt=0, workSum=0, onTime=0, late=0;
     Object.keys(src).forEach(k=>{
       if(k.indexOf(ym)!==0) return;
       const raw=src[k];
@@ -1355,10 +1368,16 @@
       const r=raw||{};
       if(!r.in && !r.out) return;
       days++;
-      if(r.in){ const [h,m]=r.in.split(":").map(Number); if(isFinite(h)){ inSum+=h*60+m; inCnt++; } }
+      if(r.in){
+        const [h,m]=r.in.split(":").map(Number);
+        if(isFinite(h)){ inSum+=h*60+m; inCnt++; }
+        if(isLate(r.in)) late++; else onTime++;
+      }
       const w=workMinutes(r.in,r.out); if(w!=null) workSum+=w;
     });
-    return { days, absent, avgIn: inCnt?Math.round(inSum/inCnt):null, workSum };
+    // 正着率＝出勤した日のうち9時までに来た割合（欠勤・休みは分母に入れない）
+    const rate = inCnt ? Math.round(onTime/inCnt*1000)/10 : null;
+    return { days, absent, avgIn: inCnt?Math.round(inSum/inCnt):null, workSum, onTime, late, rate };
   }
   function prevYm(ym){
     let y=+ym.slice(0,4), m=+ym.slice(5,7)-1;
@@ -1389,7 +1408,16 @@
         else if(da<0) bits.push(`欠勤は先月より <b>${-da}日減って</b> ${a.absent}日`);
         else bits.push(`欠勤 ${a.absent}日（先月と同じ）`);
       }
-      return `<div class="kt-cmp-row"><span class="nm">${PERSON_LABEL[p]}</span>${bits.join("　／　")}<span class="d">出勤${a.days}日</span></div>`;
+      const rateTxt = a.rate==null ? "—" : `${a.rate}%`;
+      const rateCls = a.rate==null ? "" : (a.rate>=90 ? "ok" : (a.rate>=70 ? "mid" : "bad"));
+      return `<div class="kt-cmp-card">
+        <div class="kt-cmp-row"><span class="nm">${PERSON_LABEL[p]}</span>${bits.join("　／　")}<span class="d">出勤${a.days}日</span></div>
+        <div class="kt-kpis">
+          <span class="kt-kpi"><i>9時までに出勤</i><em>${a.onTime}件</em></span>
+          <span class="kt-kpi late"><i>9時を過ぎた</i><em>${a.late}件</em></span>
+          <span class="kt-kpi rate ${rateCls}"><i>正着率</i><em>${rateTxt}</em></span>
+        </div>
+      </div>`;
     }).filter(Boolean).join("");
     box.innerHTML = lines || `<div class="kt-cmp-row" style="color:#a8a496;">この月の記録はまだありません。</div>`;
   }
@@ -1441,6 +1469,22 @@
   }
   function daysInMonth(ym){ const [y,m]=ym.split("-").map(Number); return new Date(y,m,0).getDate(); }
 
+  // ===== 出勤の基準時刻 =====
+  // 9:00ちょうどはセーフ。9:01以降を遅れとみなす。
+  // 表・PDF・集計すべてがこの1か所を見るようにして、判定がズレないようにする。
+  const START_HM = "09:00";
+  function _hmToMin(hm){
+    if(!hm || typeof hm!=="string") return null;
+    const m = hm.match(/^(\d{1,2}):(\d{2})$/);
+    if(!m) return null;
+    return (+m[1])*60 + (+m[2]);
+  }
+  const START_MIN = _hmToMin(START_HM);
+  function isLate(hm){
+    const t=_hmToMin(hm);
+    return t!=null && t>START_MIN;   // 9:00は含まない＝セーフ
+  }
+
   // 1人分のセル群(出勤/操作)のHTMLを返す
   function personCells(person, k){
     const pd=data[person]||{};
@@ -1455,7 +1499,7 @@
          <td class="kt-abs-x"><button class="kt-del" data-p="${person}" data-del="${k}" title="欠勤を取り消す">×</button></td>` };
     }
     return { mins, html:
-      `<td><div class="kt-cell"><input type="time" class="${rec.in?"":"kt-empty"}" value="${rec.in||""}" data-p="${person}" data-k="${k}" data-f="in">${rec.in?`<button class="kt-delone" data-p="${person}" data-delf="${k}" data-delfield="in" title="出勤時刻を削除">×</button>`:""}</div></td>
+      `<td><div class="kt-cell"><input type="time" class="${rec.in?(isLate(rec.in)?"kt-late":""):"kt-empty"}" value="${rec.in||""}" data-p="${person}" data-k="${k}" data-f="in" title="${rec.in&&isLate(rec.in)?"9時を過ぎています":""}">${rec.in?`<button class="kt-delone" data-p="${person}" data-delf="${k}" data-delfield="in" title="出勤時刻を削除">×</button>`:""}</div></td>
        <td><div class="kt-rowbtns"><button class="kt-rowabs" data-p="${person}" data-abs="${k}" title="この日を欠勤にする">欠勤</button>${(rec.in||rec.out)?`<button class="kt-del" data-p="${person}" data-del="${k}">×</button>`:""}</div></td>` };
   }
 
@@ -1571,9 +1615,11 @@
       if(h.in) daysH++;
       if(o.in) daysO++;
       const we = wd===0||wd===6 ? ' class="we"' : "";
+      const hc = h.in && isLate(h.in) ? ' class="lt"' : "";
+      const oc = o.in && isLate(o.in) ? ' class="lt"' : "";
       rows+=`<tr${we}><td>${m}/${d}</td><td>${WD[wd]}</td>
-        <td>${h.in}</td><td class="nt">${h.note}</td>
-        <td>${o.in}</td><td class="nt">${o.note}</td></tr>`;
+        <td${hc}>${h.in}</td><td class="nt">${h.note}</td>
+        <td${oc}>${o.in}</td><td class="nt">${o.note}</td></tr>`;
     }
     // 先月比（PDFにも同じ要約を載せる）
     const pym=prevYm(ym);
@@ -1593,7 +1639,18 @@
         else if(da<0) bits.push(`欠勤は先月より ${-da}日減って ${a.absent}日`);
         else bits.push(`欠勤 ${a.absent}日（先月と同じ）`);
       }
-      return `<div class="c"><b>${PERSON_LABEL[p]}</b>　出勤${a.days}日　${bits.join("／")}</div>`;
+      // 9時基準の集計（正着率＝出勤した日のうち9時までに来た割合）
+      const rateTxt = a.rate==null ? "—" : `${a.rate}%`;
+      const rateCls = a.rate==null ? "" : (a.rate>=90 ? "ok" : (a.rate>=70 ? "mid" : "bad"));
+      return `<div class="c">
+        <div class="ch"><b>${PERSON_LABEL[p]}</b>　出勤${a.days}日${a.absent?`　欠勤${a.absent}日`:""}</div>
+        <div class="cs">
+          <span class="kpi"><i>9時までに出勤</i><em>${a.onTime}件</em></span>
+          <span class="kpi late"><i>9時を過ぎた</i><em>${a.late}件</em></span>
+          <span class="kpi rate ${rateCls}"><i>正着率</i><em>${rateTxt}</em></span>
+        </div>
+        <div class="cn">${bits.join("／")}</div>
+      </div>`;
     }).filter(Boolean).join("");
 
     const html=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>勤怠 ${y}年${m}月</title>
@@ -1605,7 +1662,20 @@
   h1{font-size:14pt;font-weight:800;letter-spacing:-.01em;}
   .sub{font-size:7.5pt;color:#8d8879;margin:2px 0 7px;}
   .cmp{border:1px solid #e2e0d7;border-radius:5px;padding:5px 8px;margin-bottom:7px;background:#faf9f6;}
-  .cmp .c{font-size:7.5pt;line-height:1.55;}
+  .cmp .c{font-size:7.5pt;line-height:1.55;padding:3pt 0;border-bottom:.5pt solid #eeece5;}
+  .cmp .c:last-child{border-bottom:none;}
+  .cmp .ch{font-size:8.5pt;margin-bottom:2pt;}
+  .cmp .cs{display:flex;gap:10pt;margin:2pt 0 3pt;}
+  .cmp .kpi{display:inline-flex;align-items:baseline;gap:3pt;}
+  .cmp .kpi i{font-style:normal;color:#8d8879;font-size:7pt;}
+  .cmp .kpi em{font-style:normal;font-weight:800;font-size:9.5pt;color:#1c1b18;}
+  .cmp .kpi.late em{color:#b91c1c;}
+  .cmp .kpi.rate em{font-size:11pt;}
+  .cmp .kpi.rate.ok em{color:#1c1b18;}
+  .cmp .kpi.rate.mid em{color:#8a6d3b;}
+  .cmp .kpi.rate.bad em{color:#b91c1c;}
+  .cmp .cn{color:#8d8879;font-size:7pt;}
+  .std{font-size:7pt;color:#8d8879;margin-bottom:4pt;}
   table{width:100%;border-collapse:collapse;table-layout:fixed;page-break-inside:avoid;}
   th,td{border:.5pt solid #ddd9cc;padding:1.2pt 2pt;text-align:center;font-size:7.5pt;line-height:1.25;}
   thead th{background:#1c1b18;color:#fff;font-weight:700;font-size:7pt;padding:2.5pt 2pt;}
@@ -1614,6 +1684,7 @@
   .grp{background:#54514a;color:#fff;font-weight:800;font-size:8pt;}
   tr.we td{background:#faf9f6;}
   td.nt{color:#b91c1c;font-weight:700;}
+  td.lt{color:#b91c1c;font-weight:800;}
   tfoot td{font-weight:800;background:#f0efe9;padding:3pt 2pt;font-size:8pt;}
   col.c-d{width:9%;} col.c-w{width:6%;}
   col.c-t{width:19%;} col.c-n{width:23.5%;}
@@ -1621,7 +1692,7 @@
 </style></head><body>
   <h1>勤怠記録　${y}年${m}月</h1>
   <div class="sub">IREライフ株式会社　／　出力日 ${new Date().toLocaleDateString("ja-JP")}</div>
-  ${cmp?`<div class="cmp">${cmp}</div>`:""}
+  ${cmp?`<div class="std">出勤基準 ${START_HM}（${START_HM}ちょうどは正着。1分でも過ぎると遅れ）／ 正着率＝9時までに出勤した日 ÷ 出勤した日</div><div class="cmp">${cmp}</div>`:""}
   <table>
     <colgroup>
       <col class="c-d"><col class="c-w">
@@ -1704,7 +1775,14 @@
   window.KT = {
     activate,
     reload(){ data = loadContainer(); if(document.getElementById("kt-monthSel")){ buildMonths(); render(); refreshTodayStatus(); } },
-    heal(){ data = loadContainer(); if(document.getElementById("kt-monthSel") && document.body.classList.contains('tab-kintai')){ buildMonths(); render(); refreshTodayStatus(); } },
+    // 保険の自己修復。body に 'tab-kintai' というクラスは存在せず（付くのは 'tab-clean' だけ）、
+    // 以前の条件では常に false になり、data だけ差し替えて再描画しないため
+    // 打刻直後に画面が古い状態へ戻ったように見えていた。
+    heal(){
+      data = loadContainer();
+      const onKintai = !document.body.classList.contains('tab-clean');
+      if(document.getElementById("kt-monthSel") && onKintai){ buildMonths(); render(); refreshTodayStatus(); }
+    },
     getData(){ return loadContainer(); }
   };
 
