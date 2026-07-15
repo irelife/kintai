@@ -16,7 +16,9 @@
     font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,-apple-system,sans-serif;
     -webkit-text-size-adjust:100%;
   }
-  body{padding:14px 10px 40px;}
+  body{padding:0 0 40px;}
+  /* タブは body 直下で sticky。中身側に左右の余白を持たせる。 */
+  #kintai-view, #cl-app{padding:0 10px;}
   /* 独立版なので #kintai-view は常時表示 */
   #kintai-view{display:block;}
 </style>
@@ -24,8 +26,10 @@
 <body>
 
 <div class="app-tabs">
-  <button class="app-tab" id="tab-clean" data-ico="🧹">清掃<span class="badge" id="tab-clean-badge" style="display:none">0</span></button>
-  <button class="app-tab on" id="tab-kintai" data-ico="🕐">勤怠</button>
+  <div class="app-tabs-inner">
+    <button class="app-tab" id="tab-clean" data-ico="🧹">清掃<span class="badge" id="tab-clean-badge" style="display:none">0</span></button>
+    <button class="app-tab on" id="tab-kintai" data-ico="🕐">勤怠</button>
+  </div>
 </div>
 
 <div id="kintai-view">
@@ -438,29 +442,35 @@
 
   /* ===== タブ切替（勤怠 / 清掃報告） ===== */
   /* ===== 下部固定タブ（スクロールしても指の届く位置に置く） ===== */
+  /* ===== 上部固定タブ：どこにスクロールしても常に見える ===== */
   .app-tabs{
-    position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;
-    background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-    border-top:1px solid #e2e0d7;display:flex;gap:0;
-    padding:6px 0 calc(8px + env(safe-area-inset-bottom));
+    position:sticky;top:0;z-index:60;margin:0 0 18px;
+    background:rgba(240,239,233,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    border-bottom:1px solid #e2e0d7;display:flex;gap:0;
+    padding:calc(6px + env(safe-area-inset-top)) 10px 0;
   }
+  .app-tabs-inner{max-width:1100px;margin:0 auto;display:flex;width:100%;}
   .app-tab{
-    flex:1;font-family:inherit;font-size:.68rem;font-weight:800;letter-spacing:.04em;
-    padding:8px 4px;border:none;border-radius:0;background:transparent;color:#b8b4a6;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .15s;
+    flex:1;font-family:inherit;font-size:1.05rem;font-weight:800;letter-spacing:.06em;
+    padding:14px 8px 13px;border:none;border-radius:0;background:transparent;color:#b8b4a6;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:9px;position:relative;
+    border-bottom:3px solid transparent;transition:color .15s, border-color .15s;
   }
-  .app-tab::before{content:attr(data-ico);font-size:1.15rem;line-height:1;}
-  .app-tab.on{background:transparent;color:#1c1b18;box-shadow:none;}
+  .app-tab::before{content:attr(data-ico);font-size:1.3rem;line-height:1;}
+  /* 選択中：太い下線で「今ここ」を示す */
+  .app-tab.on{background:transparent;color:#1c1b18;border-bottom-color:#1c1b18;box-shadow:none;}
   .app-tab:hover{color:#54514a;}
-  .app-tab:active{transform:scale(.94);}
+  .app-tab:active{transform:scale(.98);}
   @media(hover:none){ .app-tab:hover{color:#b8b4a6;} .app-tab.on:hover{color:#1c1b18;} }
   .app-tab .badge{
-    position:absolute;transform:translate(14px,-4px);
-    min-width:17px;padding:0 5px;border-radius:9px;background:#c2410c;color:#fff;font-size:.62rem;font-weight:800;line-height:17px;
+    min-width:20px;padding:0 6px;border-radius:10px;background:#c2410c;color:#fff;
+    font-size:.7rem;font-weight:800;line-height:20px;margin-left:2px;
   }
   .app-tab.on .badge{background:#c2410c;color:#fff;}
-  /* タブバーに隠れないように下を空ける */
-  body{padding-bottom:76px;}
+  @media(max-width:420px){
+    .app-tab{font-size:.92rem;gap:6px;padding:12px 4px 11px;}
+    .app-tab::before{font-size:1.15rem;}
+  }
   #cl-app{display:none;max-width:1100px;margin:0 auto;}
   body.tab-clean #kintai-view{display:none;}
   body.tab-clean #cl-app{display:block;}
