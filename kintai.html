@@ -1997,10 +1997,10 @@ function renderKtTable() {
     const rec = ktOf(ds);
     const cells = cfg.staff.map((n) => {
       const r = rec[n] || {};
-      if (r.off) return `<td style="color:var(--rose-500)">欠勤</td>`;
+      if (r.off) return `<td class="ktoff" style="color:var(--rose-500)">欠勤<button class="ktclear" data-clear="${ds}|${n}" title="欠勤を取り消す" aria-label="取消">×</button></td>`;
       const isLate = r.in && hm2min(r.in) > startMin;
       const [hh, mm] = (r.in || "").split(":");
-      const hOpts = ['<option value="">--</option>']
+      const hOpts = ['<option value="">--</option>', '<option value="off">欠</option>']
         .concat(Array.from({ length: 24 }, (_, k) => {
           const v = pad(k); return `<option value="${v}" ${v === hh ? "selected" : ""}>${v}</option>`;
         })).join("");
@@ -2026,11 +2026,19 @@ function renderKtTable() {
       const [ds, n] = btn.dataset.clear.split("|");
       clearKt(ds, n);
       renderKintai();
+      renderKtTable();
     };
   });
   document.querySelectorAll(".ktsel").forEach((sel) => {
     sel.onchange = () => {
       const [ds, n, part] = sel.dataset.kt.split("|");
+      // 「時」で「欠」を選んだら欠勤にする
+      if (part === "h" && sel.value === "off") {
+        setKt(ds, n, { off: true, in: "", out: "" });
+        renderKintai();
+        renderKtTable();
+        return;
+      }
       const cell = sel.closest("td");
       const hSel = cell.querySelector('[data-kt$="|h"]');
       const mSel = cell.querySelector('[data-kt$="|m"]');
