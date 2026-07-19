@@ -552,6 +552,19 @@ main{padding:1.5rem 0 4rem;}
       <div class="kt-h"><h2>出勤欠勤簿</h2><span style="font-size:12px;color:var(--muted-2)">この端末に保存されます</span></div>
       <div id="kt-rows"></div>
     </div>
+    <div class="card" style="margin-bottom:1.5rem;padding:1.25rem">
+      <div class="kt-h" style="margin-bottom:.6rem">
+        <h2 style="display:flex;align-items:center;gap:.4rem"><span>🔄 同期設定（スマホとPCで共有）</span></h2>
+        <span id="kt-sync-state" style="font-size:12px;color:var(--muted-2)">未設定</span>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+        <input class="input" id="cfg-ktgas" placeholder="同期サーバーのURLを貼り付け（https://script.google.com/…/exec）" style="flex:1;min-width:220px">
+        <button class="btn btn-default" id="kt-sync-save">保存</button>
+        <button class="btn btn-outline" id="kt-sync-now">今すぐ同期</button>
+      </div>
+      <div style="margin-top:.5rem;font-size:12px;color:var(--rose-600)">※ 勤怠専用の同期サーバー（Google Apps Script）のURLを設定すると、この端末の打刻が他の端末と共有されます。</div>
+      <div style="margin-top:.25rem;font-size:12px;color:var(--muted-2)">※ URLはこの端末にのみ保存されます。打刻・削除のたびに自動で同期し、起動時にも最新を取り込みます。</div>
+    </div>
     <div class="stats" id="kt-stats"></div>
     <div class="card" style="margin-bottom:1.5rem;padding:1.25rem">
       <div id="kt-per"></div>
@@ -689,7 +702,7 @@ let props = load(K.props, null) || SEED_PROPS.slice();
 let sched = load(K.sched, {});     // { "YYYY-MM-DD": [name] }
 let reps = load(K.reps, {});       // { "name|date": {...} }
 let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ... } }
-let cfg = Object.assign({ mail: "", gas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
+let cfg = Object.assign({ mail: "", gas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
 
 // 物件ごとの項目リストを取得（無ければ既定ITEMSのコピーを返す）
@@ -1856,15 +1869,108 @@ function openImport() {
 function ktOf(d) { return kintai[d] || {}; }
 function setKt(d, name, patch) {
   kintai[d] = kintai[d] || {};
+  delete kintai[d].__del;                 // 削除マーカーがあれば解除
   kintai[d][name] = Object.assign({ in: "", out: "", off: false }, kintai[d][name], patch);
+  kintai[d]._t = Date.now();              // この日の更新時刻（サーバー同期の競合解決用）
   save(K.kintai, kintai);
+  ktPush();                               // サーバーへ自動同期
 }
 function clearKt(d, name) {
   if (kintai[d]) {
     delete kintai[d][name];
-    if (!Object.keys(kintai[d]).length) delete kintai[d];
+    // その日に他の人の記録が残っていなければ、削除マーカーを立てる（他端末にも削除を伝える）
+    const names = Object.keys(kintai[d]).filter((k) => k !== "_t" && k !== "__del");
+    if (!names.length) {
+      kintai[d] = { __del: Date.now() };
+    } else {
+      kintai[d]._t = Date.now();
+    }
     save(K.kintai, kintai);
+    ktPush();                             // サーバーへ自動同期
   }
+}
+
+/* ===== 勤怠クラウド同期（スマホとPCで共有） ===== */
+let ktSyncing = false;
+// 表示用：削除マーカーの日を除外したビューを作る（描画側は kintai を直接見るため、掃除する）
+function ktStripDeleted() {
+  Object.keys(kintai).forEach((d) => {
+    const r = kintai[d];
+    if (r && r.__del) return;             // 削除マーカーはそのまま保持（同期で他端末へ伝えるため）
+    // 中身が _t だけ（人の記録ゼロ）になった日は表示に影響しないので放置でOK
+  });
+}
+// サーバーへ保存（マージ結果を受け取って反映）
+async function ktPush() {
+  if (!cfg.ktGas) return;                 // 同期URL未設定なら何もしない（ローカルのみ）
+  if (ktSyncing) return;
+  ktSyncing = true;
+  try {
+    const res = await fetch(cfg.ktGas, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "save", payload: { kintai } }),
+    });
+    const data = await res.json();
+    if (data && data.ok && data.payload && data.payload.kintai) {
+      kintai = data.payload.kintai;       // サーバーのマージ結果（全端末統合済み）で上書き
+      save(K.kintai, kintai);
+    }
+  } catch (e) {
+    // 通信失敗時はローカルを維持（次回同期で送られる）
+  }
+  ktSyncing = false;
+}
+// サーバーから最新を取り込む（起動時・手動）
+async function ktPull(silent) {
+  if (!cfg.ktGas) { if (!silent) toast("同期URLが未設定です", "勤怠の同期サーバーURLを保存してください"); return; }
+  try {
+    const res = await fetch(cfg.ktGas, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "load" }),
+    });
+    const data = await res.json();
+    if (data && data.ok && data.payload && data.payload.kintai) {
+      // サーバー分をローカルにマージ（ローカルの新しい変更も残す）
+      kintai = ktMergeLocal(data.payload.kintai, kintai);
+      save(K.kintai, kintai);
+      if (typeof renderKintai === "function") renderKintai();
+      if (typeof renderKtTable === "function") renderKtTable();
+      if (!silent) toast("同期しました", "最新の勤怠を取り込みました");
+    } else if (!silent) {
+      toast("同期できませんでした", (data && data.error) ? data.error : "応答が不正です");
+    }
+  } catch (e) {
+    if (!silent) toast("同期できませんでした", "通信状況とURLを確認してください");
+  }
+}
+// ローカル側マージ（サーバーの流儀と同じ：_t が新しい方を採用、同点は中身が多い方）
+function ktMergeLocal(a, b) {
+  a = a || {}; b = b || {};
+  const out = {};
+  const days = {};
+  Object.keys(a).forEach((k) => days[k] = 1);
+  Object.keys(b).forEach((k) => days[k] = 1);
+  const recTime = (r) => (r && r.__del) ? (Number(r.__del) || 0) : (Number(r && r._t) || 0);
+  const recScore = (r) => {
+    if (!r) return -1;
+    if (r.__del) return 0;
+    let s = 0;
+    Object.keys(r).forEach((k) => { if (k !== "_t" && k !== "__del" && r[k] != null) s++; });
+    return s;
+  };
+  Object.keys(days).forEach((d) => {
+    const ra = a[d], rb = b[d];
+    if (ra && !rb) out[d] = ra;
+    else if (!ra && rb) out[d] = rb;
+    else {
+      const ta = recTime(ra), tb = recTime(rb);
+      if (ta !== tb) out[d] = (tb > ta) ? rb : ra;
+      else out[d] = (recScore(rb) > recScore(ra)) ? rb : ra;
+    }
+  });
+  return out;
 }
 function nowHM() { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 const hm2min = (s) => { if (!s) return null; const [h, m] = s.split(":").map(Number); return h * 60 + m; };
@@ -2152,6 +2258,33 @@ function boot() {
   };
   document.getElementById("kt-pdf").onclick = ktPdf;
 
+  // 勤怠クラウド同期 UI
+  (function initKtSync() {
+    const inp = document.getElementById("cfg-ktgas");
+    const state = document.getElementById("kt-sync-state");
+    const setState = () => { if (state) state.textContent = cfg.ktGas ? "同期オン" : "未設定"; };
+    if (inp) inp.value = cfg.ktGas || "";
+    setState();
+    const saveBtn = document.getElementById("kt-sync-save");
+    if (saveBtn) saveBtn.onclick = async () => {
+      cfg.ktGas = (inp.value || "").trim();
+      save(K.cfg, cfg);
+      setState();
+      if (cfg.ktGas) {
+        toast("同期URLを保存しました", "最新の勤怠を取り込みます");
+        await ktPull(false);      // 保存直後に取り込み
+      } else {
+        toast("同期をオフにしました", "この端末のみに保存されます");
+      }
+    };
+    const nowBtn = document.getElementById("kt-sync-now");
+    if (nowBtn) nowBtn.onclick = async () => {
+      cfg.ktGas = (inp.value || "").trim(); save(K.cfg, cfg); setState();
+      await ktPush();             // 手元の変更を送り
+      await ktPull(false);        // 最新を取り込む
+    };
+  })();
+
   document.getElementById("cfg-mail").value = cfg.mail;
   document.getElementById("cfg-gas").value = cfg.gas;
   document.getElementById("cfg-start").value = cfg.start || "09:00";
@@ -2170,6 +2303,8 @@ function boot() {
     if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); }
   });
   go("cal");
+  // 起動時：勤怠同期URLが設定済みなら最新を取り込む
+  if (cfg.ktGas) { ktPull(true); }
 }
 document.addEventListener("DOMContentLoaded", boot);
 </script>
