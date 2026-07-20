@@ -2018,6 +2018,8 @@ function setKt(d, name, patch) {
   kintai[d][name] = Object.assign({ in: "", out: "", off: false }, kintai[d][name], patch);
   kintai[d]._t = Date.now();              // この日の更新時刻（サーバー同期の競合解決用）
   save(K.kintai, kintai);
+  if (typeof renderKtPerSummary === "function") renderKtPerSummary();
+  if (typeof renderKtYear === "function") renderKtYear();
   ktPush();                               // サーバーへ自動同期
 }
 function clearKt(d, name) {
@@ -2031,6 +2033,8 @@ function clearKt(d, name) {
       kintai[d]._t = Date.now();
     }
     save(K.kintai, kintai);
+    if (typeof renderKtPerSummary === "function") renderKtPerSummary();
+    if (typeof renderKtYear === "function") renderKtYear();
     ktPush();                             // サーバーへ自動同期
   }
 }
