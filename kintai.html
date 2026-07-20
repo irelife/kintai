@@ -552,6 +552,12 @@ main{padding:1.5rem 0 4rem;}
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
   transition:background-color .15s,color .15s,border-color .15s;}
 .ktclear:hover{background:#fff1f2;color:#e11d48;border-color:#fecdd3;}
+.ktoff-btn{margin-left:.5rem;padding:.35rem .8rem;border:1px solid var(--rose-200,#fecdd3);background:#fff;color:var(--rose-600,#e11d48);
+  border-radius:9999px;font-size:16px;font-weight:700;line-height:1;cursor:pointer;vertical-align:middle;font-family:inherit;
+  transition:background-color .15s,color .15s;}
+.ktoff-btn:hover{background:var(--rose-600,#e11d48);color:#fff;}
+.ktoff{color:var(--rose-500);}
+.ktoff-lbl{font-size:20px;font-weight:700;color:var(--rose-500);vertical-align:middle;}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 </style>
 </head>
@@ -2049,26 +2055,19 @@ function ktStripDeleted() {
     // 中身が _t だけ（人の記録ゼロ）になった日は表示に影響しないので放置でOK
   });
 }
-// サーバーへ保存（マージ結果を受け取って反映）
+// サーバーへ保存（送信のみ。ローカルは上書きしない＝隣接日の誤マージを防ぐ）
 async function ktPush() {
   if (!cfg.ktGas) return;                 // 同期URL未設定なら何もしない（ローカルのみ）
-  if (ktSyncing) return;
-  ktSyncing = true;
   try {
-    const res = await fetch(cfg.ktGas, {
+    await fetch(cfg.ktGas, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action: "save", payload: { kintai } }),
     });
-    const data = await res.json();
-    if (data && data.ok && data.payload && data.payload.kintai) {
-      kintai = data.payload.kintai;       // サーバーのマージ結果（全端末統合済み）で上書き
-      save(K.kintai, kintai);
-    }
+    // サーバーの返り値でローカルを上書きしない。最新の取り込みは起動時/手動同期(ktPull)で行う。
   } catch (e) {
     // 通信失敗時はローカルを維持（次回同期で送られる）
   }
-  ktSyncing = false;
 }
 // サーバーから最新を取り込む（起動時・手動）
 async function ktPull(silent) {
@@ -2327,10 +2326,10 @@ function renderKtTable() {
     const rec = ktOf(ds);
     const cells = cfg.staff.map((n) => {
       const r = rec[n] || {};
-      if (r.off) return `<td class="ktoff" style="color:var(--rose-500)">欠勤<button class="ktclear" data-clear="${ds}|${n}" title="欠勤を取り消す" aria-label="取消">×</button></td>`;
+      if (r.off) return `<td class="ktoff"><span class="ktoff-lbl">欠勤</span><button class="ktclear" data-clear="${ds}|${n}" title="欠勤を取り消す" aria-label="取消">×</button></td>`;
       const isLate = r.in && hm2min(r.in) > startMin;
       const [hh, mm] = (r.in || "").split(":");
-      const hOpts = ['<option value="">--</option>', '<option value="off">欠</option>']
+      const hOpts = ['<option value="">--</option>']
         .concat(Array.from({ length: 24 }, (_, k) => {
           const v = pad(k); return `<option value="${v}" ${v === hh ? "selected" : ""}>${v}</option>`;
         })).join("");
@@ -2345,6 +2344,7 @@ function renderKtTable() {
           <select class="ktsel" data-kt="${ds}|${n}|m">${mOpts}</select>
         </span>
         ${r.in ? `<button class="ktclear" data-clear="${ds}|${n}" title="この日の記録を消す" aria-label="リセット">×</button>` : ""}
+        <button class="ktoff-btn" data-off="${ds}|${n}" title="この日を欠勤にする">欠勤</button>
         ${isLate ? `<span class="latetag">遅刻</span>` : ""}</td>`;
     }).join("");
     h += `<tr class="${Object.values(rec).some((r) => r && r.off) ? "off" : ""} ${isCompanyOff(ds) ? "koff" : ""}">
@@ -2385,16 +2385,18 @@ function renderKtTable() {
       renderKtTable();
     };
   });
+  // 欠勤ボタン：その日・その人だけを欠勤にする
+  document.querySelectorAll(".ktoff-btn").forEach((b) => {
+    b.onclick = () => {
+      const [ds, n] = b.dataset.off.split("|");
+      setKt(ds, n, { off: true, in: "", out: "" });
+      renderKintai();
+      renderKtTable();
+    };
+  });
   document.querySelectorAll(".ktsel").forEach((sel) => {
     sel.onchange = () => {
       const [ds, n, part] = sel.dataset.kt.split("|");
-      // 「時」で「欠」を選んだら欠勤にする
-      if (part === "h" && sel.value === "off") {
-        setKt(ds, n, { off: true, in: "", out: "" });
-        renderKintai();
-        renderKtTable();
-        return;
-      }
       const cell = sel.closest("td");
       const hSel = cell.querySelector('[data-kt$="|h"]');
       const mSel = cell.querySelector('[data-kt$="|m"]');
@@ -2420,9 +2422,17 @@ function renderKtPerSummary() {
   const host = document.getElementById("kt-persum");
   if (!host) return;
   const { per, scheduled } = ktStats(ktMonth.y, ktMonth.m);
-  // 累積（年初〜今日）も取得
+  // 累積（年初〜今日。ただし今日より先に記録があればそこまで含める）
   const y = ktMonth.y, t0 = today();
-  const cumEnd = (t0.slice(0, 4) === String(y)) ? t0 : `${y}-12-31`;
+  const yEnd2 = `${y}-12-31`;
+  let cumEnd = (t0.slice(0, 4) === String(y)) ? t0 : yEnd2;
+  Object.keys(kintai).forEach((d) => {
+    if (d.slice(0, 4) !== String(y)) return;
+    const rec = kintai[d];
+    if (!rec || rec.__del) return;
+    const hasData = Object.keys(rec).some((k) => k !== "_t" && k !== "__del" && rec[k]);
+    if (hasData && d > cumEnd && d <= yEnd2) cumEnd = d;
+  });
   const cum = ktStatsRange(`${y}-01-01`, cumEnd);
   host.innerHTML = cfg.staff.map((n) => {
     const v = per[n];
@@ -2471,8 +2481,16 @@ function renderKtYear() {
   const y = ktMonth.y;
   const t0 = today();
   const yStart = `${y}-01-01`, yEnd = `${y}-12-31`;
-  const cumEnd = (t0.slice(0, 4) === String(y)) ? t0 : yEnd;
-  const cum = ktStatsRange(yStart, cumEnd);          // 累積（今日まで）
+  // 累積の終端：今日。ただしこの年に今日より先の記録があればそこまで含める（入力した欠勤・遅刻を必ず反映）
+  let cumEnd = (t0.slice(0, 4) === String(y)) ? t0 : yEnd;
+  Object.keys(kintai).forEach((d) => {
+    if (d.slice(0, 4) !== String(y)) return;
+    const rec = kintai[d];
+    if (!rec || rec.__del) return;
+    const hasData = Object.keys(rec).some((k) => k !== "_t" && k !== "__del" && rec[k]);
+    if (hasData && d > cumEnd && d <= yEnd) cumEnd = d;
+  });
+  const cum = ktStatsRange(yStart, cumEnd);          // 累積（今日 or 記録のある最終日まで）
   const AVG_HOLIDAYS = 110;                           // 一般企業の年間休日 目安
   const offYear = holidaysOfYear(y);                 // 自社の年間休日数
   const paceDiff = offYear - AVG_HOLIDAYS;
