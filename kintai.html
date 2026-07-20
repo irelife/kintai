@@ -389,6 +389,95 @@ main{padding:1.5rem 0 4rem;}
 .tbl th{font-weight:500;color:var(--muted);background:var(--bg);font-size:12px;}
 .tbl td.sun,.tbl th.sun{color:var(--rose-500);}
 .holname{display:block;font-size:10px;color:var(--rose-500);margin-top:1px;white-space:nowrap;}
+.tbl tr.koff td{background:var(--rose-50,#fef2f2);}
+.kt-persum{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin:0 0 1.25rem;}
+.psum{border:1px solid var(--border-soft);border-radius:var(--r-md,12px);padding:1.1rem 1.25rem;background:var(--card,#fff);}
+.psum h4{margin:0 0 .6rem;font-size:16px;font-weight:700;}
+.psum-main{display:flex;align-items:baseline;margin-bottom:.9rem;}
+.psum-big{display:flex;align-items:baseline;gap:.15rem;}
+.psum-num{font-size:46px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.psum-u{font-size:22px;font-weight:600;color:var(--muted);}
+.psum-cap{font-size:13px;color:var(--muted);margin-left:.6rem;align-self:flex-end;}
+.psum-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;}
+.pg{border:1px solid var(--border-soft);border-radius:10px;padding:.7rem .8rem;text-align:center;}
+.pg-n{display:block;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;}
+.pg-l{font-size:12px;color:var(--muted);}
+.pg.warn .pg-n{color:var(--am-700,#b45309);}
+.pg.bad .pg-n{color:var(--rose-600,#e11d48);}
+.psum-loss{margin-top:.9rem;padding:.9rem 1rem;border-radius:12px;background:var(--rose-50,#fef2f2);border:1.5px solid var(--rose-200,#fecdd3);text-align:center;}
+.psum-loss.on{background:var(--rose-50,#fef2f2);}
+.psum-loss:not(.on){background:var(--bg,#f8fafc);border-color:var(--border-soft);}
+.psum-loss-l{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:.2rem;}
+.psum-loss-v{display:block;font-size:36px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;color:var(--rose-600,#e11d48);letter-spacing:-1px;}
+.psum-loss:not(.on) .psum-loss-v{color:var(--muted);}
+.psum-loss-n{display:block;font-size:12px;color:var(--muted-2);margin-top:.3rem;}
+.loss-wrap{margin-top:.9rem;padding:.9rem 1rem;border-radius:12px;background:var(--rose-50,#fef2f2);border:1.5px solid var(--rose-200,#fecdd3);}
+.loss-head{text-align:center;font-size:14px;font-weight:700;color:var(--rose-700,#be123c);margin-bottom:.7rem;}
+.loss-two{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
+.loss-box{background:#fff;border:1.5px solid var(--rose-200,#fecdd3);border-radius:12px;padding:.7rem .5rem;text-align:center;display:flex;flex-direction:column;gap:.15rem;}
+.loss-box:not(.on){border-color:var(--border-soft);}
+.loss-cap{font-size:12px;font-weight:600;color:var(--muted);}
+.loss-min{font-size:30px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;color:var(--ink,#0f172a);}
+.loss-min small{font-size:14px;font-weight:600;color:var(--muted);}
+.loss-yen{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--rose-600,#e11d48);letter-spacing:-.5px;}
+.loss-box:not(.on) .loss-yen{color:var(--muted);}
+.loss-wage{text-align:center;margin-top:.7rem;font-size:12.5px;color:var(--muted);}
+.loss-wage b{color:var(--ink,#0f172a);font-size:15px;}
+.kt-cmp{margin-top:.5rem;font-size:12px;color:var(--muted);line-height:1.6;}
+.kt-cmp b{color:var(--ink,#0f172a);}
+.yeartbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:.5rem;}
+.yeartbl th,.yeartbl td{border-bottom:1px solid var(--border-soft);padding:.5rem .6rem;text-align:right;}
+.yeartbl th:first-child,.yeartbl td:first-child{text-align:left;}
+.yeartbl th{color:var(--muted);font-weight:500;font-size:12px;}
+.kt-prog{border:2px solid var(--teal-300,#5eead4);background:linear-gradient(160deg,var(--teal-50,#f0fdfa),#fff);border-radius:16px;padding:1.4rem 1.5rem;margin:0 0 1.25rem;box-shadow:0 2px 12px rgb(20 184 166 / .08);}
+.kt-prog-h{font-size:16px;font-weight:800;margin-bottom:1rem;}
+.kt-prog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;text-align:center;}
+.kp{background:#fff;border:1.5px solid var(--border-soft);border-radius:14px;padding:1rem .6rem;display:flex;flex-direction:column;align-items:center;gap:.15rem;}
+.kp-emoji{font-size:26px;line-height:1;}
+.kp-n{display:block;font-size:44px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-1px;}
+.kp-n small{font-size:18px;font-weight:700;color:var(--muted);letter-spacing:0;}
+.kp-l{font-size:13px;font-weight:600;color:var(--muted);}
+.kp.kp-ours{border-color:var(--teal-300,#5eead4);}
+.kp.good .kp-n{color:var(--em-700,#047857);}
+.kp.good{border-color:var(--em-300,#6ee7b7);background:var(--em-50,#ecfdf5);}
+.kp.bad .kp-n{color:var(--rose-600,#e11d48);}
+.kp.bad{border-color:var(--rose-300,#fda4af);background:var(--rose-50,#fef2f2);}
+.kt-prog-msg{margin-top:1rem;text-align:center;font-size:17px;font-weight:700;padding:.7rem;border-radius:12px;}
+.kt-prog-msg.good{background:var(--em-50,#ecfdf5);color:var(--em-700,#047857);}
+.kt-prog-msg.bad{background:var(--rose-50,#fef2f2);color:var(--rose-600,#e11d48);}
+.kt-prog-msg b{font-size:20px;}
+.kt-prog-note{margin-top:.7rem;text-align:center;font-size:12px;color:var(--muted-2);line-height:1.6;}
+.kt-indiv-h{margin-top:1.4rem;margin-bottom:.7rem;font-size:15px;font-weight:800;}
+.kt-indiv{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.75rem;}
+.ind{border:1.5px solid var(--border-soft);border-radius:14px;padding:.9rem 1rem;background:#fff;}
+.ind.over{border-color:var(--rose-300,#fda4af);background:var(--rose-50,#fef2f2);}
+.ind.under{border-color:var(--em-300,#6ee7b7);background:var(--em-50,#ecfdf5);}
+.ind-nm{font-size:15px;font-weight:700;margin-bottom:.3rem;}
+.ind-gap{font-size:34px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;}
+.ind.over .ind-gap{color:var(--rose-600,#e11d48);}
+.ind.under .ind-gap{color:var(--em-700,#047857);}
+.ind-gap small{display:block;font-size:12px;font-weight:600;color:var(--muted);}
+.ind-brk{margin-top:.6rem;display:flex;flex-direction:column;gap:.25rem;font-size:15px;color:var(--muted);}
+.ind-brk b{color:var(--ink,#0f172a);font-size:17px;}
+.ind-pf{margin-top:.6rem;padding-top:.6rem;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;gap:.5rem;}
+.ind-pf-l{font-size:13px;font-weight:600;color:var(--muted);line-height:1.25;}
+.ind-pf-l small{font-size:11px;font-weight:500;}
+.ind-pf-v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--rose-600,#e11d48);white-space:nowrap;}
+.ind.under .ind-pf-v{color:var(--em-700,#047857);}
+.kt-indiv2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.9rem;}
+.ind2{border:1.5px solid var(--border-soft);border-radius:14px;padding:1.1rem 1.2rem;background:#fff;text-align:center;}
+.ind2-nm{font-size:16px;font-weight:700;margin-bottom:.7rem;}
+.ind2-line{display:flex;align-items:center;justify-content:center;gap:.6rem;font-size:15px;color:var(--muted);flex-wrap:wrap;}
+.ind2-part b{font-size:22px;color:var(--ink,#0f172a);}
+.ind2-plus{font-size:18px;color:var(--muted-2);}
+.ind2-eq{font-size:12px;color:var(--muted-2);margin:.5rem 0 .2rem;}
+.ind2-big{font-size:34px;font-weight:800;line-height:1.1;color:var(--rose-600,#e11d48);font-variant-numeric:tabular-nums;}
+.ind2-big small{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:.15rem;}
+.ind2-total{margin-top:.9rem;padding-top:.8rem;border-top:1px dashed var(--border);font-size:14px;line-height:1.7;color:var(--muted);}
+.ind2-total b{color:var(--ink,#0f172a);font-size:16px;}
+.ind2-gap{font-size:22px!important;}
+.ind2-total.over .ind2-gap{color:var(--rose-600,#e11d48);}
+.ind2-total.under .ind2-gap{color:var(--em-700,#047857);}
 .tbl td.sat,.tbl th.sat{color:var(--blue-500);}
 .tbl input[type=time]{border:1px solid var(--border);border-radius:var(--r-sm);padding:.125rem .25rem;
   font-size:12px;background:#fff;}
@@ -571,22 +660,29 @@ main{padding:1.5rem 0 4rem;}
       <div style="margin-top:.5rem;font-size:12px;color:var(--rose-600)">※ 勤怠専用の同期サーバー（Google Apps Script）のURLを設定すると、この端末の打刻が他の端末と共有されます。</div>
       <div style="margin-top:.25rem;font-size:12px;color:var(--muted-2)">※ URLはこの端末にのみ保存されます。打刻・削除のたびに自動で同期し、起動時にも最新を取り込みます。</div>
     </div>
-    <div class="stats" id="kt-stats"></div>
-    <div class="card" style="margin-bottom:1.5rem;padding:1.25rem">
-      <div id="kt-per"></div>
-    </div>
     <div class="card">
-      <div class="kt-h">
+      <div class="kt-h" style="flex-wrap:wrap;gap:.5rem">
         <h2 id="kt-mon">—</h2>
-        <div class="cal-nav">
+        <div class="cal-nav" style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
           <button class="btn btn-ghost btn-icon" id="kt-prev" aria-label="前の月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
           <button class="btn btn-ghost btn-icon" id="kt-next" aria-label="次の月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          <input class="input" id="kt-mon-input" type="month" style="max-width:11rem" title="表示する月を選択（過去もさかのぼれます）">
         </div>
       </div>
+
+      <!-- 個人別サマリー（当月） -->
+      <div id="kt-persum" class="kt-persum"></div>
+
+      <!-- 一般企業との休日 途中経過（日付表の上） -->
+      <div id="kt-prog-top"></div>
+
       <div style="overflow-x:auto"><table class="tbl" id="kt-tbl"></table></div>
       <div class="kt-f">
-        <span>時刻をクリックすると直接なおせます</span>
-        <button class="btn btn-outline btn-sm" id="kt-pdf"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> PDFで出す</button>
+        <span>時刻をクリックすると直接なおせます／日付をクリックで会社休日の追加・解除</span>
+        <span style="display:flex;gap:.4rem">
+          <button class="btn btn-outline btn-sm" id="kt-csv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6M9 15h6"/></svg> CSV出力</button>
+          <button class="btn btn-outline btn-sm" id="kt-pdf"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> PDFで出す</button>
+        </span>
       </div>
     </div>
   </div>
@@ -719,6 +815,7 @@ const fmtDate = (s) => { const d = parseYmd(s); return `${d.getMonth() + 1}月${
 const K = {
   props: "cm_props_v1", sched: "cm_sched_v1", reps: "cm_reps_v1",
   kintai: "cm_kintai_v1", cfg: "cm_cfg_v1", itemlists: "cm_itemlists_v1",
+  choli: "cm_choli_v1",
 };
 const jparse = (s, fb) => { try { const v = JSON.parse(s); return v == null ? fb : v; } catch (e) { return fb; } };
 function load(k, fb) { return jparse(localStorage.getItem(k), fb); }
@@ -736,6 +833,7 @@ let reps = load(K.reps, {});       // { "name|date": {...} }
 let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ... } }
 let cfg = Object.assign({ mail: "", gas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
+let choli = load(K.choli, {});         // 手動の会社休日 { "YYYY-MM-DD": "盆休み" 等 }
 
 // 物件ごとの項目リストを取得（無ければ既定ITEMSのコピーを返す）
 function itemsFor(name) {
@@ -1764,7 +1862,7 @@ function buildBackup() {
     _schema: "seisou-backup",
     _version: 1,
     _savedAt: new Date().toISOString(),
-    props, sched, reps, kintai, cfg, itemlists,
+    props, sched, reps, kintai, cfg, itemlists, choli,
   };
 }
 function backupStats(b) {
@@ -1822,6 +1920,7 @@ function doRestore() {
         if (b.reps) { reps = b.reps; save(K.reps, reps); }
         if (b.kintai) { kintai = b.kintai; save(K.kintai, kintai); }
         if (b.itemlists) { itemlists = b.itemlists; save(K.itemlists, itemlists); }
+        if (b.choli) { choli = b.choli; save(K.choli, choli); }
         if (b.cfg) { cfg = Object.assign(cfg, b.cfg); save(K.cfg, cfg); }
         bkLog(`復元しました：物件${s.props}件・記録${s.reps}件・写真${s.photos}枚・勤怠${s.kt}日分`);
         go("cal");
@@ -2062,42 +2161,90 @@ function holidayName(ds) {
   if (!_holCache[y]) _holCache[y] = _jpHolidaysOfYear(y);
   return _holCache[y][ds] || null;
 }
-// 会社の休日＝水(3)・土(6)・日(0)・祝日 → 集計から除外
+// 会社の休日＝水(3)・土(6)・日(0)・祝日・手動追加休日 → 集計から除外
 function isCompanyOff(ds) {
   const dow = new Date(ds + "T00:00:00").getDay();
   if (dow === 0 || dow === 3 || dow === 6) return true;   // 日・水・土
   if (holidayName(ds)) return true;                       // 祝日
+  if (choli[ds]) return true;                             // 手動追加休日（盆・年末等）
   return false;
+}
+// 休日ラベル（祝日名＞手動休日名＞公休日）
+function offLabelOf(ds) {
+  const hol = holidayName(ds);
+  if (hol) return hol;
+  if (choli[ds]) return choli[ds];
+  const dow = new Date(ds + "T00:00:00").getDay();
+  if (dow === 0 || dow === 3 || dow === 6) return "公休日";
+  return "";
 }
 
 function ktStats(y, m) {
+  const first = `${y}-${pad(m + 1)}-01`;
   const last = new Date(y, m + 1, 0).getDate();
+  const lastDs = `${y}-${pad(m + 1)}-${pad(last)}`;
+  return ktStatsRange(first, lastDs);
+}
+// 期間集計（fromDs〜toDs 両端含む）：所定労働日数・実働・欠勤・遅刻を個人別に
+function ktStatsRange(fromDs, toDs) {
   const startMin = hm2min(cfg.start) ?? 540;
   const per = {};
-  cfg.staff.forEach((n) => (per[n] = { days: 0, ontime: 0, late: 0, off: 0, lateMin: 0 }));
-  for (let i = 1; i <= last; i++) {
-    const ds = `${y}-${pad(m + 1)}-${pad(i)}`;
-    if (isCompanyOff(ds)) continue;        // 会社の休日（水土日祝）は集計から除外
+  cfg.staff.forEach((n) => (per[n] = { work: 0, days: 0, ontime: 0, late: 0, off: 0, lateMin: 0 }));
+  let scheduled = 0;   // 所定労働日数（公休以外の日数）
+  const from = parseYmd(fromDs), to = parseYmd(toDs);
+  for (let dt = new Date(from); dt <= to; dt.setDate(dt.getDate() + 1)) {
+    const ds = ymd(dt);
+    if (isCompanyOff(ds)) continue;        // 公休（水土日祝＋手動）は除外
+    scheduled++;
     const rec = kintai[ds] || {};
     cfg.staff.forEach((n) => {
       const r = rec[n];
       if (!r) return;
       if (r.off) { per[n].days++; per[n].off++; return; }
-      if (!r.in) return;                     // 打刻なしは母数に入れない
-      per[n].days++;
+      if (!r.in) return;
+      per[n].days++; per[n].work++;        // 実働（実際に出勤打刻した日）
       const d = hm2min(r.in) - startMin;
       if (d > 0) { per[n].late++; per[n].lateMin += d; }
       else per[n].ontime++;
     });
   }
-  const tot = { days: 0, ontime: 0, late: 0, off: 0, lateMin: 0 };
+  const tot = { work: 0, days: 0, ontime: 0, late: 0, off: 0, lateMin: 0 };
   Object.values(per).forEach((v) => {
-    tot.days += v.days; tot.ontime += v.ontime; tot.late += v.late;
-    tot.off += v.off; tot.lateMin += v.lateMin;
+    tot.work += v.work; tot.days += v.days; tot.ontime += v.ontime;
+    tot.late += v.late; tot.off += v.off; tot.lateMin += v.lateMin;
   });
-  return { per, tot };
+  return { per, tot, scheduled };
+}
+// 年間の所定労働日数（公休を除いた1年の勤務すべき日数）
+function scheduledWorkdaysOfYear(y) {
+  let n = 0;
+  const from = new Date(y, 0, 1), to = new Date(y, 11, 31);
+  for (let dt = new Date(from); dt <= to; dt.setDate(dt.getDate() + 1)) {
+    if (!isCompanyOff(ymd(dt))) n++;
+  }
+  return n;
+}
+// 年間休日数（公休の合計＝365 or 366 − 所定労働日数）
+function holidaysOfYear(y) {
+  const total = (new Date(y, 1, 29).getMonth() === 1) ? 366 : 365;
+  return total - scheduledWorkdaysOfYear(y);
+}
+// 期間内の「経過日数」と「自社休日数」を数える（両端含む）
+function offCountRange(fromDs, toDs) {
+  let elapsed = 0, off = 0;
+  const from = parseYmd(fromDs), to = parseYmd(toDs);
+  for (let dt = new Date(from); dt <= to; dt.setDate(dt.getDate() + 1)) {
+    elapsed++;
+    if (isCompanyOff(ymd(dt))) off++;
+  }
+  return { elapsed, off };
 }
 const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+// 損失額の基準時給（2025年10月改定・全国加重平均の最低賃金。目安）
+const WAGE_PER_HOUR = 1121;
+// 1日の実働時間（9:00〜17:00 拘束8h − 休憩1h ＝ 実働7h）。遅刻の日数換算に使う
+const WORK_HOURS_PER_DAY = 7;
+const WORK_MIN_PER_DAY = WORK_HOURS_PER_DAY * 60;
 
 function renderKintai() {
   const d = today();
@@ -2152,41 +2299,8 @@ function renderKintai() {
 
 function renderKtTable() {
   document.getElementById("kt-mon").textContent = `${ktMonth.y}年${ktMonth.m + 1}月`;
-
-  /* 集計（正着率・遅刻・欠勤） */
-  const { per, tot } = ktStats(ktMonth.y, ktMonth.m);
-  document.getElementById("kt-stats").innerHTML = `
-    <div class="card stat">
-      <div class="stat-h"><span class="stat-i em">${ic("check2", 16)}</span><span class="stat-l">正着率</span></div>
-      <div class="stat-v tabnum">${pct(tot.ontime, tot.days)}<span style="font-size:16px;font-weight:500">%</span></div>
-      <div class="stat-sub">${tot.ontime} / ${tot.days}日（定時 ${esc(cfg.start)}）</div>
-    </div>
-    <div class="card stat">
-      <div class="stat-h"><span class="stat-i am">${ic("clock", 16)}</span><span class="stat-l">遅刻</span></div>
-      <div class="stat-v tabnum">${pct(tot.late, tot.days)}<span style="font-size:16px;font-weight:500">%</span></div>
-      <div class="stat-sub">${tot.late}回${tot.lateMin ? `／計${tot.lateMin}分` : ""}</div>
-    </div>
-    <div class="card stat">
-      <div class="stat-h"><span class="stat-i sl">${ic("alert", 16)}</span><span class="stat-l">欠勤</span></div>
-      <div class="stat-v tabnum">${pct(tot.off, tot.days)}<span style="font-size:16px;font-weight:500">%</span></div>
-      <div class="stat-sub">${tot.off}日</div>
-    </div>
-    <div class="card stat">
-      <div class="stat-h"><span class="stat-i teal">${ic("user", 16)}</span><span class="stat-l">記録日数</span></div>
-      <div class="stat-v tabnum">${tot.days}</div>
-      <div class="stat-sub">打刻・欠勤のある日のみ集計</div>
-    </div>`;
-
-  /* 個人別 */
-  document.getElementById("kt-per").innerHTML = cfg.staff.map((n) => {
-    const v = per[n];
-    return `<div class="perrow">
-      <span class="pername">${esc(n)}</span>
-      <span class="perbar"><i style="width:${pct(v.ontime, v.days)}%"></i></span>
-      <span class="perval tabnum">正着 ${pct(v.ontime, v.days)}%</span>
-      <span class="permeta">遅刻${v.late}／欠勤${v.off}／${v.days}日</span>
-    </div>`;
-  }).join("");
+  const mi = document.getElementById("kt-mon-input");
+  if (mi) mi.value = `${ktMonth.y}-${pad(ktMonth.m + 1)}`;
 
   const last = new Date(ktMonth.y, ktMonth.m + 1, 0).getDate();
   let h = `<tr><th style="width:7rem">日付</th>${cfg.staff.map((n) => `<th>${esc(n)}</th>`).join("")}</tr>`;
@@ -2195,7 +2309,10 @@ function renderKtTable() {
     const ds = `${ktMonth.y}-${pad(ktMonth.m + 1)}-${pad(i)}`;
     const dow = new Date(ktMonth.y, ktMonth.m, i).getDay();
     const hol = holidayName(ds);
+    // 曜日の色：日・祝は赤、土は青、水は通常
     const cls = (hol || dow === 0) ? "sun" : dow === 6 ? "sat" : "";
+    // ラベル：祝日は祝日名、水土日は「公休日」（ラベルは常に赤）
+    const offLabel = hol ? hol : ((dow === 0 || dow === 3 || dow === 6) ? "公休日" : "");
     const rec = ktOf(ds);
     const cells = cfg.staff.map((n) => {
       const r = rec[n] || {};
@@ -2219,10 +2336,36 @@ function renderKtTable() {
         ${r.in ? `<button class="ktclear" data-clear="${ds}|${n}" title="この日の記録を消す" aria-label="リセット">×</button>` : ""}
         ${isLate ? `<span class="latetag">遅刻</span>` : ""}</td>`;
     }).join("");
-    h += `<tr class="${Object.values(rec).some((r) => r && r.off) ? "off" : ""}">
-      <td class="${cls}">${i}日(${WD[dow]})${hol ? `<span class="holname">${esc(hol)}</span>` : ""}</td>${cells}</tr>`;
+    h += `<tr class="${Object.values(rec).some((r) => r && r.off) ? "off" : ""} ${isCompanyOff(ds) ? "koff" : ""}">
+      <td class="${cls} ktdate" data-choli="${ds}" title="クリックで会社休日の追加/解除">${i}日(${WD[dow]})${offLabel ? `<span class="holname">${esc(offLabel)}</span>` : ""}</td>${cells}</tr>`;
   }
   document.getElementById("kt-tbl").innerHTML = h;
+
+  // 日付クリック：会社休日（盆・年末等）を手動で追加/解除。祝日・水土日は元々公休なので手動対象外
+  document.querySelectorAll(".ktdate").forEach((td) => {
+    td.style.cursor = "pointer";
+    td.onclick = () => {
+      const ds = td.dataset.choli;
+      const dow = new Date(ds + "T00:00:00").getDay();
+      const isBaseOff = (dow === 0 || dow === 3 || dow === 6) || holidayName(ds);
+      if (isBaseOff) { toast("すでに公休日です", "水・土・日・祝は最初から会社休日です"); return; }
+      if (choli[ds]) {
+        delete choli[ds]; save(K.choli, choli);
+        toast("会社休日を解除しました", fmtDate(ds));
+      } else {
+        const label = prompt("会社休日として追加します。名称を入力（例：盆休み／年末休暇）", "特別休日");
+        if (label === null) return;
+        choli[ds] = (label || "特別休日").trim() || "特別休日";
+        save(K.choli, choli);
+        toast("会社休日を追加しました", `${fmtDate(ds)}（${choli[ds]}）`);
+      }
+      renderKtTable();
+    };
+  });
+
+  // 個人別サマリー＋年間サマリーを更新
+  renderKtPerSummary();
+  renderKtYear();
   document.querySelectorAll(".ktclear").forEach((btn) => {
     btn.onclick = () => {
       const [ds, n] = btn.dataset.clear.split("|");
@@ -2261,6 +2404,183 @@ function renderKtTable() {
   });
 }
 
+/* ===== 個人別サマリー（当月） ===== */
+function renderKtPerSummary() {
+  const host = document.getElementById("kt-persum");
+  if (!host) return;
+  const { per, scheduled } = ktStats(ktMonth.y, ktMonth.m);
+  // 累積（年初〜今日）も取得
+  const y = ktMonth.y, t0 = today();
+  const cumEnd = (t0.slice(0, 4) === String(y)) ? t0 : `${y}-12-31`;
+  const cum = ktStatsRange(`${y}-01-01`, cumEnd);
+  host.innerHTML = cfg.staff.map((n) => {
+    const v = per[n];
+    const cv = cum.per[n];
+    const rate = pct(v.ontime, v.days);
+    // 損失分数＝遅刻分＋欠勤日×実働420分（休憩は勘案しない）
+    const mMin = v.lateMin + v.off * WORK_MIN_PER_DAY;    // 当月の損失分数
+    const cMin = cv.lateMin + cv.off * WORK_MIN_PER_DAY;  // 累積の損失分数
+    const lossM = Math.round(mMin / 60 * WAGE_PER_HOUR);  // 当月の損失額
+    const lossC = Math.round(cMin / 60 * WAGE_PER_HOUR);  // 累積の損失額
+    return `<div class="psum">
+      <h4>${esc(n)}</h4>
+      <div class="psum-main">
+        <div class="psum-big"><span class="psum-num">${rate}</span><span class="psum-u">%</span><div class="psum-cap">正着率</div></div>
+      </div>
+      <div class="psum-grid">
+        <div class="pg"><span class="pg-n">${scheduled}</span><span class="pg-l">所定労働日</span></div>
+        <div class="pg"><span class="pg-n">${v.work}</span><span class="pg-l">実働（出勤）</span></div>
+        <div class="pg ${v.off ? "bad" : ""}"><span class="pg-n">${v.off}</span><span class="pg-l">欠勤</span></div>
+        <div class="pg ${v.late ? "warn" : ""}"><span class="pg-n">${v.lateMin}</span><span class="pg-l">遅刻（分）</span></div>
+      </div>
+      <div class="loss-wrap">
+        <div class="loss-head">💸 遅刻＋欠勤による会社の損失</div>
+        <div class="loss-two">
+          <div class="loss-box ${mMin ? "on" : ""}">
+            <span class="loss-cap">当月（${ktMonth.m + 1}月）</span>
+            <span class="loss-min">${mMin}<small>分</small></span>
+            <span class="loss-yen">¥${lossM.toLocaleString()}</span>
+          </div>
+          <div class="loss-box ${cMin ? "on" : ""}">
+            <span class="loss-cap">累積（1月〜今日）</span>
+            <span class="loss-min">${cMin}<small>分</small></span>
+            <span class="loss-yen">¥${lossC.toLocaleString()}</span>
+          </div>
+        </div>
+        <div class="loss-wage">遅刻 ＋ 欠勤(1日=420分)／時給 <b>${WAGE_PER_HOUR}円</b>（日本の平均最低賃金）で換算</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ===== 一般企業との休日比較＋個人別「働いていない量」（kt-prog-topに描画） ===== */
+function renderKtYear() {
+  const progTop = document.getElementById("kt-prog-top");
+  if (!progTop) return;
+  const y = ktMonth.y;
+  const t0 = today();
+  const yStart = `${y}-01-01`, yEnd = `${y}-12-31`;
+  const cumEnd = (t0.slice(0, 4) === String(y)) ? t0 : yEnd;
+  const cum = ktStatsRange(yStart, cumEnd);          // 累積（今日まで）
+  const AVG_HOLIDAYS = 110;                           // 一般企業の年間休日 目安
+  const offYear = holidaysOfYear(y);                 // 自社の年間休日数
+  const paceDiff = offYear - AVG_HOLIDAYS;
+  const isNow = (t0.slice(0, 4) === String(y));
+
+  // 会社全体の休日比較
+  const company = `<div class="kt-prog">
+    <div class="kt-prog-h">📅 ${y}年 年間休日（1月〜12月）｜一般企業との比較</div>
+    <div class="kt-prog-grid">
+      <div class="kp kp-ours"><span class="kp-emoji">🏢</span><span class="kp-n">${offYear}<small>日</small></span><span class="kp-l">自社の年間休日</span></div>
+      <div class="kp kp-avg"><span class="kp-emoji">📊</span><span class="kp-n">${AVG_HOLIDAYS}<small>日</small></span><span class="kp-l">一般企業 平均</span></div>
+      <div class="kp ${paceDiff >= 0 ? "good" : "bad"}"><span class="kp-emoji">${paceDiff >= 0 ? "😊" : "😥"}</span><span class="kp-n">${paceDiff >= 0 ? "+" : ""}${paceDiff}<small>日</small></span><span class="kp-l">差</span></div>
+    </div>
+    <div class="kt-prog-msg ${paceDiff >= 0 ? "good" : "bad"}">
+      会社全体：一般企業より <b>${Math.abs(paceDiff)}日${paceDiff >= 0 ? "多く" : "少なく"}</b> 休みます ${paceDiff >= 0 ? "🎉" : ""}
+    </div>
+    <div class="kt-prog-note">自社の年間休日 ${offYear}日（水・土・日・祝＋手動追加の休日）／一般企業 約${AVG_HOLIDAYS}日（厚労省調査の目安）との比較。今後の休日も含めた${y}年 通年の確定値です。</div>
+  </div>`;
+
+  // 個人別「働いていない量」——分かりやすいストーリー形式
+  const indiv = `<div class="kt-prog" style="margin-top:1rem">
+    <div class="kt-prog-h">👤 個人別｜遅刻・欠勤を合計すると？（${y}年1月〜${isNow ? "現在" : "12月"}まで）</div>
+    <div class="kt-indiv2">${cfg.staff.map((n) => {
+      const v = cum.per[n];
+      const lateDays = v.lateMin / WORK_MIN_PER_DAY;      // 遅刻を実働日換算
+      const pf = v.off + lateDays;                         // 本人要因（欠勤＋遅刻）＝働くべき日に働かなかった量
+      const pfWhole = Math.floor(pf);
+      const pfHours = Math.round((pf - pfWhole) * WORK_HOURS_PER_DAY * 10) / 10;
+      const pfStr = `${pfWhole}日${pfHours ? ` ${pfHours}時間` : ""}`;
+      const gap = (offYear + pf) - AVG_HOLIDAYS;           // 一般企業との差（合計）
+      const gapWhole = Math.floor(Math.abs(gap));
+      const gapHours = Math.round((Math.abs(gap) - gapWhole) * WORK_HOURS_PER_DAY * 10) / 10;
+      const gapStr = `${gap >= 0 ? "+" : "−"}${gapWhole}日${gapHours ? ` ${gapHours}時間` : ""}`;
+      return `<div class="ind2">
+        <div class="ind2-nm">${esc(n)}</div>
+        <div class="ind2-line">
+          <span class="ind2-part">遅刻 <b>${v.lateMin}分</b></span>
+          <span class="ind2-plus">＋</span>
+          <span class="ind2-part">欠勤 <b>${v.off}日</b></span>
+        </div>
+        <div class="ind2-eq">合計すると</div>
+        <div class="ind2-big">${pfStr}<small>働くべき日に働いていない</small></div>
+        <div class="ind2-total ${gap >= 0 ? "over" : "under"}">
+          会社の休み ${offYear}日 ＋ 上記 ＝ 実質 <b>${offYear + pfWhole}日</b> 休み<br>
+          一般企業（年${AVG_HOLIDAYS}日）と比べて <b class="ind2-gap">${gapStr}</b>
+        </div>
+      </div>`;
+    }).join("")}</div>
+    <div class="kt-prog-note" style="text-align:left">
+      ※ 遅刻・欠勤は「働くべき日に働かなかった量」。欠勤1日・遅刻は実働7時間=1日で換算。<br>
+      ※「実質休み日数」は会社の休日にこれを足したもの。一般企業の年間休日${AVG_HOLIDAYS}日との差が、その人の働いていない量の大きさです。
+    </div>
+  </div>`;
+
+  progTop.innerHTML = company + indiv;
+}
+
+/* ===== CSV出力 ===== */
+function _csvDownload(name, rows) {
+  const csv = rows.map((r) => r.map((c) => {
+    const s = String(c == null ? "" : c);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+// 当月：日別の打刻CSV
+function ktCsvMonth() {
+  const y = ktMonth.y, m = ktMonth.m, last = new Date(y, m + 1, 0).getDate();
+  const startMin = hm2min(cfg.start) ?? 540;
+  const rows = [["日付", "曜日", "区分", ...cfg.staff, ...cfg.staff.map((n) => n + "_遅刻")]];
+  for (let i = 1; i <= last; i++) {
+    const ds = `${y}-${pad(m + 1)}-${pad(i)}`;
+    const dow = WD[new Date(y, m, i).getDay()];
+    const kubun = isCompanyOff(ds) ? (offLabelOf(ds) || "公休") : "勤務日";
+    const rec = kintai[ds] || {};
+    const times = cfg.staff.map((n) => (rec[n] && rec[n].off) ? "欠勤" : (rec[n] && rec[n].in) ? rec[n].in : "");
+    const lates = cfg.staff.map((n) => {
+      const r = rec[n]; if (!r || !r.in) return "";
+      const d = hm2min(r.in) - startMin; return d > 0 ? `${d}分` : "";
+    });
+    rows.push([ds, dow, kubun, ...times, ...lates]);
+  }
+  _csvDownload(`勤怠_${y}-${pad(m + 1)}.csv`, rows);
+  toast("CSVを出力しました", `${y}年${m + 1}月の勤怠`);
+}
+// 年間：個人別サマリーCSV
+function ktCsvYear() {
+  const y = ktMonth.y;
+  const schedYear = scheduledWorkdaysOfYear(y);
+  const holYear = holidaysOfYear(y);
+  const t0 = today();
+  const cumEnd = (t0.slice(0, 4) === String(y)) ? t0 : `${y}-12-31`;
+  const full = ktStatsRange(`${y}-01-01`, `${y}-12-31`);
+  const cum = ktStatsRange(`${y}-01-01`, cumEnd);
+  const rows = [
+    [`${y}年 年間サマリー`],
+    ["年間所定労働日数", schedYear],
+    ["年間休日数（自社）", holYear],
+    ["一般企業平均 年間休日", 110],
+    ["損失計算 時給（全国平均最低賃金）", WAGE_PER_HOUR],
+    [],
+    ["氏名", "通年実働見込", "通年欠勤", "通年遅刻回", "累積実働", "累積欠勤", "累積遅刻回", "累積遅刻分", "累積正着率%", "累積損失円(遅刻+欠勤)"],
+  ];
+  cfg.staff.forEach((n) => {
+    rows.push([
+      n, full.per[n].work, full.per[n].off, full.per[n].late,
+      cum.per[n].work, cum.per[n].off, cum.per[n].late, cum.per[n].lateMin,
+      pct(cum.per[n].ontime, cum.per[n].days),
+      Math.round((cum.per[n].lateMin + cum.per[n].off * WORK_MIN_PER_DAY) / 60 * WAGE_PER_HOUR),
+    ]);
+  });
+  _csvDownload(`勤怠_年間_${y}.csv`, rows);
+  toast("年間CSVを出力しました", `${y}年`);
+}
+
 function ktPdf() {
   const last = new Date(ktMonth.y, ktMonth.m + 1, 0).getDate();
   const { per, tot } = ktStats(ktMonth.y, ktMonth.m);
@@ -2270,6 +2590,7 @@ function ktPdf() {
     const ds = `${ktMonth.y}-${pad(ktMonth.m + 1)}-${pad(i)}`;
     const dow = new Date(ktMonth.y, ktMonth.m, i).getDay();
     const hol = holidayName(ds);
+    const offLabel = hol ? hol : ((dow === 0 || dow === 3 || dow === 6) ? "公休日" : "");
     const rec = ktOf(ds);
     const tds = cfg.staff.map((n) => {
       const r = rec[n] || {};
@@ -2278,7 +2599,7 @@ function ktPdf() {
       const late = hm2min(r.in) > startMin;
       return `<td>${r.in}${late ? ` <b class="lt">遅</b>` : ""}</td>`;
     }).join("");
-    rows += `<tr class="${(hol || dow === 0) ? "sun" : dow === 6 ? "sat" : ""}"><td>${i}日(${WD[dow]})${hol ? ` <span style="font-size:9px">${esc(hol)}</span>` : ""}</td>${tds}</tr>`;
+    rows += `<tr class="${(hol || dow === 0) ? "sun" : dow === 6 ? "sat" : ""} ${isCompanyOff(ds) ? "koff" : ""}"><td>${i}日(${WD[dow]})${offLabel ? ` <span style="font-size:9px;color:#e11d48">${esc(offLabel)}</span>` : ""}</td>${tds}</tr>`;
   }
   const sum = cfg.staff.map((n) => {
     const v = per[n];
@@ -2293,6 +2614,7 @@ th,td{border:1px solid #cbd5e1;padding:5px 8px;text-align:left;}
 th{background:#f1f5f9;} tr.sun td:first-child{color:#e11d48;} tr.sat td:first-child{color:#2563eb;}
 td.off{color:#e11d48;} .lt{color:#b45309;}
 .sm th{background:#ecfdf5;}
+tr.koff td{background:#fef2f2;}
 @media print{body{margin:12mm;}}</style></head><body>
 <h1>出勤簿　${ktMonth.y}年${ktMonth.m + 1}月</h1>
 <p class="sub">定時 ${esc(cfg.start)}／集計対象 ${tot.days}日（打刻・欠勤のある日のみ）</p>
@@ -2354,6 +2676,17 @@ function boot() {
     renderKtTable();
   };
   document.getElementById("kt-pdf").onclick = ktPdf;
+  const mInput = document.getElementById("kt-mon-input");
+  if (mInput) mInput.onchange = () => {
+    const v = mInput.value; if (!v) return;
+    const [yy, mm] = v.split("-").map(Number);
+    ktMonth = { y: yy, m: mm - 1 };
+    renderKtTable();
+  };
+  const csvBtn = document.getElementById("kt-csv");
+  if (csvBtn) csvBtn.onclick = ktCsvMonth;
+  const ycsvBtn = document.getElementById("kt-year-csv");
+  if (ycsvBtn) ycsvBtn.onclick = ktCsvYear;
 
   // 勤怠クラウド同期 UI
   (function initKtSync() {
