@@ -478,6 +478,13 @@ main{padding:1.5rem 0 4rem;}
 .ind2-gap{font-size:22px!important;}
 .ind2-total.over .ind2-gap{color:var(--rose-600,#e11d48);}
 .ind2-total.under .ind2-gap{color:var(--em-700,#047857);}
+.ind2-salary{margin-top:.9rem;padding:.8rem;border-radius:12px;background:var(--am-50,#fffbeb);border:1.5px solid var(--am-200,#fde68a);}
+.ind2-salary-h{font-size:13px;font-weight:700;color:var(--am-700,#b45309);}
+.ind2-salary-v{font-size:20px;font-weight:700;margin:.25rem 0;}
+.ind2-salary-v b{font-size:28px;color:var(--am-700,#b45309);}
+.ind2-salary-n{font-size:11.5px;color:var(--muted);line-height:1.6;}
+.ind2-salary-n b{color:var(--rose-600,#e11d48);}
+.ind2-salary-base{display:block;margin-top:.4rem;font-size:10.5px;color:var(--muted-2);line-height:1.55;}
 .tbl td.sat,.tbl th.sat{color:var(--blue-500);}
 .tbl input[type=time]{border:1px solid var(--border);border-radius:var(--r-sm);padding:.125rem .25rem;
   font-size:12px;background:#fff;}
@@ -2466,6 +2473,11 @@ function renderKtYear() {
   const offYear = holidaysOfYear(y);                 // 自社の年間休日数
   const paceDiff = offYear - AVG_HOLIDAYS;
   const isNow = (t0.slice(0, 4) === String(y));
+  // 一般企業（事務職・一般社員）の平均年収の目安（国税庁 令和6年分 民間給与実態統計調査：全体平均478万円）
+  const AVG_ANNUAL_SALARY = 4780000;                 // 円
+  const genWorkdays = 365 - AVG_HOLIDAYS;            // 一般企業の年間所定労働日（約255日）
+  // 1日あたりの価値＝平均年収 ÷ 所定労働日
+  const salaryPerDay = AVG_ANNUAL_SALARY / genWorkdays;
 
   // 会社全体の休日比較
   const company = `<div class="kt-prog">
@@ -2495,6 +2507,13 @@ function renderKtYear() {
       const gapWhole = Math.floor(Math.abs(gap));
       const gapHours = Math.round((Math.abs(gap) - gapWhole) * WORK_HOURS_PER_DAY * 10) / 10;
       const gapStr = `${gap >= 0 ? "+" : "−"}${gapWhole}日${gapHours ? ` ${gapHours}時間` : ""}`;
+      // 年収換算：一般企業の平均年収を、実働日数の比率で按分
+      //  この人の実働日 ＝ 一般企業の所定労働日 − 会社の休日超過(offYear-AVG) − 本人の欠勤遅刻(pf日)
+      const personWorkDays = Math.max(0, genWorkdays - (offYear - AVG_HOLIDAYS) - pf);
+      const personSalary = Math.round(personWorkDays * salaryPerDay);
+      const salaryMan = Math.round(personSalary / 10000);                   // 万円
+      const genMan = Math.round(AVG_ANNUAL_SALARY / 10000);                 // 478
+      const diffMan = genMan - salaryMan;
       return `<div class="ind2">
         <div class="ind2-nm">${esc(n)}</div>
         <div class="ind2-line">
@@ -2507,6 +2526,14 @@ function renderKtYear() {
         <div class="ind2-total ${gap >= 0 ? "over" : "under"}">
           会社の休み ${offYear}日 ＋ 上記 ＝ 実質 <b>${offYear + pfWhole}日</b> 休み<br>
           一般企業（年${AVG_HOLIDAYS}日）と比べて <b class="ind2-gap">${gapStr}</b>
+        </div>
+        <div class="ind2-salary">
+          <div class="ind2-salary-h">💰 一般企業の年収で言うと</div>
+          <div class="ind2-salary-v">年収 <b>約${salaryMan}万円</b> 相当</div>
+          <div class="ind2-salary-n">
+            一般企業（事務職・一般社員）の平均年収 <b>約${genMan}万円</b> より <b>約${diffMan}万円少ない</b> 働き方。<br>
+            <span class="ind2-salary-base">根拠：平均年収${genMan}万円（国税庁 令和6年分 民間給与実態統計調査の平均給与478万円）を、一般企業の年間所定労働日${genWorkdays}日で割ると1日あたり約${Math.round(salaryPerDay).toLocaleString()}円。この人の実働は年${Math.round(personWorkDays)}日（会社の休日${offYear}日＋欠勤・遅刻分を差し引き）なので、${Math.round(personWorkDays)}日×${Math.round(salaryPerDay).toLocaleString()}円＝約${salaryMan}万円。</span>
+          </div>
         </div>
       </div>`;
     }).join("")}</div>
