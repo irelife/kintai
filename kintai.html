@@ -160,6 +160,7 @@ main{padding:1.5rem 0 4rem;}
 .pill.done{opacity:.6;}
 .pill.done span{text-decoration:line-through;}
 .pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pill-why{margin-left:.3rem;font-weight:700;font-size:9px;opacity:.85;}
 .pill-more{padding-left:.25rem;font-size:10px;color:var(--muted-2);}
 /* 混雑日：件数バッジ */
 .daycount{display:inline-flex;align-items:center;gap:.35rem;flex-wrap:wrap;
@@ -383,6 +384,7 @@ main{padding:1.5rem 0 4rem;}
 .tbl th,.tbl td{border-bottom:1px solid var(--border-soft);padding:.5rem .625rem;text-align:left;}
 .tbl th{font-weight:500;color:var(--muted);background:var(--bg);font-size:12px;}
 .tbl td.sun,.tbl th.sun{color:var(--rose-500);}
+.holname{display:block;font-size:10px;color:var(--rose-500);margin-top:1px;white-space:nowrap;}
 .tbl td.sat,.tbl th.sat{color:var(--blue-500);}
 .tbl input[type=time]{border:1px solid var(--border);border-radius:var(--r-sm);padding:.125rem .25rem;
   font-size:12px;background:#fff;}
@@ -668,11 +670,37 @@ const CITY_DEFS = [
   { key: "other", label: "その他", match: null },
 ];
 const CITY_STYLE = {
-  fukuyama: { dot: "#be123c", bg: "#fff1f2", fg: "#be123c" },
-  kurashiki: { dot: "#1d4ed8", bg: "#eff6ff", fg: "#1d4ed8" },
-  okayama: { dot: "#047857", bg: "#ecfdf5", fg: "#047857" },
-  other: { dot: "#a16207", bg: "#fffbeb", fg: "#a16207" },
+  fukuyama: { dot: "#7c3aed", bg: "#f5f3ff", fg: "#7c3aed" },   // 福山＝紫
+  kurashiki: { dot: "#1d4ed8", bg: "#eff6ff", fg: "#1d4ed8" },  // 倉敷＝青
+  okayama: { dot: "#047857", bg: "#ecfdf5", fg: "#047857" },    // 岡山＝緑
+  other: { dot: "#a16207", bg: "#fffbeb", fg: "#a16207" },      // その他＝黄
 };
+// 状態色（優先度：赤＞グレー＞地域色）
+const STATUS_STYLE = {
+  overdue: { dot: "#dc2626", bg: "#fef2f2", fg: "#dc2626" },    // 期限切れ＝赤
+  done: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },       // 完了＝グレー
+};
+// その物件・その日の「期限切れ」判定。理由文字列を返す（該当なしは null）
+//  A) 要対応(ng)で対応期限を過ぎて未解決  B) 清掃予定日を過ぎても手つかず(status=yet)
+function overdueReason(name, ds) {
+  const r = getRep(name, ds);
+  const t0 = today();
+  const items = r.items || {};
+  for (const k in items) {
+    const c = items[k];
+    if (c && c.ng && !c.fixed && c.deadline && c.deadline < t0) return "期限切れ";
+  }
+  if (ds < t0 && r.status !== "done" && r.status === "yet") return "未着手";
+  return null;
+}
+function isOverdue(name, ds) { return !!overdueReason(name, ds); }
+// カレンダー帯の色を決める（優先：赤＞グレー＞地域色）
+function badgeStyle(name, ds) {
+  if (isOverdue(name, ds)) return STATUS_STYLE.overdue;
+  if (getRep(name, ds).status === "done") return STATUS_STYLE.done;
+  const p = props.find((x) => x.name === name) || {};
+  return CITY_STYLE[cityOf(p.addr).key];
+}
 const cityOf = (addr) =>
   CITY_DEFS.find((d) => d.match && String(addr || "").includes(d.match)) || CITY_DEFS[3];
 
@@ -897,21 +925,25 @@ function renderCal() {
     if (list.length <= 2) {
       // 少ない日：物件名の帯をそのまま表示
       pills = list.map((n) => {
-        const p = props.find((x) => x.name === n) || {};
-        const st = CITY_STYLE[cityOf(p.addr).key];
+        const st = badgeStyle(n, ds);
         const done = getRep(n, ds).status === "done";
-        return `<span class="pill ${done ? "done" : ""}" style="background:${st.bg};color:${st.fg}"><span>${esc(n)}</span></span>`;
+        const reason = overdueReason(n, ds);
+        return `<span class="pill ${done ? "done" : ""}" style="background:${st.bg};color:${st.fg}"><span>${esc(n)}${reason ? `<b class="pill-why">${reason}</b>` : ""}</span></span>`;
       }).join("");
     } else {
       // 多い日：件数バッジ＋完了の進捗（クリックで右パネルに一覧）
       let done = 0;
       list.forEach((n) => { if (getRep(n, ds).status === "done") done++; });
-      // その日に含まれる地域の色を小さな帯で示す（最大4色）
-      const cityKeys = [...new Set(list.map((n) => {
-        const p = props.find((x) => x.name === n) || {}; return cityOf(p.addr).key;
-      }))];
-      const bands = cityKeys.slice(0, 4).map((k) =>
-        `<i class="cityband" style="background:${CITY_STYLE[k].bg};border-color:${CITY_STYLE[k].fg}44"></i>`
+      // その日の各物件の帯色（優先：赤＞グレー＞地域色）。重複色は除いて最大4つ
+      const styleKeys = [];
+      const seen = {};
+      list.forEach((n) => {
+        const st = badgeStyle(n, ds);
+        const key = st.fg;
+        if (!seen[key]) { seen[key] = 1; styleKeys.push(st); }
+      });
+      const bands = styleKeys.slice(0, 4).map((st) =>
+        `<i class="cityband" style="background:${st.bg};border-color:${st.fg}44"></i>`
       ).join("");
       pills = `<span class="daycount ${done === list.length ? "alldone" : ""}">
         <span class="daycount-n">${list.length}件</span>
@@ -1976,6 +2008,61 @@ function nowHM() { const d = new Date(); return `${pad(d.getHours())}:${pad(d.ge
 const hm2min = (s) => { if (!s) return null; const [h, m] = s.split(":").map(Number); return h * 60 + m; };
 
 /* 月の勤怠集計：記録のある日だけを母数にする（未来日・未記録日は数えない） */
+/* ===== 日本の祝日（自動計算：固定＋ハッピーマンデー＋春分秋分＋振替休日） ===== */
+function _jpHolidaysOfYear(y) {
+  const H = {}; // "YYYY-MM-DD" -> 名称
+  const set = (m, d, name) => { H[`${y}-${pad(m)}-${pad(d)}`] = name; };
+  const nthMonday = (m, nth) => {
+    const first = new Date(y, m - 1, 1).getDay();      // 0=日
+    const day = 1 + ((8 - first) % 7) + (nth - 1) * 7; // 第nth月曜
+    return day;
+  };
+  // 固定
+  set(1, 1, "元日");
+  set(2, 11, "建国記念の日");
+  set(2, 23, "天皇誕生日");
+  set(4, 29, "昭和の日");
+  set(5, 3, "憲法記念日");
+  set(5, 4, "みどりの日");
+  set(5, 5, "こどもの日");
+  set(8, 11, "山の日");
+  set(11, 3, "文化の日");
+  set(11, 23, "勤労感謝の日");
+  // ハッピーマンデー
+  set(1, nthMonday(1, 2), "成人の日");
+  set(7, nthMonday(7, 3), "海の日");
+  set(9, nthMonday(9, 3), "敬老の日");
+  set(10, nthMonday(10, 2), "スポーツの日");
+  // 春分・秋分（近似式）
+  const shunbun = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  const shubun = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  set(3, shunbun, "春分の日");
+  set(9, shubun, "秋分の日");
+  // 振替休日：祝日が日曜なら、次の平日（祝日でない日）を振替
+  Object.keys(H).slice().forEach((ds) => {
+    const dt = new Date(ds + "T00:00:00");
+    if (dt.getDay() === 0) {
+      let nx = new Date(dt); 
+      do { nx.setDate(nx.getDate() + 1); } while (H[`${nx.getFullYear()}-${pad(nx.getMonth() + 1)}-${pad(nx.getDate())}`]);
+      H[`${nx.getFullYear()}-${pad(nx.getMonth() + 1)}-${pad(nx.getDate())}`] = "振替休日";
+    }
+  });
+  return H;
+}
+const _holCache = {};
+function holidayName(ds) {
+  const y = Number(ds.slice(0, 4));
+  if (!_holCache[y]) _holCache[y] = _jpHolidaysOfYear(y);
+  return _holCache[y][ds] || null;
+}
+// 会社の休日＝水(3)・土(6)・日(0)・祝日 → 集計から除外
+function isCompanyOff(ds) {
+  const dow = new Date(ds + "T00:00:00").getDay();
+  if (dow === 0 || dow === 3 || dow === 6) return true;   // 日・水・土
+  if (holidayName(ds)) return true;                       // 祝日
+  return false;
+}
+
 function ktStats(y, m) {
   const last = new Date(y, m + 1, 0).getDate();
   const startMin = hm2min(cfg.start) ?? 540;
@@ -1983,6 +2070,7 @@ function ktStats(y, m) {
   cfg.staff.forEach((n) => (per[n] = { days: 0, ontime: 0, late: 0, off: 0, lateMin: 0 }));
   for (let i = 1; i <= last; i++) {
     const ds = `${y}-${pad(m + 1)}-${pad(i)}`;
+    if (isCompanyOff(ds)) continue;        // 会社の休日（水土日祝）は集計から除外
     const rec = kintai[ds] || {};
     cfg.staff.forEach((n) => {
       const r = rec[n];
@@ -2094,12 +2182,13 @@ function renderKtTable() {
   }).join("");
 
   const last = new Date(ktMonth.y, ktMonth.m + 1, 0).getDate();
-  let h = `<tr><th style="width:5.5rem">日付</th>${cfg.staff.map((n) => `<th>${esc(n)}</th>`).join("")}</tr>`;
+  let h = `<tr><th style="width:7rem">日付</th>${cfg.staff.map((n) => `<th>${esc(n)}</th>`).join("")}</tr>`;
   const startMin = hm2min(cfg.start) ?? 540;
   for (let i = 1; i <= last; i++) {
     const ds = `${ktMonth.y}-${pad(ktMonth.m + 1)}-${pad(i)}`;
     const dow = new Date(ktMonth.y, ktMonth.m, i).getDay();
-    const cls = dow === 0 ? "sun" : dow === 6 ? "sat" : "";
+    const hol = holidayName(ds);
+    const cls = (hol || dow === 0) ? "sun" : dow === 6 ? "sat" : "";
     const rec = ktOf(ds);
     const cells = cfg.staff.map((n) => {
       const r = rec[n] || {};
@@ -2123,8 +2212,8 @@ function renderKtTable() {
         ${r.in ? `<button class="ktclear" data-clear="${ds}|${n}" title="この日の記録を消す" aria-label="リセット">×</button>` : ""}
         ${isLate ? `<span class="latetag">遅刻</span>` : ""}</td>`;
     }).join("");
-    h += `<tr class="${Object.values(rec).some((r) => r.off) ? "off" : ""}">
-      <td class="${cls}">${i}日(${WD[dow]})</td>${cells}</tr>`;
+    h += `<tr class="${Object.values(rec).some((r) => r && r.off) ? "off" : ""}">
+      <td class="${cls}">${i}日(${WD[dow]})${hol ? `<span class="holname">${esc(hol)}</span>` : ""}</td>${cells}</tr>`;
   }
   document.getElementById("kt-tbl").innerHTML = h;
   document.querySelectorAll(".ktclear").forEach((btn) => {
@@ -2173,6 +2262,7 @@ function ktPdf() {
   for (let i = 1; i <= last; i++) {
     const ds = `${ktMonth.y}-${pad(ktMonth.m + 1)}-${pad(i)}`;
     const dow = new Date(ktMonth.y, ktMonth.m, i).getDay();
+    const hol = holidayName(ds);
     const rec = ktOf(ds);
     const tds = cfg.staff.map((n) => {
       const r = rec[n] || {};
@@ -2181,7 +2271,7 @@ function ktPdf() {
       const late = hm2min(r.in) > startMin;
       return `<td>${r.in}${late ? ` <b class="lt">遅</b>` : ""}</td>`;
     }).join("");
-    rows += `<tr class="${dow === 0 ? "sun" : dow === 6 ? "sat" : ""}"><td>${i}日(${WD[dow]})</td>${tds}</tr>`;
+    rows += `<tr class="${(hol || dow === 0) ? "sun" : dow === 6 ? "sat" : ""}"><td>${i}日(${WD[dow]})${hol ? ` <span style="font-size:9px">${esc(hol)}</span>` : ""}</td>${tds}</tr>`;
   }
   const sum = cfg.staff.map((n) => {
     const v = per[n];
