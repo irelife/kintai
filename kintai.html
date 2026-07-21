@@ -1565,11 +1565,8 @@ function renderModal() {
         <button class="btn btn-outline btn-sm" data-ngfix="${it.key}" ${!c.deadline ? "disabled" : ""}>
           ${c.fixed ? "未解決に戻す" : "解決済みにする"}
         </button>
-        <button class="btn btn-default btn-sm" data-ngconfirm="${it.key}" ${(!c.deadline || !(c.text && c.text.trim())) ? "disabled" : ""}>
-          ${c.notified ? ic("check2", 13) + " 再通知" : ic("mail", 13) + " 確定して通知"}
-        </button>
       </div>
-      ${(!c.deadline || !(c.text && c.text.trim())) ? `<div class="ng-req">${ic("alert", 11)} 内容と対応期限を入れると通知できます</div>` : ""}
+      ${(!c.deadline || !(c.text && c.text.trim())) ? `<div class="ng-req">${ic("alert", 11)} 内容と対応期限を入れると、自動でLINE通知されます</div>` : ""}
       ${c.notified ? `<div class="ng-sent">${ic("check2", 11)} ${c.notifiedAt ? esc(c.notifiedAt.slice(0, 10)) + " に" : ""}通知済み</div>` : ""}` : ""}
     </div>`;
   }).join("");
@@ -1711,32 +1708,26 @@ function renderModal() {
       setRep(name, date, { items: r.items }); renderModal();
     };
   });
-  // 要対応：対応期限
+  // 要対応：対応期限（入れた瞬間に、内容も揃っていれば自動通知）
   host.querySelectorAll("[data-ngdate]").forEach((inp) => {
     inp.onchange = () => {
       const k = inp.dataset.ngdate, it = itemOf(r, k);
       it.deadline = inp.value; r.items[k] = it;
-      setRep(name, date, { items: r.items }); renderModal();
+      setRep(name, date, { items: r.items });
+      maybeAutoNotifyNg(name, date, k);   // 揃ったら自動でLINE通知
+      renderModal();
     };
   });
-  // 要対応：確定して通知（内容＋期限が揃った要対応を、その場であなたのLINEへ）
-  host.querySelectorAll("[data-ngconfirm]").forEach((b) => {
-    b.onclick = () => {
-      const k = b.dataset.ngconfirm, it = itemOf(r, k);
-      if (!it.deadline || !(it.text && it.text.trim())) {
-        toast("確定できません", "内容と対応期限の両方を入れてください");
-        return;
-      }
-      sendNgConfirm(name, date, k);
-    };
-  });
-  // 要対応：確定→自動通知は各項目の「確定」ボタン（data-ngconfirm）で行う
-  // 要対応の本文（項目キー単位）
+  // 要対応の本文（入力を終えてフォーカスが外れた時に、期限も揃っていれば自動通知）
   host.querySelectorAll("[data-ngtext]").forEach((t) => {
     t.oninput = () => {
       const k = t.dataset.ngtext, it = itemOf(r, k);
       it.text = t.value; r.items[k] = it;
       setRep(name, date, { items: r.items });
+    };
+    t.onchange = () => {
+      const k = t.dataset.ngtext;
+      maybeAutoNotifyNg(name, date, k);   // 内容確定時にも自動通知チェック
     };
   });
   q("#m-del").onclick = () => {
@@ -1907,19 +1898,22 @@ function buildReportHTML(date) {
 ${groups}</body></html>`;
 }
 
-/* ===== 要対応をまとめてLINE通知（この物件の未解決要対応を1通で） ===== */
-// 要対応 1件を「確定して通知」：seisou GAS に type:"ngConfirm" でPOST → あなた（＋西澤）に即通知
-async function sendNgConfirm(name, date, key) {
+/* ===== 要対応の自動通知 ===== */
+// 内容＋期限が揃い、まだ未通知の要対応を、自動であなたのLINEへ送る。
+// 西澤くんはボタンを押さない。条件を満たさない時は静かに何もしない。
+async function maybeAutoNotifyNg(name, date, key) {
   const p = props.find((x) => x.name === name) || {};
   const r = getRep(name, date);
   const it = itemOf(r, key);
   const label = (itemsFor(name).find((x) => x.key === key) || {}).label || key;
 
-  if (!it.deadline || !(it.text && it.text.trim())) {
-    toast("確定できません", "内容と対応期限を入れてください");
-    return;
-  }
-  if (!cfg.gas) { toast("GAS URLが未設定です", "LINE設定タブでGAS Webhook URLを登録してください"); return; }
+  // 送る条件：要対応中／未解決／内容あり／期限あり／未通知
+  if (!it.ng) return;
+  if (it.fixed) return;
+  if (!(it.text && it.text.trim())) return;
+  if (!it.deadline) return;
+  if (it.notified) return;           // 一度送ったら二重送信しない
+  if (!cfg.gas) return;              // GAS未設定なら静かに何もしない
 
   const payload = {
     type: "ngConfirm",
@@ -1942,10 +1936,10 @@ async function sendNgConfirm(name, date, key) {
     it.notified = true; it.notifiedAt = new Date().toISOString();
     r.items[key] = it;
     setRep(name, date, { items: r.items });
-    toast("LINEに通知しました", `${name}／${label} を送信しました`);
+    toast("LINEに通知しました", `${name}／${label}`);
     renderModal();
   } catch (e) {
-    toast("通知できませんでした", "通信状況とGAS URLを確認してください");
+    // 失敗時は notified を立てない（次の機会に再送される）
   }
 }
 
