@@ -184,6 +184,21 @@ main{padding:1.5rem 0 4rem;}
 .daycount-bands{display:inline-flex;gap:2px;}
 .cityband{width:.55rem;height:.55rem;border-radius:2px;border:1px solid;display:inline-block;}
 
+/* 件数バッジのホバー物件一覧ツールチップ */
+.daycount{position:relative;cursor:pointer;}
+.cal-tip{position:absolute;left:0;top:calc(100% + 6px);z-index:60;min-width:180px;max-width:240px;
+  background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgb(15 23 42 / .18);
+  padding:.5rem .6rem;display:none;flex-direction:column;gap:.25rem;text-align:left;white-space:normal;
+  cursor:default;}
+.daycount:hover .cal-tip,.daycount:focus .cal-tip,.daycount:focus-within .cal-tip{display:flex;}
+.cal-tip-h{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:.15rem;}
+.cal-tip-row{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;font-size:12px;}
+.cal-tip-nm{font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-tip-st{flex:none;font-size:11px;color:var(--muted);}
+.cal-tip-st.done{color:var(--em-700,#047857);}
+/* ツールチップが親セルの overflow:hidden で切れないよう、ホバー中のセルだけ解除して前面に */
+.cell:hover,.cell:focus-within{overflow:visible;z-index:50;}
+
 /* 右パネル */
 .side-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.75rem;}
 .side-h h3{margin:0;font-size:14px;font-weight:600;}
@@ -1288,10 +1303,19 @@ function renderCal() {
       const bands = styleKeys.slice(0, 4).map((st) =>
         `<i class="cityband" style="background:${st.bg};border-color:${st.fg}44"></i>`
       ).join("");
-      pills = `<span class="daycount ${done === list.length ? "alldone" : ""}">
+      // ホバー用：その日の物件一覧（名前＋状態）
+      const tipRows = list.map((n) => {
+        const rp = getRep(n, ds);
+        const dn = rp.status === "done";
+        const ngc = openNg(rp);
+        const stt = dn ? "完了" : rp.status === "doing" ? "清掃中" : "清掃前";
+        return `<span class="cal-tip-row"><span class="cal-tip-nm">${esc(n)}</span><span class="cal-tip-st ${dn ? "done" : ""}">${stt}${ngc ? `・要対応${ngc}` : ""}</span></span>`;
+      }).join("");
+      pills = `<span class="daycount ${done === list.length ? "alldone" : ""}" tabindex="0">
         <span class="daycount-n">${list.length}件</span>
         ${done ? `<span class="daycount-d">${done}/${list.length}完了</span>` : ""}
         <span class="daycount-bands">${bands}</span>
+        <span class="cal-tip"><span class="cal-tip-h">${d.getMonth() + 1}/${d.getDate()}の予定 ${list.length}件</span>${tipRows}</span>
       </span>`;
     }
     h += `<button class="cell ${out ? "out" : ""} ${ds === selDate ? "sel" : ""}" data-d="${ds}">
