@@ -191,8 +191,13 @@ main{padding:1.5rem 0 4rem;}
 .side-list{display:flex;flex-direction:column;gap:.75rem;}
 .pcard{padding:1rem;cursor:pointer;transition:box-shadow .15s;}
 .pcard:hover{box-shadow:var(--sh-md);}
-.pcard-h{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.25rem;}
-.pcard-n{font-weight:600;line-height:1.35;}
+.pcard-h{display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.25rem;}
+.pcard-n{font-weight:600;line-height:1.35;flex:1;min-width:0;}
+.pcard-x{flex:0 0 auto;width:1.75rem;height:1.75rem;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--muted);cursor:pointer;
+  padding:0;line-height:0;transition:background-color .15s,color .15s,border-color .15s;
+  -webkit-tap-highlight-color:rgba(0,0,0,.08);}
+.pcard-x:hover{background:var(--rose-50,#fef2f2);color:var(--rose-600,#e11d48);border-color:var(--rose-200,#fecdd3);}
 .pcard-a{margin-bottom:.625rem;font-size:12px;color:var(--muted);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pcard-m{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem;}
@@ -663,6 +668,19 @@ main{padding:1.5rem 0 4rem;}
   .itemcards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;}
   /* 3分割セグメントボタンの文字が詰まらないように */
   .seg button{font-size:13px;padding:0 .25rem;}
+
+  /* ---- 勤怠カレンダー：7列を画面内に収める（横スクロール不要） ---- */
+  .kt-cal{gap:3px;}
+  .kt-cal .kc-dow{font-size:11px;padding:.25rem 0;}
+  .kt-cal .kc-cell{min-height:64px;padding:.25rem;border-radius:8px;gap:.15rem;}
+  .kt-cal .kc-d{font-size:12px;}
+  .kt-cal .kc-off-lbl{font-size:8px;line-height:1.1;}
+  .kt-cal .kc-marks{gap:2px;}
+  /* マーク（名前＋時刻）を縦積みにして狭い列でも折り返さない */
+  .kt-cal .kc-mk{flex-wrap:wrap;font-size:9px;padding:2px 3px;gap:0 2px;border-radius:4px;line-height:1.2;}
+  .kt-cal .kc-mk .kc-nm{flex:1 1 100%;font-size:9px;}
+  .kt-cal .kc-mk .kc-tm{margin-left:0;font-size:10px;}
+  .kt-cal .kc-mkx{margin-left:auto;width:14px;height:14px;font-size:11px;}
 }
 </style>
 </head>
@@ -987,7 +1005,26 @@ function save(k, v) {
 
 let props = load(K.props, null) || SEED_PROPS.slice();
 let sched = load(K.sched, {});     // { "YYYY-MM-DD": [name] }
+// その物件が今どこかの日に予定されていれば、その日付(YYYY-MM-DD)を返す。無ければ null。
+// （1物件=同時に1予定のみ。カード非表示・重複防止に使う）
+function schedDateOf(name) {
+  const days = Object.keys(sched);
+  for (let i = 0; i < days.length; i++) {
+    if ((sched[days[i]] || []).includes(name)) return days[i];
+  }
+  return null;
+}
 let reps = load(K.reps, {});       // { "name|date": {...} }
+// 旧方式の要対応(todos)は新方式（項目カードのng）に一本化したため、既存データから除去する。
+// これで画面に出ない「幽霊の要対応」カウントが消える。写真等は項目カード側に残る。
+(function _migrateDropTodos() {
+  let changed = false;
+  Object.keys(reps).forEach((id) => {
+    const r = reps[id];
+    if (r && Array.isArray(r.todos) && r.todos.length) { r.todos = []; changed = true; }
+  });
+  if (changed) save(K.reps, reps);
+})();
 let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ... } }
 let cfg = Object.assign({ mail: "", gas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
@@ -1049,9 +1086,8 @@ function setRep(n, d, patch) {
   save(K.reps, reps);
 }
 const itemOf = (r, k) => r.items[k] || { photos: [], ok: false, ng: false, fixed: false, before: [], after: [] };
-// 要対応：項目のうち ng=true かつ未解決の数（重複なし＝項目単位）
-const openNg = (r) => Object.values(r.items || {}).filter((it) => it && it.ng && !it.fixed).length
-  + (r.todos || []).filter((t) => !t.fixed).length; // 旧todosも当面カウント（移行データ互換）
+// 要対応：項目カードのうち ng=true かつ未解決(fixed=false)の数だけを数える（新方式に一本化）
+const openNg = (r) => Object.values(r.items || {}).filter((it) => it && it.ng && !it.fixed).length;
 /* 要対応は before/after、通常項目は photos（1系統） */
 const todoShots = (t, ph) => (t[ph] = t[ph] || []);
 
@@ -1321,14 +1357,13 @@ function renderSide() {
     const r = getRep(n, selDate);
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
     let ph = 0, b = 0, a = 0;
-    Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; });
-    (r.todos || []).forEach((t) => { b += (t.before || []).length; a += (t.after || []).length; });
+    Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; b += (it.before || []).length; a += (it.after || []).length; });
     const ng = openNg(r);
     const badge = r.status === "done" ? `<span class="badge badge-emerald">清掃完了</span>`
       : r.status === "doing" ? `<span class="badge badge-amber">清掃中</span>`
       : `<span class="badge badge-slate">清掃前</span>`;
     return `<div class="card pcard" data-n="${esc(n)}">
-      <div class="pcard-h"><div class="pcard-n">${esc(n)}</div>${badge}</div>
+      <div class="pcard-h"><div class="pcard-n">${esc(n)}</div>${badge}<button class="pcard-x" data-unsched="${esc(n)}" title="この予定を外す" aria-label="予定を外す">${ic("x", 16)}</button></div>
       <div class="pcard-a">${esc(p.addr)}</div>
       <div class="pcard-m">
         <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
@@ -1340,6 +1375,19 @@ function renderSide() {
 
   wrap.querySelectorAll(".pcard").forEach((c) => {
     c.onclick = () => { openRep = { name: c.dataset.n, date: selDate }; openItem = null; renderModal(); };
+  });
+  // ×：この予定を外す（カードは物件管理側に復活する）
+  wrap.querySelectorAll("[data-unsched]").forEach((b) => {
+    b.onclick = (e) => {
+      e.stopPropagation();                       // カード本体（記録モーダル）を開かない
+      const nm = b.dataset.unsched;
+      if (!confirm(`${nm} をこの日の予定から外しますか？\n入力した写真・記録は残ります。`)) return;
+      sched[selDate] = (sched[selDate] || []).filter((x) => x !== nm);
+      if (!sched[selDate].length) delete sched[selDate];
+      save(K.sched, sched);
+      renderCal(); renderSide(); renderProps();  // カレンダー・予定・物件カードを更新（物件カード復活）
+      toast("予定から外しました", nm);
+    };
   });
   const sb = document.getElementById("send-btn");
   if (sb) sb.onclick = sendMail;
@@ -1372,6 +1420,7 @@ function sendCardHTML() {
 /* ===== 描画：物件管理 ===== */
 function renderProps() {
   const list = props.filter((p) =>
+    !schedDateOf(p.name) &&                                  // すでに予定に入っている物件はカードを出さない
     (filterCity === "all" || cityOf(p.addr).key === filterCity) &&
     (!filterQ || p.name.includes(filterQ) || String(p.addr || "").includes(filterQ)));
   document.getElementById("p-count").textContent = `${list.length}件`;
@@ -1638,6 +1687,7 @@ function renderModal() {
     save(K.sched, sched);
     toast("予定から外しました", name);
     closeM();
+    renderCal(); renderSide(); renderProps();   // カレンダー・予定・物件カード更新（物件カード復活）
   };
 }
 
@@ -1663,14 +1713,20 @@ function openSched(name) {
   host.querySelector("#s-ok").onclick = () => {
     const d = host.querySelector("#s-date").value;
     if (!d) return;
+    // 1物件=同時に1予定のみ。すでに（別の日を含め）予定があれば入れさせない
+    const exist = schedDateOf(name);
+    if (exist) {
+      toast("すでに予定に入っています", `${name}／${fmtDate(exist)}（先に予定を外してください）`);
+      close(); return;
+    }
     sched[d] = sched[d] || [];
-    if (sched[d].includes(name)) { toast("すでに予定に入っています", `${name}／${d}`); close(); return; }
     sched[d].push(name);
     save(K.sched, sched);
     const dd = parseYmd(d);
     cursor = { y: dd.getFullYear(), m: dd.getMonth() };
     selDate = d;
     close();
+    renderProps();               // 物件カードから消す
     go("cal");
     toast("予定を入れました", `${name}／${fmtDate(d)}`);
   };
@@ -1739,12 +1795,11 @@ function buildReportHTML(date) {
       if (!c.ng) (c.photos || []).forEach((s) => shots.push({ l: it.label, s }));
     });
 
-    // 要対応（項目のng）＋旧todos（移行互換）
+    // 要対応（項目のngのみ。旧todosは廃止）
     const ngItems = myItems
       .map((it) => ({ it, c: itemOf(r, it.key) }))
       .filter((x) => x.c.ng && !x.c.fixed);
-    const legacy = (r.todos || []).filter((t) => !t.fixed);
-    const ngCount = ngItems.length + legacy.length;
+    const ngCount = ngItems.length;
 
     const ngH = ngCount ? `<div class="ng"><b>要対応 ${ngCount}件</b>
       ${ngItems.map(({ it, c }) => `<div class="ngi">
@@ -1752,13 +1807,6 @@ function buildReportHTML(date) {
         ${(c.before || []).length || (c.after || []).length ? `<div class="ph">
           ${(c.before || []).map((s) => `<figure><img src="${s}"><figcaption>ビフォー</figcaption></figure>`).join("")}
           ${(c.after || []).map((s) => `<figure><img src="${s}"><figcaption>アフター</figcaption></figure>`).join("")}
-        </div>` : ""}
-      </div>`).join("")}
-      ${legacy.map((t) => `<div class="ngi">
-        <div class="ngt">${esc(t.item)}：${esc(t.text || "（記載なし）")}</div>
-        ${(t.before || []).length || (t.after || []).length ? `<div class="ph">
-          ${(t.before || []).map((s) => `<figure><img src="${s}"><figcaption>ビフォー</figcaption></figure>`).join("")}
-          ${(t.after || []).map((s) => `<figure><img src="${s}"><figcaption>アフター</figcaption></figure>`).join("")}
         </div>` : ""}
       </div>`).join("")}</div>` : "";
 
@@ -1875,7 +1923,6 @@ function buildStatusRows(date) {
         ngList.push({ item: it.label, text: c.text || "", deadline: c.deadline || "", notified: !!c.notified });
       }
     });
-    (r.todos || []).forEach((t) => { if (!t.fixed) { ngOpen++; ngList.push({ item: t.item, text: t.text || "", deadline: "", notified: false }); } });
     return {
       date, property: n, address: p.addr || "",
       status: r.status,                    // yet / doing / done
