@@ -895,6 +895,13 @@ main{padding:1.5rem 0 4rem;}
             未設定のときは、送信ボタンで印刷ダイアログが開きます。そこからPDFとして保存できます。
           </span>
         </div>
+        <div class="field"><label>清掃 同期URL（スマホとPCで共有）</label>
+          <input class="input" id="cfg-cmgas" placeholder="https://script.google.com/macros/s/.../exec">
+          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
+            清掃専用の同期サーバー（勤怠とは別のGAS）のURLです。設定すると、物件・予定・清掃記録がこの端末と他の端末で共有されます。※写真は未対応（テキスト・状態のみ）。
+          </span>
+          <div style="margin-top:.5rem"><button class="btn btn-default" id="cfg-cmsync" style="font-size:14px">🔄 清掃を今すぐ同期</button></div>
+        </div>
         <div><button class="btn btn-default" id="cfg-save">保存する</button></div>
       </div>
       <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border-soft)">
@@ -1007,7 +1014,7 @@ const fmtDate = (s) => { const d = parseYmd(s); return `${d.getMonth() + 1}月${
 const K = {
   props: "cm_props_v1", sched: "cm_sched_v1", reps: "cm_reps_v1",
   kintai: "cm_kintai_v1", cfg: "cm_cfg_v1", itemlists: "cm_itemlists_v1",
-  choli: "cm_choli_v1",
+  choli: "cm_choli_v1", schedMeta: "cm_schedmeta_v1",
 };
 const jparse = (s, fb) => { try { const v = JSON.parse(s); return v == null ? fb : v; } catch (e) { return fb; } };
 function load(k, fb) { return jparse(localStorage.getItem(k), fb); }
@@ -1021,6 +1028,21 @@ function save(k, v) {
 
 let props = load(K.props, null) || SEED_PROPS.slice();
 let sched = load(K.sched, {});     // { "YYYY-MM-DD": [name] }
+let schedMeta = load(K.schedMeta, {}); // { 名前: { d:日付, _t:時刻, del:bool } } 同期の追加/削除判定用
+// 予定を追加（同期メタも更新）
+function schedAdd(day, name) {
+  sched[day] = sched[day] || [];
+  if (sched[day].indexOf(name) < 0) sched[day].push(name);
+  schedMeta[name] = { d: day, _t: Date.now(), del: false };
+  save(K.sched, sched); save(K.schedMeta, schedMeta);
+}
+// 予定を削除（同期メタに削除マーカー）
+function schedRemove(day, name) {
+  sched[day] = (sched[day] || []).filter((x) => x !== name);
+  if (!sched[day].length) delete sched[day];
+  schedMeta[name] = { d: day, _t: Date.now(), del: true };
+  save(K.sched, sched); save(K.schedMeta, schedMeta);
+}
 // その物件が今どこかの日に予定されていれば、その日付(YYYY-MM-DD)を返す。無ければ null。
 // （1物件=同時に1予定のみ。カード非表示・重複防止に使う）
 function schedDateOf(name) {
@@ -1042,7 +1064,7 @@ let reps = load(K.reps, {});       // { "name|date": {...} }
   if (changed) save(K.reps, reps);
 })();
 let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ... } }
-let cfg = Object.assign({ mail: "", gas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
+let cfg = Object.assign({ mail: "", gas: "", cmGas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
 let choli = load(K.choli, {});         // 会社休日 { "YYYY-MM-DD": {name, _t} または削除マーカー {__del, _t} }
 // 旧形式（値が文字列）を新形式 {name,_t} に自動変換（後方互換）
@@ -1408,10 +1430,9 @@ function renderSide() {
       e.stopPropagation();                       // カード本体（記録モーダル）を開かない
       const nm = b.dataset.unsched;
       if (!confirm(`${nm} をこの日の予定から外しますか？\n入力した写真・記録は残ります。`)) return;
-      sched[selDate] = (sched[selDate] || []).filter((x) => x !== nm);
-      if (!sched[selDate].length) delete sched[selDate];
-      save(K.sched, sched);
+      schedRemove(selDate, nm);
       renderCal(); renderSide(); renderProps();  // カレンダー・予定・物件カードを更新（物件カード復活）
+      cmPush();                                   // 清掃同期
       toast("予定から外しました", nm);
     };
   });
@@ -1592,7 +1613,8 @@ function renderModal() {
   const closeM = () => {
     const d = openRep && openRep.date;
     openRep = null; openItem = null; renderModal(); renderCal();
-    if (d && cfg.gas) syncToSheet(d, true);  // 記録を閉じたら静かに同期
+    if (d && cfg.gas) syncToSheet(d, true);  // 記録を閉じたら静かに同期（スプレッドシート）
+    cmPush();                                 // 清掃同期（他端末へ：予定・記録）
   };
   q("#m-x").onclick = closeM;
   q("#m-cancel").onclick = closeM;
@@ -1708,12 +1730,11 @@ function renderModal() {
   });
   q("#m-del").onclick = () => {
     if (!confirm(`${name} をこの日の予定から外しますか？\n入力した写真・記録は残ります。`)) return;
-    sched[date] = (sched[date] || []).filter((x) => x !== name);
-    if (!sched[date].length) delete sched[date];
-    save(K.sched, sched);
+    schedRemove(date, name);
     toast("予定から外しました", name);
     closeM();
     renderCal(); renderSide(); renderProps();   // カレンダー・予定・物件カード更新（物件カード復活）
+    cmPush();                                    // 清掃同期
   };
 }
 
@@ -1745,14 +1766,13 @@ function openSched(name) {
       toast("すでに予定に入っています", `${name}／${fmtDate(exist)}（先に予定を外してください）`);
       close(); return;
     }
-    sched[d] = sched[d] || [];
-    sched[d].push(name);
-    save(K.sched, sched);
+    schedAdd(d, name);
     const dd = parseYmd(d);
     cursor = { y: dd.getFullYear(), m: dd.getMonth() };
     selDate = d;                 // 次にカレンダーを開いたとき、この日が選択された状態で表示される
     close();
     renderProps();               // 物件カードから消す（この画面にとどまる）
+    cmPush();                    // 清掃同期（他端末へ）
     toast("予定を入れました", `${name}／${fmtDate(d)}（物件カードが消えました）`);
   };
 }
@@ -2317,6 +2337,148 @@ function ktStripDeleted() {
   });
 }
 // サーバーへ保存（送信のみ。ローカルは上書きしない＝隣接日の誤マージを防ぐ）
+/* ===== 清掃の同期（物件・予定・記録／写真はフェーズ2）===== */
+// 記録から写真(base64)を除いたコピーを返す（スプレッドシート同期用。写真同期はフェーズ2）
+function repsWithoutPhotos(src) {
+  const out = {};
+  Object.keys(src || {}).forEach((id) => {
+    const r = src[id];
+    const c = JSON.parse(JSON.stringify(r));  // 深いコピー
+    if (c.items) {
+      Object.keys(c.items).forEach((k) => {
+        const it = c.items[k];
+        // ドライブURL(http)は残し、base64(data:)は除く
+        const keepUrl = (arr) => (arr || []).filter((s) => typeof s === "string" && s.indexOf("data:") !== 0);
+        it.photos = keepUrl(it.photos);
+        it.before = keepUrl(it.before);
+        it.after  = keepUrl(it.after);
+      });
+    }
+    out[id] = c;
+  });
+  return out;
+}
+async function cmPush() {
+  if (!cfg.cmGas) return;                 // 清掃同期URL未設定なら何もしない
+  try {
+    await fetch(cfg.cmGas, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      // seisou GAS 仕様：トップレベルに reports/props/sched/_schedMeta。写真base64は除く
+      body: JSON.stringify({
+        action: "save",
+        reports: repsWithoutPhotos(reps),
+        props,
+        sched,
+        _schedMeta: schedMeta,
+      }),
+    });
+    // 返り値でローカルは上書きしない。取り込みは起動時/手動(cmPull)で行う。
+  } catch (e) { /* 通信失敗時はローカル維持。次回送信で反映 */ }
+}
+// サーバーから清掃データを取り込む（起動時・手動）
+async function cmPull(silent) {
+  if (!cfg.cmGas) { if (!silent) toast("清掃 同期URLが未設定です", "LINE設定で清掃同期URLを保存してください"); return; }
+  try {
+    const res = await fetch(cfg.cmGas, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "load" }),
+    });
+    const data = await res.json();
+    if (data && data.ok) {
+      // seisou GAS 仕様：payloadで包まず data トップレベルに reports/props/sched/_schedMeta
+      // 物件：名前キーで統合（サーバーとローカル両方の物件を残す）
+      if (Array.isArray(data.props)) { props = cmMergeProps(data.props, props); save(K.props, props); }
+      // 予定メタ：新しい操作(_t)を採用してからschedを再構築
+      schedMeta = cmMergeMeta(data._schedMeta || {}, schedMeta, data.sched || {}, sched);
+      sched = cmSchedFromMeta(schedMeta);
+      save(K.schedMeta, schedMeta); save(K.sched, sched);
+      // 記録：ts が新しい方を採用。サーバー側は写真base64を持たないので、ローカルの写真は保持
+      if (data.reports && typeof data.reports === "object") {
+        reps = cmMergeReps(data.reports, reps);
+        save(K.reps, reps);
+      }
+      if (typeof renderCal === "function" && document.getElementById("cal-grid")) renderCal();
+      if (typeof renderProps === "function" && document.getElementById("p-grid")) renderProps();
+      if (!silent) toast("清掃を同期しました", "最新の物件・予定・記録を取り込みました");
+    } else if (!silent) {
+      toast("同期できませんでした", (data && data.error) ? data.error : "応答が不正です");
+    }
+  } catch (e) {
+    if (!silent) toast("同期できませんでした", "通信状況とURLを確認してください");
+  }
+}
+// 物件：名前キーで統合（両方の物件を保持。同名は後（サーバー）優先）
+function cmMergeProps(server, local) {
+  const map = {};
+  (local || []).forEach((p) => { if (p && p.name) map[p.name] = p; });
+  (server || []).forEach((p) => { if (p && p.name) map[p.name] = p; });
+  return Object.keys(map).map((k) => map[k]);
+}
+// 予定メタ：名前ごとに _t が新しい操作（追加/削除）を採用。schedからも_t=0で補完
+function cmMergeMeta(sMeta, lMeta, sSched, lSched) {
+  const meta = {};
+  const put = (m) => { Object.keys(m || {}).forEach((nm) => {
+    const t = Number(m[nm]._t) || 0;
+    if (!meta[nm] || t >= meta[nm]._t) meta[nm] = { d: m[nm].d, _t: t, del: !!m[nm].del };
+  }); };
+  const putSched = (s) => { Object.keys(s || {}).forEach((day) => {
+    (s[day] || []).forEach((nm) => { if (!meta[nm]) meta[nm] = { d: day, _t: 0, del: false }; });
+  }); };
+  put(lMeta); put(sMeta); putSched(lSched); putSched(sSched);
+  return meta;
+}
+function cmSchedFromMeta(meta) {
+  const sched = {};
+  Object.keys(meta || {}).forEach((nm) => {
+    const e = meta[nm];
+    if (e.del || !e.d) return;
+    sched[e.d] = sched[e.d] || [];
+    if (sched[e.d].indexOf(nm) < 0) sched[e.d].push(nm);
+  });
+  return sched;
+}
+// 記録：ts が新しい方を採用。ただし写真base64はローカル側を必ず引き継ぐ（サーバーは写真を持たないため）
+function cmMergeReps(server, local) {
+  const out = {};
+  const keys = {};
+  Object.keys(server || {}).forEach((k) => keys[k] = 1);
+  Object.keys(local || {}).forEach((k) => keys[k] = 1);
+  // ローカル記録から写真だけ取り出す
+  const localPhotos = (r) => {
+    const m = {};
+    Object.keys((r && r.items) || {}).forEach((k) => {
+      const it = r.items[k] || {};
+      const b64 = (arr) => (arr || []).filter((s) => typeof s === "string" && s.indexOf("data:") === 0);
+      m[k] = { photos: b64(it.photos), before: b64(it.before), after: b64(it.after) };
+    });
+    return m;
+  };
+  Object.keys(keys).forEach((id) => {
+    const ra = server[id], rb = local[id];
+    let chosen;
+    if (ra && !rb) chosen = ra;
+    else if (!ra && rb) chosen = rb;
+    else chosen = ((Number(rb.ts) || 0) >= (Number(ra.ts) || 0)) ? rb : ra;
+    // サーバー側を採用したときは、ローカルにあった写真base64を各項目に戻す
+    if (chosen === ra && rb) {
+      chosen = JSON.parse(JSON.stringify(ra));
+      const lp = localPhotos(rb);
+      chosen.items = chosen.items || {};
+      Object.keys(lp).forEach((k) => {
+        chosen.items[k] = chosen.items[k] || { photos: [], before: [], after: [], ok: false, ng: false, fixed: false };
+        // サーバー由来のURL(http)＋ローカルのbase64を結合
+        chosen.items[k].photos = (chosen.items[k].photos || []).concat(lp[k].photos);
+        chosen.items[k].before = (chosen.items[k].before || []).concat(lp[k].before);
+        chosen.items[k].after  = (chosen.items[k].after  || []).concat(lp[k].after);
+      });
+    }
+    out[id] = chosen;
+  });
+  return out;
+}
+
 async function ktPush() {
   if (!cfg.ktGas) return;                 // 同期URL未設定なら何もしない（ローカルのみ）
   try {
@@ -3294,14 +3456,22 @@ function boot() {
 
   document.getElementById("cfg-mail").value = cfg.mail;
   document.getElementById("cfg-gas").value = cfg.gas;
+  document.getElementById("cfg-cmgas").value = cfg.cmGas || "";
   document.getElementById("cfg-start").value = cfg.start || "09:00";
   document.getElementById("cfg-save").onclick = () => {
     cfg.mail = document.getElementById("cfg-mail").value.trim();
     cfg.gas = document.getElementById("cfg-gas").value.trim();
+    cfg.cmGas = document.getElementById("cfg-cmgas").value.trim();
     cfg.start = document.getElementById("cfg-start").value || "09:00";
     save(K.cfg, cfg);
     toast("設定を保存しました", `定時 ${cfg.start}${cfg.mail ? `／${cfg.mail}` : ""}`);
     renderSide();
+    if (cfg.cmGas) cmPull(true);   // 保存直後に一度取り込む
+  };
+  document.getElementById("cfg-cmsync").onclick = async () => {
+    if (!cfg.cmGas) { cfg.cmGas = document.getElementById("cfg-cmgas").value.trim(); save(K.cfg, cfg); }
+    await cmPush();       // まずローカルをサーバーへ
+    await cmPull(false);  // 次にサーバーの最新を取り込む
   };
   document.getElementById("cfg-import").onclick = openImport;
   document.getElementById("cfg-backup").onclick = doBackup;
@@ -3310,8 +3480,9 @@ function boot() {
     if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); }
   });
   go("cal");
-  // 起動時：勤怠同期URLが設定済みなら最新を取り込む
+  // 起動時：同期URLが設定済みなら最新を取り込む
   if (cfg.ktGas) { ktPull(true); }
+  if (cfg.cmGas) { cmPull(true); }
 }
 document.addEventListener("DOMContentLoaded", boot);
 </script>
