@@ -626,6 +626,44 @@ main{padding:1.5rem 0 4rem;}
 .ktday-btns .b-off.on{background:var(--rose-600,#e11d48);color:#fff;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
+
+/* ===== スマホ幅(≤480px)：見切れ対策 ===== */
+@media(max-width:480px){
+  /* 画面外への横あふれを全体で禁止 */
+  html,body{overflow-x:hidden;}
+  .wrap{padding:0 1rem;}
+
+  /* 年間休日などの統計カード：数字が大きすぎて列からはみ出るのを抑える */
+  .kt-prog{padding:1.2rem 1rem;}
+  .kt-prog-grid{gap:.5rem;}
+  .kp{padding:.9rem .35rem;min-width:0;}
+  .kp-n{font-size:34px;letter-spacing:-1.5px;max-width:100%;overflow:hidden;}
+  .kp-n small{font-size:14px;}
+  .kp-emoji{font-size:22px;}
+  .kp-l{font-size:11px;}
+
+  /* 出勤欠勤簿の行：名前＋状態＋ボタンが1行に収まらないので折り返す */
+  .kt-row{flex-wrap:wrap;gap:.5rem .75rem;padding:.9rem 1rem;}
+  .kt-nm{min-width:0;flex:0 0 auto;}
+  .kt-st{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .kt-b{flex:1 1 100%;gap:.5rem;}
+  .kt-b .btn-kt{flex:1;padding:0 .5rem;font-size:17px;height:3rem;min-width:0;}
+
+  /* 個人別サマリーの大きな数字も収める */
+  .psum-num{font-size:38px;}
+  .kt-prog-msg{font-size:15px;}
+  .kt-prog-msg b{font-size:18px;}
+
+  /* ---- 清掃側 ---- */
+  /* 清掃カレンダーのセルを詰める（縦の間延び防止） */
+  .cell{min-height:4.5rem;padding:.35rem;}
+  .cell-d{height:1.35rem;min-width:1.35rem;font-size:11px;}
+  .pill{padding:.1rem .3rem;font-size:10px;}
+  /* 清掃記録モーダルの項目カード：狭い画面は1〜2列に */
+  .itemcards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;}
+  /* 3分割セグメントボタンの文字が詰まらないように */
+  .seg button{font-size:13px;padding:0 .25rem;}
+}
 </style>
 </head>
 <body>
