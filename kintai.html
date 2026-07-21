@@ -604,6 +604,13 @@ main{padding:1.5rem 0 4rem;}
 .ktday-close{width:2rem;height:2rem;border:none;background:var(--bg,#f1f5f9);border-radius:50%;font-size:20px;cursor:pointer;color:var(--muted);}
 .ktday-ok{width:100%;margin-top:1rem;padding:.85rem;border:none;border-radius:12px;background:var(--teal-700,#0f766e);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;}
 .ktday-ok:hover{background:var(--teal-800,#115e59);}
+.ktday-choli{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.7rem .9rem;border:1px dashed var(--border);border-radius:12px;margin-bottom:1rem;background:#fafafa;}
+.ktday-choli.on{background:#fff7ed;border-color:#fed7aa;border-style:solid;}
+.ktday-choli.base{background:var(--rose-50,#fef2f2);border-color:#fecdd3;border-style:solid;}
+.ktday-choli .kc-flag{font-size:14px;font-weight:700;color:#c2410c;}
+.ktday-choli.base .kc-flag{color:var(--rose-600,#e11d48);}
+.ktday-choli .kc-note{font-size:12px;color:var(--muted-2);}
+.ktday-choli button{margin-left:auto;}
 .ktday-person{border:1px solid var(--border-soft);border-radius:12px;padding:.9rem 1rem;margin-bottom:.75rem;}
 .ktday-person h4{margin:0 0 .6rem;font-size:15px;font-weight:700;}
 .ktday-cur{font-size:13px;color:var(--muted);margin-bottom:.7rem;}
@@ -946,7 +953,35 @@ let reps = load(K.reps, {});       // { "name|date": {...} }
 let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ... } }
 let cfg = Object.assign({ mail: "", gas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
-let choli = load(K.choli, {});         // 手動の会社休日 { "YYYY-MM-DD": "盆休み" 等 }
+let choli = load(K.choli, {});         // 会社休日 { "YYYY-MM-DD": {name, _t} または削除マーカー {__del, _t} }
+// 旧形式（値が文字列）を新形式 {name,_t} に自動変換（後方互換）
+(function _migrateCholi() {
+  let changed = false;
+  Object.keys(choli).forEach((ds) => {
+    if (typeof choli[ds] === "string") {
+      choli[ds] = { name: choli[ds], _t: 0 };   // 既存分は _t=0（同期時に相手側の操作が新しければ上書きされる）
+      changed = true;
+    }
+  });
+  if (changed) save(K.choli, choli);
+})();
+// その日の会社休日名を返す（削除マーカーや空は null）
+function choliName(ds) {
+  const v = choli[ds];
+  if (!v || v.__del) return null;
+  if (typeof v === "string") return v || null;   // 念のため
+  return v.name || null;
+}
+// 会社休日を追加／更新
+function choliSet(ds, name) {
+  choli[ds] = { name: name, _t: Date.now() };
+  save(K.choli, choli);
+}
+// 会社休日を解除（削除マーカーを残して他端末にも解除を伝える）
+function choliDel(ds) {
+  choli[ds] = { __del: Date.now() };
+  save(K.choli, choli);
+}
 
 // 物件ごとの項目リストを取得（無ければ既定ITEMSのコピーを返す）
 function itemsFor(name) {
@@ -2178,7 +2213,7 @@ async function ktPush() {
     await fetch(cfg.ktGas, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "save", payload: { kintai } }),
+      body: JSON.stringify({ action: "save", payload: { kintai, choli } }),
     });
     // サーバーの返り値でローカルを上書きしない。最新の取り込みは起動時/手動同期(ktPull)で行う。
   } catch (e) {
@@ -2199,6 +2234,11 @@ async function ktPull(silent) {
       // サーバー分をローカルにマージ（ローカルの新しい変更も残す）
       kintai = ktMergeLocal(data.payload.kintai, kintai);
       save(K.kintai, kintai);
+      // 会社休日もマージ（追加・解除どちらも、より新しい操作が勝つ）
+      if (data.payload.choli && typeof data.payload.choli === "object") {
+        choli = mergeCholiLocal(data.payload.choli, choli);
+        save(K.choli, choli);
+      }
       if (typeof renderKintai === "function") renderKintai();
       if (typeof renderKtTable === "function") renderKtTable();
       if (!silent) toast("同期しました", "最新の勤怠を取り込みました");
@@ -2208,6 +2248,26 @@ async function ktPull(silent) {
   } catch (e) {
     if (!silent) toast("同期できませんでした", "通信状況とURLを確認してください");
   }
+}
+// 会社休日のマージ（値は {name,_t} か {__del,_t}。_t が新しい方＝より新しい操作を採用）
+function mergeCholiLocal(a, b) {
+  a = a || {}; b = b || {};
+  const out = {};
+  const days = {};
+  Object.keys(a).forEach((k) => days[k] = 1);
+  Object.keys(b).forEach((k) => days[k] = 1);
+  const tOf = (v) => {
+    if (!v) return -1;
+    if (typeof v === "string") return 0;         // 旧形式は最古扱い
+    return Number(v.__del || v._t) || 0;
+  };
+  Object.keys(days).forEach((ds) => {
+    const va = a[ds], vb = b[ds];
+    if (va && !vb) { out[ds] = va; }
+    else if (!va && vb) { out[ds] = vb; }
+    else { out[ds] = (tOf(vb) >= tOf(va)) ? vb : va; }
+  });
+  return out;
 }
 // ローカル側マージ（サーバーの流儀と同じ：_t が新しい方を採用、同点は中身が多い方）
 function ktMergeLocal(a, b) {
@@ -2292,14 +2352,14 @@ function isCompanyOff(ds) {
   const dow = new Date(ds + "T00:00:00").getDay();
   if (dow === 0 || dow === 3 || dow === 6) return true;   // 日・水・土
   if (holidayName(ds)) return true;                       // 祝日
-  if (choli[ds]) return true;                             // 手動追加休日（盆・年末等）
+  if (choliName(ds)) return true;                         // 手動追加休日（盆・年末等）
   return false;
 }
 // 休日ラベル（祝日名＞手動休日名＞公休日）
 function offLabelOf(ds) {
   const hol = holidayName(ds);
   if (hol) return hol;
-  if (choli[ds]) return choli[ds];
+  if (choliName(ds)) return choliName(ds);
   const dow = new Date(ds + "T00:00:00").getDay();
   if (dow === 0 || dow === 3 || dow === 6) return "公休日";
   return "";
@@ -2477,16 +2537,16 @@ function renderKtTable() {
       const dow = new Date(ds + "T00:00:00").getDay();
       const isBaseOff = (dow === 0 || dow === 3 || dow === 6) || holidayName(ds);
       if (isBaseOff) { toast("すでに公休日です", "水・土・日・祝は最初から会社休日です"); return; }
-      if (choli[ds]) {
-        delete choli[ds]; save(K.choli, choli);
+      if (choliName(ds)) {
+        choliDel(ds);
         toast("会社休日を解除しました", fmtDate(ds));
       } else {
         const label = prompt("会社休日として追加します。名称を入力（例：盆休み／年末休暇）", "特別休日");
         if (label === null) return;
-        choli[ds] = (label || "特別休日").trim() || "特別休日";
-        save(K.choli, choli);
-        toast("会社休日を追加しました", `${fmtDate(ds)}（${choli[ds]}）`);
+        choliSet(ds, (label || "特別休日").trim() || "特別休日");
+        toast("会社休日を追加しました", `${fmtDate(ds)}（${choliName(ds)}）`);
       }
+      ktPush();            // 会社休日もサーバーへ同期
       renderKtTable();
     };
   });
@@ -2625,7 +2685,20 @@ function renderKtDayBody() {
   const rec = ktOf(ds);
   const startMin = hm2min(cfg.start) ?? 540;
   const body = document.getElementById("ktday-body");
-  body.innerHTML = cfg.staff.map((n) => {
+  // 会社休日セクション
+  const dow = new Date(ds + "T00:00:00").getDay();
+  const isBaseOff = (dow === 0 || dow === 3 || dow === 6) || holidayName(ds);
+  const manualName = choliName(ds) || "";
+  let choliHtml;
+  if (isBaseOff) {
+    choliHtml = `<div class="ktday-choli base"><span class="kc-flag">🏢 ${esc(holidayName(ds) || "公休日")}</span><span class="kc-note">水・土・日・祝は最初から会社休日です</span></div>`;
+  } else if (manualName) {
+    choliHtml = `<div class="ktday-choli on"><span class="kc-flag">🏖️ 会社休日：${esc(manualName)}</span><button class="btn btn-outline btn-sm" data-choli-del="${ds}">休日を解除</button></div>`;
+  } else {
+    choliHtml = `<div class="ktday-choli"><span class="kc-note">特別休暇・会社休日にできます</span><button class="btn btn-outline btn-sm" data-choli-add="${ds}">この日を会社休日にする</button></div>`;
+  }
+
+  body.innerHTML = choliHtml + cfg.staff.map((n) => {
     const r = rec[n] || {};
     const [hh, mm] = (r.in || "").split(":");
     let cur;
@@ -2670,6 +2743,28 @@ function renderKtDayBody() {
     let _ktTapBusy = false;
     const handleTap = (e) => {
       const dd = _ktDayCur; if (!dd) return;
+      // 会社休日の追加・解除
+      const cAdd = e.target.closest("[data-choli-add]");
+      if (cAdd) {
+        e.preventDefault();
+        const label = prompt("会社休日として追加します。名称を入力（例：盆休み／年末休暇／特別休日）", "特別休日");
+        if (label !== null) {
+          choliSet(dd, (label || "特別休日").trim() || "特別休日");
+          toast("会社休日を追加しました", `${fmtDate(dd)}（${choliName(dd)}）`);
+          ktPush();          // 会社休日もサーバーへ同期
+          afterKtDayChange();
+        }
+        return;
+      }
+      const cDel = e.target.closest("[data-choli-del]");
+      if (cDel) {
+        e.preventDefault();
+        choliDel(dd);
+        toast("会社休日を解除しました", fmtDate(dd));
+        ktPush();            // 解除も同期
+        afterKtDayChange();
+        return;
+      }
       const target = e.target.closest(".ktday-now, [data-off], [data-clr]");
       if (!target) return;
       e.preventDefault();
