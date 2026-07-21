@@ -1724,11 +1724,10 @@ function openSched(name) {
     save(K.sched, sched);
     const dd = parseYmd(d);
     cursor = { y: dd.getFullYear(), m: dd.getMonth() };
-    selDate = d;
+    selDate = d;                 // 次にカレンダーを開いたとき、この日が選択された状態で表示される
     close();
-    renderProps();               // 物件カードから消す
-    go("cal");
-    toast("予定を入れました", `${name}／${fmtDate(d)}`);
+    renderProps();               // 物件カードから消す（この画面にとどまる）
+    toast("予定を入れました", `${name}／${fmtDate(d)}（物件カードが消えました）`);
   };
 }
 
