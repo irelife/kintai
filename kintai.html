@@ -909,6 +909,9 @@ main{padding:1.5rem 0 4rem;}
           </span>
         </div>
         <div><button class="btn btn-default" id="cfg-save">保存する</button></div>
+        <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
+          🔄 GAS Webhook URL を設定すると、物件・予定・清掃記録・項目リストが他の端末とも自動で同期されます（写真はfileIdのみ・軽量／変更のたび自動同期し、起動時にも取り込みます）。専用の設定は不要です。
+        </span>
       </div>
       <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border-soft)">
         <h2 style="margin:0 0 .25rem;font-size:16px;font-weight:600">バックアップ</h2>
@@ -1075,7 +1078,12 @@ function storagePct() {
   } catch (e) { return 0; }
 }
 function save(k, v) {
-  try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+  try {
+    if (!_cleanApplyingRemote) stampCleanChanges(k, v);   // 差分をメタに記録（対象キーのみ）
+    localStorage.setItem(k, JSON.stringify(v));
+    if (!_cleanApplyingRemote && isCleanKey(k)) { saveCleanMeta(); cleanPushDebounced(); }
+    return true;
+  }
   catch (e) {
     toast("保存できませんでした", "端末の空き容量が不足しています。古い写真を消してください。");
     return false;
@@ -1089,6 +1097,12 @@ let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ...
 let cfg = Object.assign({ mail: "", gas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
 let choli = load(K.choli, {});         // 会社休日 { "YYYY-MM-DD": {name, _t} または削除マーカー {__del, _t} }
+// 清掃クラウド同期：URLは既存の cfg.gas（GAS Webhook URL）を流用。専用欄は作らない。
+// メタはキー単位のタイムスタンプ／削除墓標。
+const CLEAN_META_KEY = "clean_meta_v1";
+let cleanMeta = load(CLEAN_META_KEY, null) || { sched: {}, props: {}, itemlists: {} };
+cleanMeta.sched = cleanMeta.sched || {}; cleanMeta.props = cleanMeta.props || {}; cleanMeta.itemlists = cleanMeta.itemlists || {};
+let _cleanApplyingRemote = false;   // pull適用中は save() の再スタンプ／再pushを止める
 // 旧形式（値が文字列）を新形式 {name,_t} に自動変換（後方互換）
 (function _migrateCholi() {
   let changed = false;
@@ -1327,6 +1341,151 @@ function reportSrc(id) {
   if (!id) return PH_IMG;
   if (id.startsWith("data:")) return id;
   return _imgCache[id] || PH_IMG;
+}
+
+/* ===== 清掃データのクラウド同期（勤怠と同じ思想／写真はfileIdのみ） =====
+   ・push＝送信専用（ローカルを上書きしない）
+   ・pull＝キー単位マージ（新しい操作が勝つ／削除も伝播）
+   ・空ガード＝クラウドが空ならローカルを潰さない */
+function isCleanKey(k) { return (k === K.reps || k === K.props || k === K.sched || k === K.itemlists); }
+function saveCleanMeta() { try { localStorage.setItem(CLEAN_META_KEY, JSON.stringify(cleanMeta)); } catch (e) {} }
+
+// props(配列)は name をキーにした辞書へ。sched/itemlists は既に辞書。
+function _cleanSectionOf(k) {
+  if (k === K.sched) return "sched";
+  if (k === K.props) return "props";
+  if (k === K.itemlists) return "itemlists";
+  return null;
+}
+function _asKeyed(section, val) {
+  if (section === "props") {
+    const o = {}; (Array.isArray(val) ? val : []).forEach((p) => { if (p && p.name) o[p.name] = p; }); return o;
+  }
+  return val || {};
+}
+// 保存の直前に、直前値との差分でメタを更新（変更→{t}、消滅→{del}）
+function stampCleanChanges(k, newVal) {
+  const section = _cleanSectionOf(k);
+  if (!section) return;
+  const prev = jparse(localStorage.getItem(k), null);
+  const oldMap = _asKeyed(section, prev);
+  const newMap = _asKeyed(section, newVal);
+  const meta = cleanMeta[section] = cleanMeta[section] || {};
+  const now = Date.now();
+  const keys = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
+  keys.forEach((key) => {
+    const inOld = Object.prototype.hasOwnProperty.call(oldMap, key);
+    const inNew = Object.prototype.hasOwnProperty.call(newMap, key);
+    if (inNew && (!inOld || JSON.stringify(oldMap[key]) !== JSON.stringify(newMap[key]))) meta[key] = { t: now };
+    else if (inOld && !inNew) meta[key] = { del: now };
+  });
+}
+
+// 送信用に reps を軽量化（base64=data: と 未完=temp_ を除去 → fileIdと文字だけ）
+function repsForSync(src) {
+  const clean = (arr) => Array.isArray(arr) ? arr.filter((s) => typeof s === "string" && !s.startsWith("data:") && !s.startsWith("temp_")) : arr;
+  const out = {};
+  Object.keys(src || {}).forEach((id) => {
+    const r = src[id]; if (!r) return;
+    const c = JSON.parse(JSON.stringify(r));
+    if (c.items) Object.values(c.items).forEach((it) => { if (it) { it.photos = clean(it.photos); it.before = clean(it.before); it.after = clean(it.after); } });
+    if (c.inbox) c.inbox = clean(c.inbox);
+    (c.todos || []).forEach((t) => { if (t) { t.before = clean(t.before); t.after = clean(t.after); } });
+    out[id] = c;
+  });
+  return out;
+}
+
+let _cleanPushTimer = null;
+function cleanPushDebounced() {
+  if (!cfg.gas) return;                  // GAS Webhook URL 未設定なら何もしない
+  clearTimeout(_cleanPushTimer);
+  _cleanPushTimer = setTimeout(cleanPush, 1500);
+}
+async function cleanPush() {
+  if (!cfg.gas) return;
+  try {
+    await postToGas(cfg.gas, { action: "saveClean", payload: {
+      props, sched, itemlists, reps: repsForSync(reps), meta: cleanMeta, mtime: Date.now()
+    } });
+  } catch (e) { /* 失敗はローカル維持（次回変更で再送） */ }
+}
+
+// メタの新旧比較（del も t も同じ時間軸で比較。新しい操作が勝つ）
+function _metaTime(m) { if (!m) return -1; return Number(m.del || m.t) || 0; }
+// セクション（辞書）をキー単位でマージ。戻り値 {map, meta}
+function mergeSectionByMeta(cloudMap, localMap, cloudMeta, localMeta) {
+  cloudMap = cloudMap || {}; localMap = localMap || {}; cloudMeta = cloudMeta || {}; localMeta = localMeta || {};
+  const outMap = {}, outMeta = {};
+  const keys = new Set([...Object.keys(cloudMap), ...Object.keys(localMap), ...Object.keys(cloudMeta), ...Object.keys(localMeta)]);
+  keys.forEach((key) => {
+    const cm = cloudMeta[key], lm = localMeta[key];
+    const localWins = _metaTime(lm) >= _metaTime(cm);   // 同点はローカル優先
+    const wMeta = localWins ? (lm || cm) : (cm || lm);
+    if (wMeta) outMeta[key] = wMeta;
+    if (wMeta && wMeta.del) return;                       // 削除が勝ち → 値は入れない（墓標だけ残す）
+    const val = localWins
+      ? (localMap[key] !== undefined ? localMap[key] : cloudMap[key])
+      : (cloudMap[key] !== undefined ? cloudMap[key] : localMap[key]);
+    if (val !== undefined) outMap[key] = val;
+  });
+  return { map: outMap, meta: outMeta };
+}
+// reps は name|date 単位、各レコードの ts が新しい方（同点はローカル優先＝base64温存）
+function mergeRepsCloud(cloud, local) {
+  cloud = cloud || {}; local = local || {};
+  const out = {}; const keys = new Set([...Object.keys(cloud), ...Object.keys(local)]);
+  keys.forEach((k) => {
+    const a = cloud[k], b = local[k];
+    if (a && !b) out[k] = a;
+    else if (!a && b) out[k] = b;
+    else out[k] = ((Number(b && b.ts) || 0) >= (Number(a && a.ts) || 0)) ? b : a;
+  });
+  return out;
+}
+
+async function cleanPull(silent) {
+  if (!cfg.gas) { if (!silent) toast("GAS Webhook URLが未設定です", "LINE設定で登録してください"); return; }
+  let data;
+  try { data = await postToGas(cfg.gas, { action: "loadClean" }, 30000); }
+  catch (e) { if (!silent) toast("同期できませんでした", "通信状況とURLを確認してください"); return; }
+  if (!data || !data.ok) { if (!silent) toast("同期できませんでした", (data && data.error) || "応答が不正です"); return; }
+  const pl = data.payload;
+
+  // 空ガード：クラウドが空（reps・props・sched すべて空）なのにローカルに何かある → 取り込まない
+  const cloudEmpty = !pl ||
+    ((!pl.reps || !Object.keys(pl.reps).length) &&
+     (!pl.props || !pl.props.length) &&
+     (!pl.sched || !Object.keys(pl.sched).length));
+  const localHasData = Object.keys(reps || {}).length > 0 || (props && props.length > 0) || Object.keys(sched || {}).length > 0;
+  if (cloudEmpty) {
+    if (!silent) toast(localHasData ? "取り込みをスキップ" : "クラウドは空です",
+      localHasData ? "クラウドが空のためローカルを保護しました" : "この端末が最初の同期元になります");
+    return;
+  }
+
+  const cloudMeta = pl.meta || {};
+  // reps
+  reps = mergeRepsCloud(pl.reps, reps);
+  // sched / props / itemlists（キー単位・メタ駆動）
+  const ms = mergeSectionByMeta(pl.sched, sched, cloudMeta.sched, cleanMeta.sched);
+  sched = ms.map; cleanMeta.sched = ms.meta;
+  const mp = mergeSectionByMeta(_asKeyed("props", pl.props), _asKeyed("props", props), cloudMeta.props, cleanMeta.props);
+  props = Object.values(mp.map); cleanMeta.props = mp.meta;
+  const mi = mergeSectionByMeta(pl.itemlists, itemlists, cloudMeta.itemlists, cleanMeta.itemlists);
+  itemlists = mi.map; cleanMeta.itemlists = mi.meta;
+
+  // 永続化（pull適用中フラグで save() の再スタンプ・再pushを止める）
+  _cleanApplyingRemote = true;
+  save(K.reps, reps); save(K.sched, sched); save(K.props, props); save(K.itemlists, itemlists);
+  saveCleanMeta();
+  _cleanApplyingRemote = false;
+
+  // 画面更新
+  if (typeof renderCal === "function") renderCal();
+  if (typeof renderProps === "function" && tab === "prop") renderProps();
+  if (openRep) renderModal();
+  if (!silent) toast("同期しました", "最新の清掃データを取り込みました");
 }
 
 /* ===== まとめて写真 → 各清掃箇所へ振り分け ===== */
@@ -3723,6 +3882,8 @@ function boot() {
     save(K.cfg, cfg);
     toast("設定を保存しました", `定時 ${cfg.start}${cfg.mail ? `／${cfg.mail}` : ""}`);
     renderSide();
+    // GAS Webhook URL があれば、清掃同期もこのURLで開始（取り込み→この端末の内容を送信＝初回はクラウド作成）
+    if (cfg.gas) { cleanPull(true).then(() => cleanPush()); }
   };
   document.getElementById("cfg-import").onclick = openImport;
   document.getElementById("cfg-backup").onclick = doBackup;
@@ -3733,6 +3894,8 @@ function boot() {
   go("cal");
   // 起動時：勤怠同期URLが設定済みなら最新を取り込む
   if (cfg.ktGas) { ktPull(true); }
+  // 起動時：GAS Webhook URL があれば清掃データも最新を取り込む（空ガードで潰さない）
+  if (cfg.gas) { cleanPull(true); }
 }
 document.addEventListener("DOMContentLoaded", boot);
 </script>
