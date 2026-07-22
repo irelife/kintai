@@ -171,6 +171,9 @@ main{padding:1.5rem 0 4rem;}
 .pill-nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
 .pill-why{display:block;font-weight:700;font-size:9px;opacity:.95;margin-top:1px;}
 .pill.hard{box-shadow:inset 0 0 0 1px #b91c1c;font-weight:700;}
+.cal-legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.7rem;padding-top:.6rem;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+.cal-legend .cll{display:inline-flex;align-items:center;gap:.35rem;font-weight:600;}
+.cal-legend .cll-dot{width:13px;height:13px;border-radius:4px;border:2px solid;display:inline-block;box-sizing:border-box;}
 .pill.hard .pill-why{opacity:1;}
 .pill-more{padding-left:.25rem;font-size:10px;color:var(--muted-2);}
 /* 混雑日：件数バッジ */
@@ -184,22 +187,6 @@ main{padding:1.5rem 0 4rem;}
 .daycount-bands{display:inline-flex;gap:2px;}
 .cityband{width:.55rem;height:.55rem;border-radius:2px;border:1px solid;display:inline-block;}
 
-/* 件数バッジのホバー物件一覧ツールチップ */
-.daycount{position:relative;cursor:pointer;}
-.cal-tip{position:absolute;left:0;top:calc(100% + 6px);z-index:60;min-width:180px;max-width:240px;
-  background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgb(15 23 42 / .18);
-  padding:.5rem .6rem;display:none;flex-direction:column;gap:.25rem;text-align:left;white-space:normal;
-  cursor:default;}
-.daycount:hover .cal-tip,.daycount:focus .cal-tip,.daycount:focus-within .cal-tip{display:flex;}
-.cal-tip-h{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:.15rem;}
-.cal-tip-row{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;font-size:12px;}
-.cal-tip-nm{font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-flex;align-items:center;gap:.35rem;}
-.cal-tip-dot{flex:none;width:.55rem;height:.55rem;border-radius:2px;border:1px solid;display:inline-block;}
-.cal-tip-st{flex:none;font-size:11px;color:var(--muted);}
-.cal-tip-st.done{color:var(--em-700,#047857);}
-/* ツールチップが親セルの overflow:hidden で切れないよう、ホバー中のセルだけ解除して前面に */
-.cell:hover,.cell:focus-within{overflow:visible;z-index:50;}
-
 /* 右パネル */
 .side-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.75rem;}
 .side-h h3{margin:0;font-size:14px;font-weight:600;}
@@ -207,13 +194,8 @@ main{padding:1.5rem 0 4rem;}
 .side-list{display:flex;flex-direction:column;gap:.75rem;}
 .pcard{padding:1rem;cursor:pointer;transition:box-shadow .15s;}
 .pcard:hover{box-shadow:var(--sh-md);}
-.pcard-h{display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.25rem;}
-.pcard-n{font-weight:600;line-height:1.35;flex:1;min-width:0;}
-.pcard-x{flex:0 0 auto;width:1.75rem;height:1.75rem;display:inline-flex;align-items:center;justify-content:center;
-  border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--muted);cursor:pointer;
-  padding:0;line-height:0;transition:background-color .15s,color .15s,border-color .15s;
-  -webkit-tap-highlight-color:rgba(0,0,0,.08);}
-.pcard-x:hover{background:var(--rose-50,#fef2f2);color:var(--rose-600,#e11d48);border-color:var(--rose-200,#fecdd3);}
+.pcard-h{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.25rem;}
+.pcard-n{font-weight:600;line-height:1.35;}
 .pcard-a{margin-bottom:.625rem;font-size:12px;color:var(--muted);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pcard-m{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem;}
@@ -285,7 +267,81 @@ main{padding:1.5rem 0 4rem;}
 /* 点検項目 */
 .items{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
 /* 新：清掃項目カード（大きな項目名・その場に写真・×削除） */
+/* まとめて写真 → 振り分け（未振り分けプール） */
+.inbox-wrap{border:1.5px dashed var(--teal-300,#5eead4);background:var(--teal-50,#f0fdfa);border-radius:12px;padding:.8rem .9rem;margin-bottom:1rem;}
+/* 大きなドロップ枠（西澤くん向け：迷わず写真を入れられる主役の枠） */
+.dropbox{border:2.5px dashed var(--teal-400,#2dd4bf);background:var(--teal-50,#f0fdfa);border-radius:16px;
+  min-height:300px;display:flex;align-items:center;justify-content:center;text-align:center;
+  cursor:pointer;padding:2rem 1rem;transition:background-color .15s,border-color .15s,box-shadow .15s;}
+.dropbox:hover{background:var(--teal-100,#ccfbf1);border-color:var(--teal-500,#14b8a6);}
+.dropbox.dragover{background:var(--teal-100,#ccfbf1);border-color:var(--teal-700,#0f766e);
+  box-shadow:0 0 0 4px var(--teal-100,#ccfbf1);}
+.dropbox-inner{display:flex;flex-direction:column;align-items:center;gap:.5rem;pointer-events:none;}
+.dropbox-ico{color:var(--teal-600,#0d9488);line-height:0;}
+.dropbox-big{font-size:18px;font-weight:800;color:var(--teal-800,#115e59);line-height:1.4;}
+.dropbox-sub{font-size:13px;color:var(--teal-700,#0f766e);}
+.dropbox-btn{pointer-events:auto;margin-top:.5rem;font-size:16px;font-weight:800;padding:.75rem 1.4rem;}
+.inbox-h{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem;}
+.inbox-t{font-size:13px;font-weight:700;color:var(--teal-800,#115e59);display:inline-flex;align-items:center;gap:.35rem;}
+.inbox-strip{display:flex;gap:.6rem;overflow-x:auto;padding:.7rem .2rem .3rem;flex-wrap:wrap;}
+.inbox-shot{position:relative;flex:0 0 auto;width:110px;height:110px;border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid var(--teal-300,#5eead4);transition:border-color .12s,transform .1s;}
+.inbox-shot:hover{border-color:var(--teal-600,#0d9488);transform:translateY(-1px);}
+.inbox-shot img{width:100%;height:100%;object-fit:cover;display:block;}
+.inbox-tag{position:absolute;left:0;right:0;bottom:0;background:rgba(15,118,110,.88);color:#fff;font-size:10px;font-weight:800;text-align:center;padding:3px 0;}
+.inbox-del{position:absolute;top:3px;right:3px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.inbox-hint{font-size:13px;color:var(--teal-800,#115e59);margin-top:.6rem;font-weight:800;display:inline-flex;align-items:center;gap:.35rem;background:var(--am-50,#fffbeb);border:1px solid var(--am-200,#fde68a);border-radius:8px;padding:.5rem .7rem;}
+.inbox-empty{font-size:12px;color:var(--muted-2);padding:.3rem 0;}
+/* 振り分け先の選択オーバーレイ */
+.assign{background:#fff;border-radius:18px;width:min(94vw,460px);max-height:88vh;overflow:auto;padding:1.1rem;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.assign-h{display:flex;align-items:center;justify-content:space-between;font-size:16px;font-weight:700;margin-bottom:.8rem;}
+.assign-h .x{border:none;background:var(--bg,#f1f5f9);width:2rem;height:2rem;border-radius:50%;cursor:pointer;color:var(--muted);}
+.assign-preview{width:100%;height:170px;border-radius:12px;overflow:hidden;margin-bottom:.9rem;background:#f1f5f9;}
+.assign-preview img{width:100%;height:100%;object-fit:contain;}
+.assign-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem;}
+.assign-item{display:flex;align-items:center;justify-content:space-between;gap:.4rem;padding:.7rem .8rem;border:1px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:var(--fg);text-align:left;transition:background-color .12s,border-color .12s;}
+.assign-item:hover{background:var(--teal-50,#f0fdfa);border-color:var(--teal-400,#2dd4bf);}
+.assign-item .ai-c{font-size:11px;color:var(--teal-700,#0f766e);font-weight:800;flex:none;}
+.assign-remain{margin-left:.5rem;display:inline-block;font-size:12px;font-weight:800;color:var(--am-700,#b45309);background:var(--am-50,#fffbeb);border:1px solid var(--am-200,#fde68a);border-radius:999px;padding:.15rem .55rem;vertical-align:middle;}
+.assign-empty{text-align:center;padding:1.4rem 1rem;font-size:14px;font-weight:600;color:var(--em-700,#047857);line-height:1.7;}
+.assign-empty svg{vertical-align:-3px;margin-right:.3rem;}
 .itemcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.7rem;align-items:start;}
+/* 容量メーター */
+.stmeter{margin-top:.6rem;display:flex;flex-direction:column;gap:.25rem;}
+.stmeter-bar{height:7px;border-radius:99px;background:var(--em-100,#d1fae5);overflow:hidden;}
+.stmeter-fill{height:100%;background:var(--em-500,#10b981);transition:width .3s;}
+.stmeter-t{font-size:11px;color:var(--muted-2);font-weight:600;}
+.stmeter.warn .stmeter-bar{background:#fee2e2;}
+.stmeter.warn .stmeter-fill{background:#dc2626;}
+.stmeter.warn .stmeter-t{color:#dc2626;}
+/* 完了フォルダ（折りたたみ） */
+.donefolder-h{width:100%;display:flex;align-items:center;gap:.6rem;padding:.8rem 1rem;
+  border:1px solid var(--em-200,#a7f3d0);background:var(--em-50,#ecfdf5);border-radius:10px;
+  cursor:pointer;font-family:inherit;font-size:16px;font-weight:800;color:var(--em-700,#047857);
+  transition:background-color .15s;}
+.donefolder-h:hover{background:var(--em-100,#d1fae5);}
+.donefolder-h .df-ico{line-height:0;color:var(--em-600,#059669);}
+.donefolder-h .df-l{flex:1;text-align:left;}
+.donefolder-h .df-chev{line-height:0;transition:transform .18s;}
+.donefolder-h .df-chev.open{transform:rotate(180deg);}
+.donefolder-body{margin-top:.7rem;}
+/* 残留カード（写真をまだ入れていない箇所：未登録を強調） */
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;align-items:start;}
+.pcard{position:relative;border:2px solid var(--am-300,#fcd34d);border-radius:.7rem;
+  background:var(--am-50,#fffbeb);padding:1.2rem .8rem .8rem;display:flex;flex-direction:column;gap:.55rem;
+  transition:border-color .15s,background-color .15s;box-shadow:0 1px 3px rgba(180,120,0,.08);}
+.pcard.dragover{border-color:var(--teal-700);background:var(--teal-50);box-shadow:0 0 0 3px var(--teal-100);}
+.pcard-badge{position:absolute;top:-10px;left:12px;display:inline-flex;align-items:center;gap:.25rem;
+  background:var(--am-500,#f59e0b);color:#fff;font-size:11px;font-weight:800;line-height:1;
+  padding:.32rem .55rem;border-radius:999px;box-shadow:0 2px 5px rgba(180,120,0,.3);}
+.pcard-h{display:flex;align-items:center;gap:.4rem;}
+.pcard-l{flex:1;font-size:17px;font-weight:700;color:var(--am-900,#78350f);line-height:1.3;}
+.pcard-msg{font-size:12px;font-weight:600;color:var(--am-700,#b45309);}
+.pcard-ng{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  border:1.5px solid var(--am-400,#fbbf24);background:#fff;color:var(--am-700);
+  font-size:15px;font-weight:800;padding:.7rem .8rem;border-radius:.55rem;cursor:pointer;
+  transition:background-color .15s,color .15s,border-color .15s;}
+.pcard-ng:hover{background:var(--am-500);color:#fff;border-color:var(--am-500);}
+.pending-label{display:inline-flex;align-items:center;gap:.4rem;color:var(--am-700,#b45309)!important;font-weight:800!important;}
 /* 要対応中のカードは中身が縦に伸びるので全幅に */
 .itemcard.isng{grid-column:1/-1;}
 .itemcard{border:1px solid var(--border);border-radius:.625rem;background:#fff;padding:.7rem .8rem;
@@ -323,6 +379,9 @@ main{padding:1.5rem 0 4rem;}
 .ng-sent{margin-top:.4rem;font-size:11px;color:var(--em-700);display:inline-flex;align-items:center;gap:.25rem;}
 .ng-allhint{margin-top:.35rem;font-size:11px;color:var(--ink-500,#667085);}
 .itemcard-shots{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem;}
+.itemcard-hint{font-size:12px;font-weight:600;margin-top:.35rem;line-height:1.45;opacity:.95;}
+.itemcard-shot-h{display:flex;justify-content:flex-end;margin-top:.5rem;}
+.itemcard-cnt{font-size:11px;font-weight:800;color:var(--muted-2);}
 .ishot{position:relative;width:5rem;height:5rem;border-radius:.5rem;overflow:hidden;
   border:1px solid var(--border);background:var(--border-soft);}
 .ishot img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -647,64 +706,13 @@ main{padding:1.5rem 0 4rem;}
 .ktday-btns .b-off.on{background:var(--rose-600,#e11d48);color:#fff;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
-
-/* ===== スマホ幅(≤480px)：見切れ対策 ===== */
-@media(max-width:480px){
-  /* 画面外への横あふれを全体で禁止 */
-  html,body{overflow-x:hidden;}
-  .wrap{padding:0 1rem;}
-
-  /* 年間休日などの統計カード：数字が大きすぎて列からはみ出るのを抑える */
-  .kt-prog{padding:1.2rem 1rem;}
-  .kt-prog-grid{gap:.5rem;}
-  .kp{padding:.9rem .35rem;min-width:0;}
-  .kp-n{font-size:34px;letter-spacing:-1.5px;max-width:100%;overflow:hidden;}
-  .kp-n small{font-size:14px;}
-  .kp-emoji{font-size:22px;}
-  .kp-l{font-size:11px;}
-
-  /* 出勤欠勤簿の行：名前＋状態＋ボタンが1行に収まらないので折り返す */
-  .kt-row{flex-wrap:wrap;gap:.5rem .75rem;padding:.9rem 1rem;}
-  .kt-nm{min-width:0;flex:0 0 auto;}
-  .kt-st{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .kt-b{flex:1 1 100%;gap:.5rem;}
-  .kt-b .btn-kt{flex:1;padding:0 .5rem;font-size:17px;height:3rem;min-width:0;}
-
-  /* 個人別サマリーの大きな数字も収める */
-  .psum-num{font-size:38px;}
-  .kt-prog-msg{font-size:15px;}
-  .kt-prog-msg b{font-size:18px;}
-
-  /* ---- 清掃側 ---- */
-  /* 清掃カレンダーのセルを詰める（縦の間延び防止） */
-  .cell{min-height:4.5rem;padding:.35rem;}
-  .cell-d{height:1.35rem;min-width:1.35rem;font-size:11px;}
-  .pill{padding:.1rem .3rem;font-size:10px;}
-  /* 清掃記録モーダルの項目カード：狭い画面は1〜2列に */
-  .itemcards{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem;}
-  /* 3分割セグメントボタンの文字が詰まらないように */
-  .seg button{font-size:13px;padding:0 .25rem;}
-
-  /* ---- 勤怠カレンダー：7列を画面内に収める（横スクロール不要） ---- */
-  .kt-cal{gap:3px;}
-  .kt-cal .kc-dow{font-size:11px;padding:.25rem 0;}
-  .kt-cal .kc-cell{min-height:64px;padding:.25rem;border-radius:8px;gap:.15rem;}
-  .kt-cal .kc-d{font-size:12px;}
-  .kt-cal .kc-off-lbl{font-size:8px;line-height:1.1;}
-  .kt-cal .kc-marks{gap:2px;}
-  /* マーク（名前＋時刻）を縦積みにして狭い列でも折り返さない */
-  .kt-cal .kc-mk{flex-wrap:wrap;font-size:9px;padding:2px 3px;gap:0 2px;border-radius:4px;line-height:1.2;}
-  .kt-cal .kc-mk .kc-nm{flex:1 1 100%;font-size:9px;}
-  .kt-cal .kc-mk .kc-tm{margin-left:0;font-size:10px;}
-  .kt-cal .kc-mkx{margin-left:auto;width:14px;height:14px;font-size:11px;}
-}
 </style>
 </head>
 <body>
 
 <header class="hd">
   <div class="wrap hd-in">
-    <div class="hd-brand" id="hd-brand" title="タップで再読み込み" style="cursor:pointer">
+    <div class="hd-brand">
       <span class="hd-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/></svg></span>
       <span>
         <span class="hd-t1" id="hd-t1" style="display:block">清掃管理</span>
@@ -762,6 +770,11 @@ main{padding:1.5rem 0 4rem;}
           <div class="sun">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="sat">土</div>
         </div>
         <div class="cal-g" id="cal-grid"></div>
+        <div class="cal-legend">
+          <span class="cll"><i class="cll-dot" style="background:#fef3c7;border-color:#d97706"></i>要対応（未解決）</span>
+          <span class="cll"><i class="cll-dot" style="background:#fef2f2;border-color:#dc2626"></i>期限切れ</span>
+          <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>完了</span>
+        </div>
       </div>
 
       <div>
@@ -895,13 +908,6 @@ main{padding:1.5rem 0 4rem;}
             未設定のときは、送信ボタンで印刷ダイアログが開きます。そこからPDFとして保存できます。
           </span>
         </div>
-        <div class="field"><label>清掃 同期URL（スマホとPCで共有）</label>
-          <input class="input" id="cfg-cmgas" placeholder="https://script.google.com/macros/s/.../exec">
-          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
-            清掃専用の同期サーバー（勤怠とは別のGAS）のURLです。設定すると、物件・予定・清掃記録がこの端末と他の端末で共有されます。※写真は未対応（テキスト・状態のみ）。
-          </span>
-          <div style="margin-top:.5rem"><button class="btn btn-default" id="cfg-cmsync" style="font-size:14px">🔄 清掃を今すぐ同期</button></div>
-        </div>
         <div><button class="btn btn-default" id="cfg-save">保存する</button></div>
       </div>
       <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border-soft)">
@@ -928,6 +934,7 @@ main{padding:1.5rem 0 4rem;}
 </main>
 
 <div id="modal-host"></div>
+<div id="assign-host"></div>
 <div class="toast hide" id="toast" role="status" aria-live="polite"></div>
 
 <script>const SEED_PROPS=[{"name":"アイディール","addr":"広島県福山市今津町６丁目18-17","mno":"0019"},{"name":"アシンプトート","addr":"広島県福山市明神町２丁目８-２６","mno":"0041"},{"name":"アプリシティ","addr":"広島県福山市曙町６丁目２-28","mno":"0007"},{"name":"アミティー山崎","addr":"岡山県岡山市中区山崎14-1","mno":"0212"},{"name":"アメリア","addr":"広島県福山市駅家町大字倉光１１０-１","mno":"0015"},{"name":"アルカディア","addr":"広島県福山市大門町３丁目２７-６","mno":"0026"},{"name":"アルカンシェル","addr":"広島県福山市大門町５丁目２０－１０","mno":"0037"},{"name":"アルスアイパワー","addr":"岡山県倉敷市宮前352-1","mno":"0217"},{"name":"アルデバラン","addr":"広島県福山市曙町３丁目24-10-1","mno":"0117"},{"name":"アルトゥーラ","addr":"岡山県倉敷市平田47-3","mno":"0183"},{"name":"アルファステイツ福山駅前Ⅱ","addr":"広島県福山市三之丸町4-8","mno":"0114"},{"name":"アルヴィータ","addr":"広島県福山市神辺町字道上2983-1","mno":"0039"},{"name":"アロモント","addr":"広島県福山市南今津町９７","mno":"0055"},{"name":"アンブルネージュ","addr":"岡山県倉敷市安江588-5","mno":"0206"},{"name":"ウィステリア","addr":"岡山県岡山市南区西市505-8","mno":"0144"},{"name":"エクラス","addr":"岡山県岡山市中区平井１丁目16-38","mno":"0150"},{"name":"S place bld.","addr":"岡山県総社市駅前１丁目3-43","mno":"0119"},{"name":"エスリードホウセン","addr":"岡山県岡山市南区芳泉２丁目7-12","mno":"0151"},{"name":"エルキュール","addr":"広島県福山市東手城町３丁目２９-３０","mno":"0043"},{"name":"オルカアネックス","addr":"岡山県岡山市中区雄町456-3","mno":"0148"},{"name":"オルタナ","addr":"岡山県岡山市北区奥田南町4-8","mno":"0152"},{"name":"オンワード","addr":"岡山県岡山市北区奥田西町3-15","mno":"0146"},{"name":"KASUGAエコパティオ","addr":"広島県福山市春日町浦上1948-5","mno":"0087"},{"name":"カルムコート","addr":"広島県福山市草戸町５丁目６-１０-２","mno":"0017"},{"name":"カルムプロムナード","addr":"岡山県岡山市北区辛川市場655-1","mno":"0201"},{"name":"カーサアンフルール","addr":"岡山県岡山市北区高松原古才609-1","mno":"0158"},{"name":"カーサグランデ学南町","addr":"岡山県岡山市北区学南町１丁目1-11","mno":"0153"},{"name":"ガーデンヒルズ","addr":"広島県福山市大門町２丁目１８−３","mno":"0033"},{"name":"ガーデンヒルズ東手城","addr":"広島県福山市東手城町１丁目３４−１７−５","mno":"0034"},{"name":"キッキーエーカー","addr":"岡山県倉敷市北畝３丁目5-4","mno":"0194"},{"name":"キャシュリーココ","addr":"岡山県倉敷市片島町113","mno":"0210"},{"name":"クラリス","addr":"広島県福山市草戸町４丁目２７-１１","mno":"0016"},{"name":"クレアコート","addr":"岡山県岡山市南区青江６丁目6-32","mno":"0173"},{"name":"クレアール","addr":"岡山県岡山市南区千鳥町13-8","mno":"0193"},{"name":"クレスト","addr":"岡山県岡山市東区宍甘61-1","mno":"0137"},{"name":"クロスロードツー","addr":"岡山県岡山市東区宍甘159-2","mno":"0202"},{"name":"グランエール","addr":"広島県福山市大門町４丁目２３−１４","mno":"0049"},{"name":"グランフルール庭瀬","addr":"岡山県岡山市北区庭瀬130-1","mno":"0191"},{"name":"グロリオサ","addr":"広島県福山市東町３丁目４-２９","mno":"0001"},{"name":"ココライズ","addr":"岡山県倉敷市福田町古新田916-4","mno":"0185"},{"name":"サブライム","addr":"岡山県総社市総社862-5","mno":"0186"},{"name":"サンサリーレ富原","addr":"岡山県岡山市北区富原720-1","mno":"0218"},{"name":"サントーシャ","addr":"広島県福山市千田町２丁目48-15","mno":"0008"},{"name":"シエスタ","addr":"岡山県岡山市中区四御神85-6","mno":"0149"},{"name":"シティハイツみどり","addr":"広島県福山市手城町３丁目7-13","mno":"0113"},{"name":"シャトー秋桜","addr":"岡山県倉敷市生坂133-1","mno":"0197"},{"name":"シャンティ","addr":"広島県福山市伊勢丘４丁目４−１０","mno":"0009"},{"name":"シャンティーコア","addr":"岡山県倉敷市連島中央４丁目13-4","mno":"0214"},{"name":"シルヴィア","addr":"岡山県岡山市南区新福２丁目5-24","mno":"0159"},{"name":"シンティランテ","addr":"広島県福山市瀬戸町大字長和１０６６ー7","mno":"0014"},{"name":"ジャロウ","addr":"岡山県総社市駅南１丁目8-47","mno":"0188"},{"name":"スカイヴィスタ","addr":"岡山県岡山市中区四御神700-47","mno":"0163"},{"name":"スパーブコート","addr":"広島県福山市千田町３丁目５５-１９","mno":"0057"},{"name":"スピネルデュオ","addr":"広島県福山市千田町2丁目44-2","mno":"0092"},{"name":"スリジエ","addr":"岡山県倉敷市酒津2754","mno":"0190"},{"name":"スーマ","addr":"岡山県岡山市北区宿513-1","mno":"0154"},{"name":"セシリア","addr":"岡山県岡山市東区瀬戸町瀬戸234-2","mno":"0162"},{"name":"セレナーデ","addr":"岡山県岡山市東区西大寺中２丁目","mno":"0164"},{"name":"セントラルスティード","addr":"岡山県岡山市東区瀬戸町下433-2","mno":"0143"},{"name":"ソアヴィータ","addr":"広島県福山市瀬戸町大字長和２０６-１","mno":"0036"},{"name":"操南ハイツ","addr":"岡山県岡山市中区倉田488-2","mno":"0216"},{"name":"創和ハイツ","addr":"岡山県岡山市北区京町1-20","mno":"0213"},{"name":"ソルトグラス","addr":"広島県福山市千田町３丁目14-1","mno":"0046"},{"name":"ソレイユ","addr":"広島県福山市千田町大字千田3055","mno":"0024"},{"name":"タストフル","addr":"岡山県岡山市北区田益1325-1","mno":"0157"},{"name":"タリスヴィータ","addr":"岡山県倉敷市玉島乙島6850-2","mno":"0093"},{"name":"チュールベール","addr":"岡山県倉敷市連島町連島142-321","mno":"0195"},{"name":"ティアラ新倉敷","addr":"岡山県倉敷市玉島八島892-1","mno":"0199"},{"name":"テタンジェ","addr":"岡山県倉敷市玉島乙島7128-1","mno":"0078"},{"name":"テラストリア","addr":"広島県尾道市高須町4840-6","mno":"0120"},{"name":"ディアレスト","addr":"広島県福山市大門町４丁目5-1","mno":"0021"},{"name":"デルニエ","addr":"岡山県岡山市中区長岡513-1","mno":"0139"},{"name":"ドルセットセブン","addr":"広島県福山市大門町大門４９３−１","mno":"0050"},{"name":"ドルチェヴィータ","addr":"岡山県岡山市中区平井６丁目16-3","mno":"0140"},{"name":"ナチュラルプラン","addr":"岡山県倉敷市中畝４丁目10-18","mno":"0198"},{"name":"ナディア","addr":"岡山県倉敷市中畝７丁目7-15","mno":"0129"},{"name":"ナビータ","addr":"岡山県岡山市中区長岡554","mno":"0203"},{"name":"ナルサス","addr":"岡山県倉敷市中畝５丁目3-12","mno":"0184"},{"name":"ニューアーク","addr":"岡山県岡山市中区西川原148-16","mno":"0147"},{"name":"ネクサス","addr":"岡山県岡山市中区中井３丁目9-3","mno":"0142"},{"name":"ノブリス","addr":"広島県福山市奈良津町３丁目１２−4","mno":"0022"},{"name":"ハイクレア","addr":"岡山県倉敷市東塚５丁目11-23","mno":"0189"},{"name":"ハイサニー","addr":"広島県福山市水呑町3305-1","mno":"0090"},{"name":"ハイツ福居","addr":"岡山県岡山市北区津島福居１丁目5-8","mno":"0127"},{"name":"ハルモニア","addr":"広島県福山市引野町南１丁目１０-３-３","mno":"0020"},{"name":"ハーベスト","addr":"岡山県岡山市中区浜１丁目14-27","mno":"0141"},{"name":"ハーベストムーン","addr":"岡山県岡山市中区浜１丁目2-3","mno":"0165"},{"name":"パイクプレイス","addr":"岡山県岡山市中区浜２丁目6-15","mno":"0166"},{"name":"パシフィコ","addr":"岡山県岡山市中区土田198-3","mno":"0169"},{"name":"ヒラリアス","addr":"広島県福山市引野町４丁目12-10","mno":"0110"},{"name":"ヒーストン","addr":"岡山県倉敷市東塚３丁目","mno":"0192"},{"name":"ビラ芳翠","addr":"広島県福山市南松永町２丁目15-12-5","mno":"0135"},{"name":"フェリックス","addr":"広島県福山市引野町３丁目１９-１４","mno":"0002"},{"name":"プティメゾン","addr":"広島県福山市新涯町４丁目12-14","mno":"0069"},{"name":"ヘスティア","addr":"広島県福山市引野町２丁目13-7","mno":"0138"},{"name":"ヘリオス","addr":"岡山県岡山市中区平井７丁目27-5","mno":"0174"},{"name":"ベラカーササウス","addr":"岡山県倉敷市老松町３丁目6-39","mno":"0111"},{"name":"ベラカーサノース","addr":"岡山県倉敷市老松町３丁目7-20","mno":"0112"},{"name":"松永町AP3","addr":"広島県福山市松永町４丁目17-6","mno":"0222"},{"name":"マロウ","addr":"岡山県倉敷市宮前458-5","mno":"0196"},{"name":"マースフル","addr":"広島県福山市南蔵王町６丁目21-20","mno":"0134"},{"name":"マートル","addr":"広島県福山市松永町４丁目32-11","mno":"0176"},{"name":"マーベラス","addr":"広島県福山市南今津町２５","mno":"0003"},{"name":"ミステール","addr":"広島県福山市松永町487-1","mno":"0126"},{"name":"ミラヴィルタス","addr":"広島県福山市千田町３丁目１７-４","mno":"0005"},{"name":"ミルドレッド","addr":"広島県福山市南松永町２丁目15-3","mno":"0125"},{"name":"ミーティア","addr":"広島県福山市水呑町3443-1","mno":"0030"},{"name":"メゾンドリヴァージュ","addr":"広島県福山市南本庄５丁目５-２０","mno":"0010"},{"name":"メリッサ","addr":"広島県福山市南手城町１丁目8-18","mno":"0121"},{"name":"メルヴェイユ","addr":"広島県福山市南手城町２丁目27-10","mno":"0178"},{"name":"モノリス番長","addr":"岡山県岡山市北区番町２丁目13-3","mno":"0145"},{"name":"ラコリーヌ","addr":"広島県福山市伊勢丘５丁目6-28","mno":"0060"},{"name":"ラナンキュラス","addr":"広島県福山市大門町野々浜２２９−１","mno":"0047"},{"name":"ラピスラズリ","addr":"岡山県倉敷市稲荷町8-28","mno":"0211"},{"name":"リドレイ","addr":"岡山県岡山市北区辛川市場287","mno":"0208"},{"name":"リーフガーデン","addr":"岡山県岡山市北区西辛川482-1","mno":"0167"},{"name":"ルミエール静","addr":"広島県福山市沖野上町５丁目２５－７","mno":"0012"},{"name":"ルミナス","addr":"広島県福山市西新涯町２丁目１１−２４","mno":"0052"},{"name":"レッジェーロ","addr":"岡山県倉敷市林240-1","mno":"0204"},{"name":"レパント","addr":"岡山県岡山市東区宍甘198-4","mno":"0168"},{"name":"ローレルコート","addr":"広島県福山市曙町５丁目29-45-1","mno":"0182"},{"name":"ワイエスエヌスタイル","addr":"岡山県総社市真壁1179-3","mno":"0187"},{"name":"ヴァンヴェール","addr":"岡山県岡山市南区西市448","mno":"0156"},{"name":"ヴィラソレイル","addr":"岡山県倉敷市八王寺町263-27","mno":"0205"},{"name":"アルバ","addr":"広島県福山市曙町２丁目19-12-2","mno":"0073"},{"name":"アンティカベラカーサ","addr":"岡山県倉敷市老松町１丁目2-30","mno":"0067"},{"name":"エバーグリーン福山西町","addr":"広島県福山市西町１丁目3-30","mno":"0118"},{"name":"カルコーサ","addr":"広島県福山市神村町50-4","mno":"0123"},{"name":"ガーデンヒルズ長者町","addr":"広島県福山市長者町1-9","mno":"0099"},{"name":"シティハイツ暁の星","addr":"広島県福山市西深津町１丁目７ー８","mno":"0061"},{"name":"スピネル","addr":"広島県福山市千田町２丁目44-5","mno":"0079"},{"name":"セラータ","addr":"広島県福山市千田町２丁目31-2","mno":"0072"},{"name":"ソフィア","addr":"広島県福山市千田町３丁目４７-２","mno":"0058"},{"name":"タラッサ","addr":"岡山県倉敷市玉島乙島7172-11","mno":"0066"},{"name":"フレンディア常光","addr":"広島県福山市引野町２丁目19-7","mno":"0063"},{"name":"プレジール高橋","addr":"広島県福山市今津町６丁目2-34","mno":"0076"},{"name":"ベラカーサフェリーチェ","addr":"岡山県倉敷市老松町３丁目12-23","mno":"0068"},{"name":"ペルシュ城山","addr":"岡山県笠岡市笠岡2388番地58","mno":"0082"},{"name":"マジェステ","addr":"広島県福山市南松永町３丁目10-23","mno":"0080"},{"name":"マルヴィナ","addr":"広島県福山市南松永町３丁目9-17","mno":"0124"},{"name":"モデルノ","addr":"広島県福山市南手城町２丁目15-6","mno":"0071"},{"name":"ローレルコート霞町","addr":"広島県福山市霞町１丁目9-14","mno":"0084"}];
@@ -952,6 +959,9 @@ const IC = {
   check:'<path d="M20 6 9 17l-5-5"/>',
   file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
   user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  folder:'<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  "folder-open":'<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+  chevron:'<path d="m6 9 6 6 6-6"/>',
 };
 function ic(n, size = 16, cls = "") {
   return `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
@@ -972,11 +982,12 @@ const CITY_STYLE = {
   fukuyama: { dot: "#7c3aed", bg: "#f5f3ff", fg: "#7c3aed" },   // 福山＝紫
   kurashiki: { dot: "#1d4ed8", bg: "#eff6ff", fg: "#1d4ed8" },  // 倉敷＝青
   okayama: { dot: "#047857", bg: "#ecfdf5", fg: "#047857" },    // 岡山＝緑
-  other: { dot: "#a16207", bg: "#fffbeb", fg: "#a16207" },      // その他＝黄
+  other: { dot: "#0891b2", bg: "#ecfeff", fg: "#0e7490" },      // その他＝シアン（黄は要対応専用にしたため変更）
 };
-// 状態色（優先度：赤＞グレー＞地域色）
+// 状態色（優先度：赤＞黄＞グレー＞地域色）
 const STATUS_STYLE = {
   overdue: { dot: "#dc2626", bg: "#fef2f2", fg: "#dc2626" },    // 期限切れ＝赤
+  ng: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309" },         // 要対応（未解決・期限内）＝黄
   done: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },       // 完了＝グレー
 };
 // その物件・その日の「期限切れ」判定。理由文字列を返す（該当なしは null）
@@ -993,15 +1004,48 @@ function overdueReason(name, ds) {
   return null;
 }
 function isOverdue(name, ds) { return !!overdueReason(name, ds); }
-// カレンダー帯の色を決める（優先：赤＞グレー＞地域色）
+// 未解決の要対応があるか（期限切れは別枠＝赤で扱うので、ここは期限内の未解決）
+function hasOpenNg(name, ds) {
+  const items = getRep(name, ds).items || {};
+  return Object.values(items).some((c) => c && c.ng && !c.fixed);
+}
+// カレンダー帯の色を決める（優先：赤＞黄＞グレー＞地域色）
 function badgeStyle(name, ds) {
   if (isOverdue(name, ds)) return STATUS_STYLE.overdue;
+  if (hasOpenNg(name, ds)) return STATUS_STYLE.ng;
   if (getRep(name, ds).status === "done") return STATUS_STYLE.done;
   const p = props.find((x) => x.name === name) || {};
   return CITY_STYLE[cityOf(p.addr).key];
 }
 const cityOf = (addr) =>
   CITY_DEFS.find((d) => d.match && String(addr || "").includes(d.match)) || CITY_DEFS[3];
+
+/* ===== 清掃箇所のカテゴリ（色・写真枚数・案内文） =====
+   ①清掃系=薄紫 / ②異常確認系=緑 / ③破損確認系=オレンジ / ④庫系=青  */
+const ITEM_CATS = {
+  clean:  { key: "clean",  max: 3, hint: "清掃・草刈り後の写真を入れてください",
+            bd: "#c4b5fd", bg: "#f5f3ff", fg: "#6d28d9", badgeBg: "#8b5cf6" },        // 薄紫
+  check:  { key: "check",  max: 3, hint: "異常がなければ写真を入れるだけ。異常があれば「要対応にする」を押してください",
+            bd: "#6ee7b7", bg: "#ecfdf5", fg: "#047857", badgeBg: "#10b981" },        // 緑
+  damage: { key: "damage", max: 5, hint: "破損・異常がないか確認して写真を入れてください（最大5枚）",
+            bd: "#fcd34d", bg: "#fffbeb", fg: "#b45309", badgeBg: "#f59e0b" },        // オレンジ
+  box:    { key: "box",    max: 3, hint: "扉・中身の状態を写真に入れてください（最大3枚）",
+            bd: "#93c5fd", bg: "#eff6ff", fg: "#1d4ed8", badgeBg: "#3b82f6" },        // 青
+};
+// キー → カテゴリ。個別に案内文を上書きしたい箇所は hintOverride を使う。
+const ITEM_CAT_MAP = {
+  entrance: "clean", weed: "clean", common: "clean", corridor: "clean", elevator: "clean",
+  sign: "check", exterior: "check", bike: "check", parking: "check", illegalpark: "check",
+  masubuta: "damage", equip: "damage", abandoned: "damage",
+  delivery: "box", garbage: "box",
+};
+const ITEM_HINT_OVERRIDE = {
+  garbage: "ゴミ庫の【外観】と【中身】の両方を写真に入れてください（最大3枚）",
+  weed: "草刈り・剪定・除草後の写真を入れてください",
+};
+function catOf(key) { return ITEM_CATS[ITEM_CAT_MAP[key]] || ITEM_CATS.check; }
+function catMax(key) { return catOf(key).max; }
+function catHint(key) { return ITEM_HINT_OVERRIDE[key] || catOf(key).hint; }
 
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 const pad = (n) => String(n).padStart(2, "0");
@@ -1014,10 +1058,22 @@ const fmtDate = (s) => { const d = parseYmd(s); return `${d.getMonth() + 1}月${
 const K = {
   props: "cm_props_v1", sched: "cm_sched_v1", reps: "cm_reps_v1",
   kintai: "cm_kintai_v1", cfg: "cm_cfg_v1", itemlists: "cm_itemlists_v1",
-  choli: "cm_choli_v1", schedMeta: "cm_schedmeta_v1",
+  choli: "cm_choli_v1",
 };
 const jparse = (s, fb) => { try { const v = JSON.parse(s); return v == null ? fb : v; } catch (e) { return fb; } };
 function load(k, fb) { return jparse(localStorage.getItem(k), fb); }
+/* localStorageの使用量をざっくり推定（%）。上限は端末により差があるが約5MBと仮定 */
+function storagePct() {
+  try {
+    let bytes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const v = localStorage.getItem(k) || "";
+      bytes += (k.length + v.length) * 2; // UTF-16概算
+    }
+    return Math.min(100, Math.round((bytes / (5 * 1024 * 1024)) * 100));
+  } catch (e) { return 0; }
+}
 function save(k, v) {
   try { localStorage.setItem(k, JSON.stringify(v)); return true; }
   catch (e) {
@@ -1028,43 +1084,9 @@ function save(k, v) {
 
 let props = load(K.props, null) || SEED_PROPS.slice();
 let sched = load(K.sched, {});     // { "YYYY-MM-DD": [name] }
-let schedMeta = load(K.schedMeta, {}); // { 名前: { d:日付, _t:時刻, del:bool } } 同期の追加/削除判定用
-// 予定を追加（同期メタも更新）
-function schedAdd(day, name) {
-  sched[day] = sched[day] || [];
-  if (sched[day].indexOf(name) < 0) sched[day].push(name);
-  schedMeta[name] = { d: day, _t: Date.now(), del: false };
-  save(K.sched, sched); save(K.schedMeta, schedMeta);
-}
-// 予定を削除（同期メタに削除マーカー）
-function schedRemove(day, name) {
-  sched[day] = (sched[day] || []).filter((x) => x !== name);
-  if (!sched[day].length) delete sched[day];
-  schedMeta[name] = { d: day, _t: Date.now(), del: true };
-  save(K.sched, sched); save(K.schedMeta, schedMeta);
-}
-// その物件が今どこかの日に予定されていれば、その日付(YYYY-MM-DD)を返す。無ければ null。
-// （1物件=同時に1予定のみ。カード非表示・重複防止に使う）
-function schedDateOf(name) {
-  const days = Object.keys(sched);
-  for (let i = 0; i < days.length; i++) {
-    if ((sched[days[i]] || []).includes(name)) return days[i];
-  }
-  return null;
-}
 let reps = load(K.reps, {});       // { "name|date": {...} }
-// 旧方式の要対応(todos)は新方式（項目カードのng）に一本化したため、既存データから除去する。
-// これで画面に出ない「幽霊の要対応」カウントが消える。写真等は項目カード側に残る。
-(function _migrateDropTodos() {
-  let changed = false;
-  Object.keys(reps).forEach((id) => {
-    const r = reps[id];
-    if (r && Array.isArray(r.todos) && r.todos.length) { r.todos = []; changed = true; }
-  });
-  if (changed) save(K.reps, reps);
-})();
 let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ... } }
-let cfg = Object.assign({ mail: "", gas: "", cmGas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
+let cfg = Object.assign({ mail: "", gas: "", ktGas: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
 let choli = load(K.choli, {});         // 会社休日 { "YYYY-MM-DD": {name, _t} または削除マーカー {__del, _t} }
 // 旧形式（値が文字列）を新形式 {name,_t} に自動変換（後方互換）
@@ -1112,20 +1134,22 @@ let cursor = (() => { const t = new Date(); return { y: t.getFullYear(), m: t.ge
 let selDate = today();
 let openRep = null;     // {name, date}
 let openItem = null;    // 展開中の点検項目 key
+let doneOpen = false;   // 完了フォルダの開閉
+let _modalScroll = 0;   // モーダルのスクロール位置（再描画で保持）
 let filterView = null;  // {filter} 月全体の絞り込み一覧を右パネルに出す
 let filterQ = "", filterCity = "all";
 let ktMonth = (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() }; })();
 
 const repId = (n, d) => `${n}|${d}`;
 const blankRep = () => ({ status: "yet", staff: "", note: "", items: {}, todos: [] });
-function getRep(n, d) { return reps[repId(n, d)] || blankRep(); }
-function setRep(n, d, patch) {
+function getRep(n, d) { return reps[repId(n, d)] || blankRep(); }function setRep(n, d, patch) {
   reps[repId(n, d)] = Object.assign(getRep(n, d), patch, { ts: Date.now() });
   save(K.reps, reps);
 }
 const itemOf = (r, k) => r.items[k] || { photos: [], ok: false, ng: false, fixed: false, before: [], after: [] };
-// 要対応：項目カードのうち ng=true かつ未解決(fixed=false)の数だけを数える（新方式に一本化）
-const openNg = (r) => Object.values(r.items || {}).filter((it) => it && it.ng && !it.fixed).length;
+// 要対応：項目のうち ng=true かつ未解決の数（重複なし＝項目単位）
+const openNg = (r) => Object.values(r.items || {}).filter((it) => it && it.ng && !it.fixed).length
+  + (r.todos || []).filter((t) => !t.fixed).length; // 旧todosも当面カウント（移行データ互換）
 /* 要対応は before/after、通常項目は photos（1系統） */
 const todoShots = (t, ph) => (t[ph] = t[ph] || []);
 
@@ -1139,7 +1163,7 @@ function toast(title, body) {
   toastTimer = setTimeout(() => el.classList.add("hide"), 3600);
 }
 
-/* ===== 写真（圧縮して dataURL 化：kintai.html と同仕様 1000px / JPEG 0.7） ===== */
+/* ===== 写真（圧縮して dataURL 化：容量節約のため 900px / JPEG 0.6） ===== */
 function shrink(f) {
   return new Promise((res, rej) => {
     const rd = new FileReader();
@@ -1148,12 +1172,12 @@ function shrink(f) {
       const img = new Image();
       img.onerror = () => rej(new Error("img"));
       img.onload = () => {
-        const max = 1000; let w = img.width, h = img.height;
+        const max = 800; let w = img.width, h = img.height;
         if (w > h && w > max) { h = Math.round((h * max) / w); w = max; }
         else if (h >= w && h > max) { w = Math.round((w * max) / h); h = max; }
         const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
         cv.getContext("2d").drawImage(img, 0, 0, w, h);
-        let data; try { data = cv.toDataURL("image/jpeg", 0.7); } catch (e) { data = rd.result; }
+        let data; try { data = cv.toDataURL("image/jpeg", 0.55); } catch (e) { data = rd.result; }
         res(data);
       };
       img.src = rd.result;
@@ -1168,6 +1192,222 @@ function pickFiles(cb) {
   inp.click();
 }
 const SHOT_MAX = 3;
+
+/* ===== 写真をGoogleドライブへ逃がす方式（PIVOT準拠） =====
+   localStorage には fileId（または旧 base64）だけを保存。画像本体はメモリ + IndexedDB キャッシュ。
+   配列の要素は「id」= data:(旧base64) / temp_(アップロード中) / fileId(確定) のいずれか。 */
+const _imgCache = {};                         // id -> dataURL（メモリ）
+const PH_IMG = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="; // 1x1透明
+
+// ---- IndexedDB（端末キャッシュ） ----
+const IMGDB_NAME = "seisou_img_cache", IMGDB_STORE = "images";
+let _imgDbPromise = null;
+function openImgDb() {
+  if (_imgDbPromise) return _imgDbPromise;
+  _imgDbPromise = new Promise((resolve) => {
+    if (!window.indexedDB) { resolve(null); return; }
+    const req = indexedDB.open(IMGDB_NAME, 1);
+    req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(IMGDB_STORE)) db.createObjectStore(IMGDB_STORE); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+  return _imgDbPromise;
+}
+async function idbGetImage(id) {
+  try {
+    const db = await openImgDb(); if (!db) return null;
+    return await new Promise((resolve) => {
+      const r = db.transaction(IMGDB_STORE, "readonly").objectStore(IMGDB_STORE).get(id);
+      r.onsuccess = () => resolve(r.result || null); r.onerror = () => resolve(null);
+    });
+  } catch (e) { return null; }
+}
+async function idbPutImage(id, dataUrl) {
+  try { const db = await openImgDb(); if (!db) return; db.transaction(IMGDB_STORE, "readwrite").objectStore(IMGDB_STORE).put(dataUrl, id); } catch (e) {}
+}
+// 取得済み画像をメモリ + 端末（IndexedDB）に保存。temp_ はメモリのみ。
+function cacheImage(id, dataUrl) {
+  if (!id) return;
+  _imgCache[id] = dataUrl;
+  if (!id.startsWith("temp_") && !id.startsWith("data:")) idbPutImage(id, dataUrl);
+}
+
+// ---- GAS通信（text/plain で CORS プリフライト回避。応答JSONを読める） ----
+async function postToGas(url, body, timeoutMs) {
+  const ctrl = new AbortController();
+  const ms = (typeof timeoutMs === "number" && timeoutMs > 0) ? timeoutMs : 60000;
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  let res;
+  try {
+    res = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body), redirect: "follow", signal: ctrl.signal });
+  } catch (e) { clearTimeout(timer); throw new Error(e.name === "AbortError" ? "タイムアウト" : "通信エラー: " + e.message); }
+  clearTimeout(timer);
+  const text = await res.text();
+  try { return JSON.parse(text); } catch (e) { throw new Error("GAS応答が不正: " + text.slice(0, 120)); }
+}
+
+// ---- id を表示可能な src へ解決 ----
+// data:(旧base64) → そのまま / メモリ・端末キャッシュ → 即 / fileId → GAS getImage
+async function resolvePhotoSrc(id) {
+  if (!id) return "";
+  if (id.startsWith("data:")) return id;                 // 旧base64（後方互換）
+  if (_imgCache[id]) return _imgCache[id];               // temp_ / fileId のメモリヒット
+  if (id.startsWith("temp_")) return "";                 // 未アップロードでメモリ消失（通常起きない）
+  const cached = await idbGetImage(id);
+  if (cached) { _imgCache[id] = cached; return cached; }
+  if (!cfg.gas) return "";
+  try {
+    const r = await postToGas(cfg.gas, { action: "getImage", fileId: id }, 25000);
+    if (r && r.ok && r.base64) { const dataUrl = "data:" + (r.mimeType || "image/jpeg") + ";base64," + r.base64; cacheImage(id, dataUrl); return dataUrl; }
+  } catch (e) {}
+  return "";
+}
+// <img data-photo="id"> を後から解決して src を差し込む
+function hydratePhotos(root) {
+  (root || document).querySelectorAll("img[data-photo]").forEach((img) => {
+    if (img.dataset.hydrated) return; img.dataset.hydrated = "1";
+    resolvePhotoSrc(img.dataset.photo).then((src) => { if (src) img.src = src; }).catch(() => {});
+  });
+}
+// 画像タグを生成：data: は即 src、それ以外(temp_/fileId)はプレースホルダ＋data-photo
+function imgTag(id) {
+  if (id && id.startsWith("data:")) return `<img src="${id}" alt="">`;
+  return `<img data-photo="${esc(id || "")}" src="${PH_IMG}" alt="">`;
+}
+
+// ---- 追加した写真をアップロードして temp_ → fileId に確定 ----
+async function uploadPhotoBg(tempId, dataUrl, opts) {
+  if (!cfg.gas) return;
+  let fileId = null;
+  try {
+    const res = await postToGas(cfg.gas, { action: "uploadImage", property: opts.name || "", date: opts.date || "", base64: dataUrl }, 60000);
+    if (res && res.ok && res.fileId) fileId = res.fileId;
+  } catch (e) {}
+  const rep = reps[repId(opts.name, opts.date)];
+  if (!rep) return;
+  // rep 内のどの配列に入っていても temp_ を差し替え（振り分けで移動していても追従）
+  const repl = fileId || dataUrl;   // 失敗時は base64 に戻して消失を防ぐ（旧方式フォールバック）
+  const fix = (a) => { if (Array.isArray(a)) { const i = a.indexOf(tempId); if (i >= 0) a[i] = repl; } };
+  fix(rep.inbox);
+  Object.values(rep.items || {}).forEach((c) => { fix(c.photos); fix(c.before); fix(c.after); });
+  (rep.todos || []).forEach((t) => { fix(t.before); fix(t.after); });
+  if (fileId) { cacheImage(fileId, dataUrl); delete _imgCache[tempId]; }
+  save(K.reps, reps);
+  if (openRep && openRep.name === opts.name && openRep.date === opts.date) renderModal();
+  // アップロード完了後に要対応の自動通知を再評価（temp_ が消えたので送れる状態になる）
+  if (fileId && opts.notify) maybeAutoNotifyNg(opts.notify.name, opts.notify.date, opts.notify.key);
+}
+// files を圧縮して arr に追加（即 temp_ 表示 → 裏で確定）。GAS未設定時は旧方式で base64 を直保存。
+async function addPhotosToArray(files, arr, persist, opts) {
+  opts = opts || {};
+  let added = 0; const jobs = [];
+  for (const f of files) {
+    let dataUrl; try { dataUrl = await shrink(f); } catch (e) { continue; }
+    added++;
+    if (!cfg.gas) { arr.push(dataUrl); continue; }        // GAS未設定：従来どおり base64 を保存
+    const tempId = "temp_" + Date.now() + "_" + added + "_" + Math.floor(Math.random() * 100000);
+    _imgCache[tempId] = dataUrl; arr.push(tempId); jobs.push({ tempId, dataUrl });
+  }
+  persist(); renderModal();
+  jobs.forEach((j) => uploadPhotoBg(j.tempId, j.dataUrl, opts));
+  return added;
+}
+// 印刷/メール報告の前に、その日の全写真を base64 に解決してキャッシュを温める
+async function preloadReportImages(date) {
+  const ids = [];
+  (sched[date] || []).forEach((n) => {
+    const r = getRep(n, date);
+    Object.values(r.items || {}).forEach((c) => { (c.photos || []).forEach((s) => ids.push(s)); (c.before || []).forEach((s) => ids.push(s)); (c.after || []).forEach((s) => ids.push(s)); });
+    (r.todos || []).forEach((t) => { (t.before || []).forEach((s) => ids.push(s)); (t.after || []).forEach((s) => ids.push(s)); });
+  });
+  await Promise.all(ids.map((id) => resolvePhotoSrc(id)));
+}
+// 報告HTML用：解決済み（preload済み）の src を同期で返す
+function reportSrc(id) {
+  if (!id) return PH_IMG;
+  if (id.startsWith("data:")) return id;
+  return _imgCache[id] || PH_IMG;
+}
+
+/* ===== まとめて写真 → 各清掃箇所へ振り分け ===== */
+// 未振り分けプールに写真を一括追加
+function addToInbox() {
+  pickFiles(async (files) => {
+    files = files.filter((f) => !f.type || /^image\//.test(f.type));
+    if (!files.length) return;
+    const r = getRep(openRep.name, openRep.date);
+    r.inbox = r.inbox || [];
+    const persist = () => setRep(openRep.name, openRep.date, { inbox: r.inbox });
+    const added = await addPhotosToArray(files, r.inbox, persist, { name: openRep.name, date: openRep.date });
+    toast(`${added}枚を追加しました`, "写真をタップして各箇所へ振り分けてください");
+  });
+}
+function delInboxPhoto(i) {
+  const r = getRep(openRep.name, openRep.date);
+  (r.inbox || []).splice(i, 1);
+  setRep(openRep.name, openRep.date, { inbox: r.inbox });
+  renderModal();
+}
+// 振り分け先を選ぶオーバーレイを開く
+let _assignIdx = null;
+function openAssign(i) {
+  _assignIdx = i;
+  const r = getRep(openRep.name, openRep.date);
+  const src = (r.inbox || [])[i];
+  if (!src) return;
+  const myItems = itemsFor(openRep.name);
+  // 未登録（写真なし・非要対応）の箇所だけを候補にする。登録済みは消えて残りが分かりやすい。
+  const isRegistered = (c) =>
+    !!c.ng || ((c.photos || []).length > 0) || ((c.before || []).length > 0) || ((c.after || []).length > 0);
+  const openItems = myItems.filter((it) => !isRegistered(itemOf(r, it.key)));
+  const host = document.getElementById("assign-host");
+  host.innerHTML = `<div class="mask" id="assign-mask">
+    <div class="assign">
+      <div class="assign-h">
+        <span>この写真をどの箇所に？<span class="assign-remain">残り ${openItems.length}箇所</span></span>
+        <button class="x" id="assign-x">${ic("x", 18)}</button>
+      </div>
+      <div class="assign-preview">${imgTag(src)}</div>
+      ${openItems.length ? `<div class="assign-grid">
+        ${openItems.map((it) => {
+          return `<button class="assign-item" data-assign="${it.key}">
+            <span class="ai-l">${esc(it.label)}</span>
+          </button>`;
+        }).join("")}
+      </div>` : `<div class="assign-empty">${ic("check2", 18)} すべての箇所が登録済みです。<br>この写真が不要なら × で削除してください。</div>`}
+    </div>
+  </div>`;
+  hydratePhotos(host);   // プレビュー写真を解決して表示
+  const q = (s) => host.querySelector(s);
+  const close = () => { host.innerHTML = ""; _assignIdx = null; };
+  q("#assign-x").onclick = close;
+  q("#assign-mask").onclick = (e) => { if (e.target.id === "assign-mask") close(); };
+  host.querySelectorAll("[data-assign]").forEach((b) => {
+    b.onclick = () => { assignInboxPhoto(i, b.dataset.assign); close(); };
+  });
+}
+// プールの写真を指定の箇所へ移動（通常写真として。最大2枚まで）
+function assignInboxPhoto(i, key) {
+  const r = getRep(openRep.name, openRep.date);
+  const src = (r.inbox || [])[i];
+  if (!src) return;
+  const it = itemOf(r, key);
+  it.photos = it.photos || [];
+  const MAXN = catMax(key);
+  const myItems = itemsFor(openRep.name);
+  const lbl = (myItems.find((x) => x.key === key) || {}).label || "";
+  if (it.photos.length >= MAXN) {
+    toast("これ以上追加できません", `${lbl}は写真${MAXN}枚までです`);
+    return;
+  }
+  it.photos.push(src);
+  r.items[key] = it;
+  (r.inbox || []).splice(i, 1);   // プールから取り除く
+  setRep(openRep.name, openRep.date, { items: r.items, inbox: r.inbox });
+  renderModal();
+  toast("振り分けました", lbl);
+}
+
 /* target: {kind:"item", key} または {kind:"todo", id, phase} */
 function addShots(target) {
   pickFiles(async (files) => {
@@ -1192,16 +1432,16 @@ function addShots(target) {
       arr = todoShots(t, target.phase);
       limitName = target.phase === "before" ? "ビフォー" : "アフター";
     }
-    const maxN = (target.kind === "item" && !(target.phase === "before" || target.phase === "after")) ? 2 : SHOT_MAX;
+    const maxN = (target.kind === "item") ? catMax(target.key) : SHOT_MAX;
     const room = maxN - arr.length;
     if (room <= 0) { toast("これ以上追加できません", `${limitName}は最大${maxN}枚です`); return; }
     const use = files.slice(0, room);
-    for (const f of use) {
-      try { arr.push(await shrink(f)); } catch (e) { /* 1枚失敗しても続行 */ }
-    }
-    setRep(openRep.name, openRep.date, { items: r.items, todos: r.todos });
-    renderModal();
-    if (files.length > room) toast(`${use.length}枚を追加しました`, `上限${SHOT_MAX}枚のため残りは追加していません`);
+    const persist = () => setRep(openRep.name, openRep.date, { items: r.items, todos: r.todos });
+    // 要対応のビフォー/アフターに追加した場合は、アップロード完了後に自動通知を再評価
+    const notify = (target.kind === "item" && (target.phase === "before" || target.phase === "after"))
+      ? { name: openRep.name, date: openRep.date, key: target.key } : null;
+    await addPhotosToArray(use, arr, persist, { name: openRep.name, date: openRep.date, notify });
+    if (files.length > room) toast(`${use.length}枚を追加しました`, `上限${maxN}枚のため残りは追加していません`);
   });
 }
 function delShot(target, i) {
@@ -1305,8 +1545,10 @@ function renderCal() {
       pills = list.map((n) => {
         const st = badgeStyle(n, ds);
         const done = getRep(n, ds).status === "done";
-        const reason = overdueReason(n, ds);
+        let reason = overdueReason(n, ds);
         const hard = reason === "期限切れ";   // 要対応の期限切れ＝最重要
+        // 期限切れでなくても、未解決の要対応があれば「要対応」ラベルを出す（黄帯）
+        if (!reason && hasOpenNg(n, ds)) reason = "要対応";
         const styleStr = hard ? "background:#dc2626;color:#fff" : `background:${st.bg};color:${st.fg}`;
         return `<span class="pill ${done ? "done" : ""} ${reason ? "haswhy" : ""} ${hard ? "hard" : ""}" style="${styleStr}">
           <span class="pill-nm">${esc(n)}</span>${reason ? `<b class="pill-why">${reason}</b>` : ""}</span>`;
@@ -1326,20 +1568,10 @@ function renderCal() {
       const bands = styleKeys.slice(0, 4).map((st) =>
         `<i class="cityband" style="background:${st.bg};border-color:${st.fg}44"></i>`
       ).join("");
-      // ホバー用：その日の物件一覧（名前＋状態）。名前は地域色で色分け
-      const tipRows = list.map((n) => {
-        const rp = getRep(n, ds);
-        const dn = rp.status === "done";
-        const ngc = openNg(rp);
-        const stt = dn ? "完了" : rp.status === "doing" ? "清掃中" : "清掃前";
-        const bs = badgeStyle(n, ds);
-        return `<span class="cal-tip-row"><span class="cal-tip-nm" style="color:${bs.fg}"><i class="cal-tip-dot" style="background:${bs.bg};border-color:${bs.fg}"></i>${esc(n)}</span><span class="cal-tip-st ${dn ? "done" : ""}">${stt}${ngc ? `・要対応${ngc}` : ""}</span></span>`;
-      }).join("");
-      pills = `<span class="daycount ${done === list.length ? "alldone" : ""}" tabindex="0">
+      pills = `<span class="daycount ${done === list.length ? "alldone" : ""}">
         <span class="daycount-n">${list.length}件</span>
         ${done ? `<span class="daycount-d">${done}/${list.length}完了</span>` : ""}
         <span class="daycount-bands">${bands}</span>
-        <span class="cal-tip"><span class="cal-tip-h">${d.getMonth() + 1}/${d.getDate()}の予定 ${list.length}件</span>${tipRows}</span>
       </span>`;
     }
     h += `<button class="cell ${out ? "out" : ""} ${ds === selDate ? "sel" : ""}" data-d="${ds}">
@@ -1405,13 +1637,14 @@ function renderSide() {
     const r = getRep(n, selDate);
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
     let ph = 0, b = 0, a = 0;
-    Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; b += (it.before || []).length; a += (it.after || []).length; });
+    Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; });
+    (r.todos || []).forEach((t) => { b += (t.before || []).length; a += (t.after || []).length; });
     const ng = openNg(r);
     const badge = r.status === "done" ? `<span class="badge badge-emerald">清掃完了</span>`
       : r.status === "doing" ? `<span class="badge badge-amber">清掃中</span>`
       : `<span class="badge badge-slate">清掃前</span>`;
     return `<div class="card pcard" data-n="${esc(n)}">
-      <div class="pcard-h"><div class="pcard-n">${esc(n)}</div>${badge}<button class="pcard-x" data-unsched="${esc(n)}" title="この予定を外す" aria-label="予定を外す">${ic("x", 16)}</button></div>
+      <div class="pcard-h"><div class="pcard-n">${esc(n)}</div>${badge}</div>
       <div class="pcard-a">${esc(p.addr)}</div>
       <div class="pcard-m">
         <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
@@ -1423,18 +1656,6 @@ function renderSide() {
 
   wrap.querySelectorAll(".pcard").forEach((c) => {
     c.onclick = () => { openRep = { name: c.dataset.n, date: selDate }; openItem = null; renderModal(); };
-  });
-  // ×：この予定を外す（カードは物件管理側に復活する）
-  wrap.querySelectorAll("[data-unsched]").forEach((b) => {
-    b.onclick = (e) => {
-      e.stopPropagation();                       // カード本体（記録モーダル）を開かない
-      const nm = b.dataset.unsched;
-      if (!confirm(`${nm} をこの日の予定から外しますか？\n入力した写真・記録は残ります。`)) return;
-      schedRemove(selDate, nm);
-      renderCal(); renderSide(); renderProps();  // カレンダー・予定・物件カードを更新（物件カード復活）
-      cmPush();                                   // 清掃同期
-      toast("予定から外しました", nm);
-    };
   });
   const sb = document.getElementById("send-btn");
   if (sb) sb.onclick = sendMail;
@@ -1467,7 +1688,6 @@ function sendCardHTML() {
 /* ===== 描画：物件管理 ===== */
 function renderProps() {
   const list = props.filter((p) =>
-    !schedDateOf(p.name) &&                                  // すでに予定に入っている物件はカードを出さない
     (filterCity === "all" || cityOf(p.addr).key === filterCity) &&
     (!filterQ || p.name.includes(filterQ) || String(p.addr || "").includes(filterQ)));
   document.getElementById("p-count").textContent = `${list.length}件`;
@@ -1501,31 +1721,61 @@ function renderProps() {
 /* ===== 清掃記録モーダル ===== */
 function renderModal() {
   const host = document.getElementById("modal-host");
-  if (!openRep) { host.innerHTML = ""; return; }
+  if (!openRep) { host.innerHTML = ""; _modalScroll = 0; return; }
+  // 再描画でスクロール位置が先頭に戻らないよう、現在位置を退避（オーバーレイ経由でも保持）
+  const _prevMask = host.querySelector("#mask");
+  if (_prevMask) _modalScroll = _prevMask.scrollTop;
+  const _prevScroll = _modalScroll || 0;
   const { name, date } = openRep;
   const p = props.find((x) => x.name === name) || {};
   const r = getRep(name, date);
   const myItems = itemsFor(name);
-  const ITEM_PHOTO_MAX = 2;
-  const doneCount = myItems.filter((i) => itemOf(r, i.key).ok).length;
   const ng = openNg(r);
 
-  // 清掃項目：大きな項目名・要対応トグル・写真（通常は最大2枚／要対応時はビフォー・アフター）
-  const itemsH = myItems.map((it) => {
+  // 3分類：
+  //  未着手(pending) … 写真なし・非要対応 → 上部の残留カード
+  //  未完了(active)  … 写真あり(未チェック) or 要対応(未解決) → 中段に残す
+  //  完了(done)      … 完了チェック済みの通常箇所 or 解決済みの要対応 → 下部フォルダ
+  const hasContent = (c) =>
+    !!c.ng || ((c.photos || []).length > 0) || ((c.before || []).length > 0) || ((c.after || []).length > 0);
+  const isDoneItem = (c) => (c.ng ? !!c.fixed : !!c.ok);   // 要対応=解決済み／通常=完了チェック
+
+  const pendingItems = myItems.filter((it) => !hasContent(itemOf(r, it.key)));
+  const activeItems  = myItems.filter((it) => { const c = itemOf(r, it.key); return hasContent(c) && !isDoneItem(c); });
+  const doneItems    = myItems.filter((it) => { const c = itemOf(r, it.key); return hasContent(c) && isDoneItem(c); });
+
+  // 上部：残留カード（写真をまだ入れていない箇所）。要対応ボタンが大きく出る。
+  const pendingH = pendingItems.map((it) => {
+    const cat = catOf(it.key);
+    return `<div class="pcard" data-drop="item|${it.key}"
+        style="border-color:${cat.bd};background:${cat.bg}">
+      <div class="pcard-badge" style="background:${cat.badgeBg}">${ic("alert", 12)} 未登録</div>
+      <div class="pcard-h">
+        <span class="pcard-l" style="color:${cat.fg}">${esc(it.label)}${it.optional ? `<span class="item-o">任意</span>` : ""}</span>
+        <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 14)}</button>
+      </div>
+      <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
+      <button class="pcard-ng" data-ngtoggle="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("alert", 16)} 異常あり → 要対応にする</button>
+    </div>`;
+  }).join("");
+
+  // カード描画（記録済み：写真あり／要対応）。未完了・完了で共通利用。
+  const cardHTML = (it) => {
     const c = itemOf(r, it.key);
     const isNg = !!c.ng;
+    const cat = catOf(it.key);
+    const maxN = cat.max;
 
     let shotsBlock;
     if (isNg) {
-      // 要対応：ビフォー / アフター
       const panel = (ph, label, cls) => {
         const arr = c[ph] || [];
         const strip = arr.map((src, i) =>
-          `<div class="ishot"><img src="${src}" alt=""><button data-del="item|${it.key}|${ph}|${i}">${ic("x", 11)}</button></div>`
+          `<div class="ishot">${imgTag(src)}<button data-del="item|${it.key}|${ph}|${i}">${ic("x", 11)}</button></div>`
         ).join("") +
-        (arr.length < SHOT_MAX ? `<button class="iadd small" data-add="item|${it.key}|${ph}">${ic("camera", 16)}</button>` : "");
+        (arr.length < maxN ? `<button class="iadd small" data-add="item|${it.key}|${ph}">${ic("camera", 16)}</button>` : "");
         return `<div class="phase">
-          <div class="phase-h"><span class="phase-t ${cls}">${label}</span><span class="phase-c">${arr.length}/${SHOT_MAX}枚</span></div>
+          <div class="phase-h"><span class="phase-t" style="color:${cat.fg}">${label}</span><span class="phase-c" style="color:${cat.fg}">${arr.length}/${maxN}枚</span></div>
           <div class="shots">${strip}</div>
         </div>`;
       };
@@ -1542,23 +1792,32 @@ function renderModal() {
         ${!c.deadline ? `<span class="ng-req">${ic("alert", 12)} 期限を入れると通知・解決ができます</span>` : ""}
       </div>`;
     } else {
-      // 通常：写真 最大2枚
-      const arr = (c.photos || []).slice(0, ITEM_PHOTO_MAX);
+      const arr = (c.photos || []).slice(0, maxN);
       const shots = arr.map((src, i) =>
-        `<div class="ishot"><img src="${src}" alt=""><button data-del="item|${it.key}||${i}" aria-label="写真を消す">${ic("x", 11)}</button></div>`
+        `<div class="ishot">${imgTag(src)}<button data-del="item|${it.key}||${i}" aria-label="写真を消す">${ic("x", 11)}</button></div>`
       ).join("");
-      const addBtn = arr.length < ITEM_PHOTO_MAX
+      const addBtn = arr.length < maxN
         ? `<button class="iadd" data-add="item|${it.key}|" aria-label="写真を追加">${ic("camera", 18)}<span>写真</span></button>` : "";
-      shotsBlock = `<div class="itemcard-shots">${shots}${addBtn}</div>`;
+      shotsBlock = `<div class="itemcard-shot-h"><span class="itemcard-cnt" style="color:${cat.fg}">${arr.length}/${maxN}枚</span></div>
+        <div class="itemcard-shots">${shots}${addBtn}</div>`;
     }
 
-    return `<div class="itemcard ${c.ok ? "done" : ""} ${isNg ? "isng" : ""}" data-drop="item|${it.key}">
+    // カード色：完了(done)はグレー、それ以外はカテゴリ色（要対応も同じカテゴリ色を引き継ぐ）
+    const tinted = !c.ok;
+    const cardStyle = tinted ? `border-color:${cat.bd};background:${cat.bg}` : "";
+    const labelStyle = tinted ? `color:${cat.fg}` : "";
+    // 要対応中ボタンもカテゴリ色に（オンのとき塗り、オフのとき枠線）
+    const ngBtnStyle = isNg
+      ? `background:${cat.badgeBg};border-color:${cat.badgeBg};color:#fff`
+      : `background:#fff;border-color:${cat.bd};color:${cat.fg}`;
+    return `<div class="itemcard ${c.ok ? "done" : ""} ${isNg ? "isng" : ""}" data-drop="item|${it.key}" style="${cardStyle}">
       <div class="itemcard-h">
         <button class="ck ${c.ok ? "on" : ""}" data-ok="${it.key}" aria-label="完了">${c.ok ? ic("check", 15) : ""}</button>
-        <span class="itemcard-l">${esc(it.label)}${it.optional ? `<span class="item-o">任意</span>` : ""}</span>
-        <button class="ng-toggle ${isNg ? "on" : ""}" data-ngtoggle="${it.key}">${ic("alert", 13)} ${isNg ? "要対応中" : "要対応"}</button>
+        <span class="itemcard-l" style="${labelStyle}">${esc(it.label)}${it.optional ? `<span class="item-o">任意</span>` : ""}</span>
+        <button class="ng-toggle ${isNg ? "on" : ""}" data-ngtoggle="${it.key}" style="${ngBtnStyle}">${ic("alert", 13)} ${isNg ? "要対応中" : "要対応にする"}</button>
         <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 15)}</button>
       </div>
+      ${!isNg ? `<div class="itemcard-hint" style="${labelStyle}">${catHint(it.key)}</div>` : ""}
       ${isNg && c.fixed ? '<div class="ng-fixed-badge">解決済み</div>' : ""}
       ${shotsBlock}
       ${isNg ? `<div class="ng-actions">
@@ -1566,10 +1825,12 @@ function renderModal() {
           ${c.fixed ? "未解決に戻す" : "解決済みにする"}
         </button>
       </div>
-      ${(!c.deadline || !(c.text && c.text.trim())) ? `<div class="ng-req">${ic("alert", 11)} 内容と対応期限を入れると、自動でLINE通知されます</div>` : ""}
       ${c.notified ? `<div class="ng-sent">${ic("check2", 11)} ${c.notifiedAt ? esc(c.notifiedAt.slice(0, 10)) + " に" : ""}通知済み</div>` : ""}` : ""}
     </div>`;
-  }).join("");
+  };
+
+  const activeH = activeItems.map(cardHTML).join("");
+  const doneH = doneItems.map(cardHTML).join("");
 
   const todosH = "";
 
@@ -1581,22 +1842,49 @@ function renderModal() {
           <div class="mbox-n">${esc(name)}</div>
           <div class="mbox-a">${esc(p.addr)}</div>
           <div class="mbox-s">
-            <span style="color:var(--teal-700)">清掃済: ${doneCount}/${myItems.length}箇所</span>
+            <span style="color:var(--teal-700)">完了: ${doneItems.length}/${myItems.length}箇所</span>
             ${ng ? `<span style="color:var(--am-700)">要対応: ${ng}件</span>` : ""}
           </div>
+          ${(() => { const pct = storagePct(); const warn = pct >= 80; return `
+          <div class="stmeter ${warn ? "warn" : ""}" title="端末に保存できる写真の残り容量">
+            <div class="stmeter-bar"><div class="stmeter-fill" style="width:${pct}%"></div></div>
+            <span class="stmeter-t">端末の空き ${100 - pct}%${warn ? "（残りわずか。古い写真を減らしてください）" : ""}</span>
+          </div>`; })()}
         </div>
-        <div class="field"><label>ステータス</label>
-          <div class="seg">
-            <button data-st="yet" class="${r.status === "yet" ? "on-yet" : ""}">清掃前</button>
-            <button data-st="doing" class="${r.status === "doing" ? "on-doing" : ""}">清掃中</button>
-            <button data-st="done" class="${r.status === "done" ? "on-done" : ""}">清掃完了</button>
+        <div class="field" style="margin-bottom:-.4rem">
+          <label>① まず写真をここに入れる（ドラッグ＆ドロップ or タップ）</label>
+          <div class="dropbox" id="dropbox">
+            <div class="dropbox-inner" id="dropbox-inner">
+              <div class="dropbox-ico">${ic("camera", 40)}</div>
+              <div class="dropbox-big">ここに写真をドラッグ、またはタップして選ぶ</div>
+              <div class="dropbox-sub">スマホは下のボタンから撮影・選択できます</div>
+              <button class="btn btn-default dropbox-btn" id="inbox-add">${ic("plus", 18)} 写真を追加する</button>
+            </div>
           </div>
+          ${(r.inbox && r.inbox.length) ? `<div class="inbox-strip">${r.inbox.map((src, i) =>
+            `<div class="inbox-shot" data-inbox-open="${i}">${imgTag(src)}<span class="inbox-tag">タップで振り分け</span><button class="inbox-del" data-inbox-del="${i}" aria-label="削除">${ic("x", 11)}</button></div>`
+          ).join("")}</div>
+          <div class="inbox-hint">${ic("alert", 13)} ${r.inbox.length}枚が未振り分けです。写真をタップして、どの箇所か選んでください。</div>` : ""}
         </div>
-        <div class="field">
-          <label>清掃箇所（枠に写真をドロップ／タップで追加）</label>
-          <div class="itemcards">${itemsH}</div>
+        ${pendingItems.length ? `<div class="field">
+          <label class="pending-label">${ic("alert", 15)} まだ未登録の箇所が ${pendingItems.length}件あります（写真を入れるか、要対応にしてください）</label>
+          <div class="pcards">${pendingH}</div>
           <button class="btn btn-outline btn-sm" id="item-add" style="margin-top:.5rem">${ic("plus", 14)} 項目を追加</button>
-        </div>
+        </div>` : `<div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" id="item-add">${ic("plus", 14)} 項目を追加</button>
+        </div>`}
+        ${activeItems.length ? `<div class="field">
+          <label>対応中・未完了の箇所</label>
+          <div class="itemcards">${activeH}</div>
+        </div>` : ""}
+        ${doneItems.length ? `<div class="field">
+          <button class="donefolder-h ${doneOpen ? "open" : ""}" id="donefolder-toggle">
+            <span class="df-ico">${ic(doneOpen ? "folder-open" : "folder", 18)}</span>
+            <span class="df-l">✅ 完了 ${doneItems.length}件</span>
+            <span class="df-chev ${doneOpen ? "open" : ""}">${ic("chevron", 16)}</span>
+          </button>
+          ${doneOpen ? `<div class="itemcards donefolder-body">${doneH}</div>` : ""}
+        </div>` : ""}
         ${todosH}
         <div class="modal-f">
           <button class="btn btn-danger btn-sm" id="m-del">${ic("trash", 14)} 予定から外す</button>
@@ -1608,20 +1896,42 @@ function renderModal() {
       </div>
     </div></div>`;
 
+  // 退避したスクロール位置を復元（作業画面から先頭に戻らないように）
+  const _newMask = host.querySelector("#mask");
+  if (_newMask && _prevScroll) {
+    _newMask.scrollTop = _prevScroll;
+    requestAnimationFrame(() => { if (_newMask.isConnected) _newMask.scrollTop = _prevScroll; });
+    setTimeout(() => { if (_newMask.isConnected) _newMask.scrollTop = _prevScroll; }, 0);
+  }
+
+  hydratePhotos(host);   // fileId/temp_ の写真を後から解決して表示
+
   const q = (s) => host.querySelector(s);
   const closeM = () => {
     const d = openRep && openRep.date;
+    const nm = openRep && openRep.name;
+    if (d && nm) {
+      const rr = getRep(nm, d);
+      const openNgNow = openNg(rr);
+      const anyRecord = Object.values(rr.items || {}).some((it) =>
+        it && (it.ng || (it.photos || []).length || (it.before || []).length || (it.after || []).length || it.ok));
+      if (openNgNow > 0) {
+        // 未解決の要対応あり → 未完了のまま（doneにしない）
+        if (rr.status === "done") setRep(nm, d, { status: "doing" });
+      } else if (anyRecord && rr.status !== "done") {
+        // 要対応なし＋何か記録あり → 完了確認
+        if (confirm("要対応はありません。この清掃を「完了」にしますか？\n（カレンダー上でグレーアウトされます）")) {
+          setRep(nm, d, { status: "done" });
+        }
+      }
+    }
     openRep = null; openItem = null; renderModal(); renderCal();
-    if (d && cfg.gas) syncToSheet(d, true);  // 記録を閉じたら静かに同期（スプレッドシート）
-    cmPush();                                 // 清掃同期（他端末へ：予定・記録）
+    if (d && cfg.gas) syncToSheet(d, true);  // 記録を閉じたら静かに同期
   };
   q("#m-x").onclick = closeM;
   q("#m-cancel").onclick = closeM;
   q("#mask").onclick = (e) => { if (e.target.id === "mask") closeM(); };
 
-  host.querySelectorAll("[data-st]").forEach((b) => {
-    b.onclick = () => { setRep(name, date, { status: b.dataset.st }); renderModal(); };
-  });
   host.querySelectorAll("[data-ok]").forEach((b) => {
     b.onclick = () => {
       const k = b.dataset.ok, it = itemOf(r, k);
@@ -1658,6 +1968,38 @@ function renderModal() {
     setItemsFor(name, [...myItems, { key, label: label.trim(), optional: false }]);
     renderModal();
   };
+  // 完了フォルダの開閉
+  const dfToggle = q("#donefolder-toggle");
+  if (dfToggle) dfToggle.onclick = () => { doneOpen = !doneOpen; renderModal(); };
+  // まとめて写真を追加（未振り分けプールへ）
+  const inboxAdd = q("#inbox-add");
+  if (inboxAdd) inboxAdd.onclick = (e) => { e.stopPropagation(); addToInbox(); };
+  // 大きなドロップ枠：全体タップでピッカー、ドラッグ&ドロップで直接追加
+  const dropbox = q("#dropbox");
+  if (dropbox) {
+    dropbox.onclick = (e) => { if (!e.target.closest("#inbox-add")) addToInbox(); };
+    dropbox.addEventListener("dragover", (e) => { e.preventDefault(); dropbox.classList.add("dragover"); });
+    dropbox.addEventListener("dragleave", () => dropbox.classList.remove("dragover"));
+    dropbox.addEventListener("drop", async (e) => {
+      e.preventDefault(); dropbox.classList.remove("dragover");
+      const files = Array.from(e.dataTransfer.files || []).filter((f) => /^image\//.test(f.type));
+      if (!files.length) return;
+      const rr = getRep(name, date); rr.inbox = rr.inbox || [];
+      const persist = () => setRep(name, date, { inbox: rr.inbox });
+      const added = await addPhotosToArray(files, rr.inbox, persist, { name, date });
+      toast(`${added}枚を追加しました`, "写真をタップして各箇所へ振り分けてください");
+    });
+  }
+  // プールの写真をタップ → 振り分け先を選ぶ
+  host.querySelectorAll("[data-inbox-open]").forEach((el) => {
+    el.onclick = (e) => {
+      if (e.target.closest("[data-inbox-del]")) return;   // ×は別処理
+      openAssign(+el.dataset.inboxOpen);
+    };
+  });
+  host.querySelectorAll("[data-inbox-del]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); delInboxPhoto(+b.dataset.inboxDel); };
+  });
   // 写真：タップ追加
   host.querySelectorAll("[data-add]").forEach((b) => {
     b.onclick = () => {
@@ -1681,20 +2023,31 @@ function renderModal() {
       const files = Array.from(e.dataTransfer.files || []).filter((f) => /^image\//.test(f.type));
       if (!files.length) return;
       const it = itemOf(r, key); it.photos = it.photos || [];
-      const room = 2 - it.photos.length;
-      for (const f of files.slice(0, room)) {
-        try { it.photos.push(await shrink(f)); } catch (_) {}
-      }
+      const room = catMax(key) - it.photos.length;
+      if (room <= 0) return;
       r.items[key] = it;
-      setRep(name, date, { items: r.items }); renderModal();
+      const persist = () => setRep(name, date, { items: r.items });
+      await addPhotosToArray(files.slice(0, room), it.photos, persist, { name, date });
     });
   });
   // 要対応トグル（何度押しても重複しない＝項目のフラグを切り替えるだけ）
   host.querySelectorAll("[data-ngtoggle]").forEach((b) => {
     b.onclick = () => {
       const k = b.dataset.ngtoggle, it = itemOf(r, k);
+      const wasNg = !!it.ng;
       it.ng = !it.ng;
-      if (it.ng) { it.before = it.before || []; it.after = it.after || []; it.fixed = false; }
+      if (it.ng && !wasNg) {
+        // 新しく要対応にした時は、期限・通知履歴を必ず空から始める
+        it.before = it.before || []; it.after = it.after || []; it.fixed = false;
+        it.deadline = "";            // 日付は空スタート（入力したら自動通知）
+        it.notified = false; it.notifiedAt = "";
+        // 既にこの箇所へ振り分けた通常写真を、自動でビフォーへ移す
+        if (it.photos && it.photos.length) {
+          const room = catMax(k) - it.before.length;
+          it.before.push(...it.photos.slice(0, room));
+          it.photos = [];
+        }
+      }
       r.items[k] = it;
       setRep(name, date, { items: r.items }); renderModal();
     };
@@ -1708,17 +2061,17 @@ function renderModal() {
       setRep(name, date, { items: r.items }); renderModal();
     };
   });
-  // 要対応：対応期限（入れた瞬間に、内容も揃っていれば自動通知）
+  // 要対応：対応期限
   host.querySelectorAll("[data-ngdate]").forEach((inp) => {
     inp.onchange = () => {
       const k = inp.dataset.ngdate, it = itemOf(r, k);
       it.deadline = inp.value; r.items[k] = it;
       setRep(name, date, { items: r.items });
-      maybeAutoNotifyNg(name, date, k);   // 揃ったら自動でLINE通知
+      maybeAutoNotifyNg(name, date, k);   // 内容＋期限が揃えば自動でLINE通知
       renderModal();
     };
   });
-  // 要対応の本文（入力を終えてフォーカスが外れた時に、期限も揃っていれば自動通知）
+  // 要対応の本文（項目キー単位）
   host.querySelectorAll("[data-ngtext]").forEach((t) => {
     t.oninput = () => {
       const k = t.dataset.ngtext, it = itemOf(r, k);
@@ -1726,17 +2079,16 @@ function renderModal() {
       setRep(name, date, { items: r.items });
     };
     t.onchange = () => {
-      const k = t.dataset.ngtext;
-      maybeAutoNotifyNg(name, date, k);   // 内容確定時にも自動通知チェック
+      maybeAutoNotifyNg(name, date, t.dataset.ngtext);   // 入力確定時に揃っていれば自動通知
     };
   });
   q("#m-del").onclick = () => {
     if (!confirm(`${name} をこの日の予定から外しますか？\n入力した写真・記録は残ります。`)) return;
-    schedRemove(date, name);
+    sched[date] = (sched[date] || []).filter((x) => x !== name);
+    if (!sched[date].length) delete sched[date];
+    save(K.sched, sched);
     toast("予定から外しました", name);
     closeM();
-    renderCal(); renderSide(); renderProps();   // カレンダー・予定・物件カード更新（物件カード復活）
-    cmPush();                                    // 清掃同期
   };
 }
 
@@ -1762,20 +2114,16 @@ function openSched(name) {
   host.querySelector("#s-ok").onclick = () => {
     const d = host.querySelector("#s-date").value;
     if (!d) return;
-    // 1物件=同時に1予定のみ。すでに（別の日を含め）予定があれば入れさせない
-    const exist = schedDateOf(name);
-    if (exist) {
-      toast("すでに予定に入っています", `${name}／${fmtDate(exist)}（先に予定を外してください）`);
-      close(); return;
-    }
-    schedAdd(d, name);
+    sched[d] = sched[d] || [];
+    if (sched[d].includes(name)) { toast("すでに予定に入っています", `${name}／${d}`); close(); return; }
+    sched[d].push(name);
+    save(K.sched, sched);
     const dd = parseYmd(d);
     cursor = { y: dd.getFullYear(), m: dd.getMonth() };
-    selDate = d;                 // 次にカレンダーを開いたとき、この日が選択された状態で表示される
+    selDate = d;
     close();
-    renderProps();               // 物件カードから消す（この画面にとどまる）
-    cmPush();                    // 清掃同期（他端末へ）
-    toast("予定を入れました", `${name}／${fmtDate(d)}（物件カードが消えました）`);
+    go("cal");
+    toast("予定を入れました", `${name}／${fmtDate(d)}`);
   };
 }
 
@@ -1842,18 +2190,26 @@ function buildReportHTML(date) {
       if (!c.ng) (c.photos || []).forEach((s) => shots.push({ l: it.label, s }));
     });
 
-    // 要対応（項目のngのみ。旧todosは廃止）
+    // 要対応（項目のng）＋旧todos（移行互換）
     const ngItems = myItems
       .map((it) => ({ it, c: itemOf(r, it.key) }))
       .filter((x) => x.c.ng && !x.c.fixed);
-    const ngCount = ngItems.length;
+    const legacy = (r.todos || []).filter((t) => !t.fixed);
+    const ngCount = ngItems.length + legacy.length;
 
     const ngH = ngCount ? `<div class="ng"><b>要対応 ${ngCount}件</b>
       ${ngItems.map(({ it, c }) => `<div class="ngi">
         <div class="ngt">${esc(it.label)}：${esc(c.text || "（記載なし）")}</div>
         ${(c.before || []).length || (c.after || []).length ? `<div class="ph">
-          ${(c.before || []).map((s) => `<figure><img src="${s}"><figcaption>ビフォー</figcaption></figure>`).join("")}
-          ${(c.after || []).map((s) => `<figure><img src="${s}"><figcaption>アフター</figcaption></figure>`).join("")}
+          ${(c.before || []).map((s) => `<figure><img src="${reportSrc(s)}"><figcaption>ビフォー</figcaption></figure>`).join("")}
+          ${(c.after || []).map((s) => `<figure><img src="${reportSrc(s)}"><figcaption>アフター</figcaption></figure>`).join("")}
+        </div>` : ""}
+      </div>`).join("")}
+      ${legacy.map((t) => `<div class="ngi">
+        <div class="ngt">${esc(t.item)}：${esc(t.text || "（記載なし）")}</div>
+        ${(t.before || []).length || (t.after || []).length ? `<div class="ph">
+          ${(t.before || []).map((s) => `<figure><img src="${reportSrc(s)}"><figcaption>ビフォー</figcaption></figure>`).join("")}
+          ${(t.after || []).map((s) => `<figure><img src="${reportSrc(s)}"><figcaption>アフター</figcaption></figure>`).join("")}
         </div>` : ""}
       </div>`).join("")}</div>` : "";
 
@@ -1862,7 +2218,7 @@ function buildReportHTML(date) {
       <p class="ad">${esc(p.addr)}</p>
       ${ngH}
       <div class="ph">${shots.map((x) =>
-        `<figure><img src="${x.s}"><figcaption>${esc(x.l)}</figcaption></figure>`).join("")}</div>
+        `<figure><img src="${reportSrc(x.s)}"><figcaption>${esc(x.l)}</figcaption></figure>`).join("")}</div>
     </section>`;
   };
 
@@ -1898,52 +2254,7 @@ function buildReportHTML(date) {
 ${groups}</body></html>`;
 }
 
-/* ===== 要対応の自動通知 ===== */
-// 内容＋期限が揃い、まだ未通知の要対応を、自動であなたのLINEへ送る。
-// 西澤くんはボタンを押さない。条件を満たさない時は静かに何もしない。
-async function maybeAutoNotifyNg(name, date, key) {
-  const p = props.find((x) => x.name === name) || {};
-  const r = getRep(name, date);
-  const it = itemOf(r, key);
-  const label = (itemsFor(name).find((x) => x.key === key) || {}).label || key;
-
-  // 送る条件：要対応中／未解決／内容あり／期限あり／未通知
-  if (!it.ng) return;
-  if (it.fixed) return;
-  if (!(it.text && it.text.trim())) return;
-  if (!it.deadline) return;
-  if (it.notified) return;           // 一度送ったら二重送信しない
-  if (!cfg.gas) return;              // GAS未設定なら静かに何もしない
-
-  const payload = {
-    type: "ngConfirm",
-    property: name,
-    address: p.addr || "",
-    date,
-    reporter: "西澤",
-    items: [{
-      item: label,
-      text: it.text || "",
-      deadline: it.deadline,
-      before: it.before || [],
-      after: it.after || [],
-    }],
-  };
-
-  try {
-    const body = new URLSearchParams({ payload: JSON.stringify(payload) });
-    await fetch(cfg.gas, { method: "POST", mode: "no-cors", body });
-    it.notified = true; it.notifiedAt = new Date().toISOString();
-    r.items[key] = it;
-    setRep(name, date, { items: r.items });
-    toast("LINEに通知しました", `${name}／${label}`);
-    renderModal();
-  } catch (e) {
-    // 失敗時は notified を立てない（次の機会に再送される）
-  }
-}
-
-
+/* ===== 要対応をまとめてLINE通知（この物件の未解決要対応を1通で） ===== */
 async function sendNgNotifyAll(name, date) {
   const p = props.find((x) => x.name === name) || {};
   const r = getRep(name, date);
@@ -1998,6 +2309,50 @@ async function sendNgNotifyAll(name, date) {
   }
 }
 
+/* ===== 要対応の自動通知（項目単位） ===== */
+// 要対応中／未解決／内容あり／期限あり／未通知 が揃った瞬間に、自動でLINEへ1件送る。
+// 西澤くんはボタンを押さない。条件を満たさない時は静かに何もしない。
+async function maybeAutoNotifyNg(name, date, key) {
+  const p = props.find((x) => x.name === name) || {};
+  const r = getRep(name, date);
+  const it = itemOf(r, key);
+  const label = (itemsFor(name).find((x) => x.key === key) || {}).label || key;
+
+  if (!it.ng) return;
+  if (it.fixed) return;
+  if (!(it.text && it.text.trim())) return;
+  if (!it.deadline) return;
+  if (it.notified) return;   // 一度送ったら二重送信しない
+  if (!cfg.gas) return;      // GAS未設定なら静かに何もしない
+  // 写真アップロード未完了(temp_)が残っている間は送らない。完了時に再評価される。
+  if ([...(it.before || []), ...(it.after || [])].some((s) => typeof s === "string" && s.startsWith("temp_"))) return;
+
+  const payload = {
+    type: "ngAlert",
+    property: name,
+    address: p.addr || "",
+    date,
+    items: [{
+      item: label,
+      text: it.text || "",
+      deadline: it.deadline,
+      before: it.before || [],
+      after: it.after || [],
+    }],
+  };
+  try {
+    const body = new URLSearchParams({ payload: JSON.stringify(payload) });
+    await fetch(cfg.gas, { method: "POST", mode: "no-cors", body });
+    it.notified = true; it.notifiedAt = new Date().toISOString();
+    r.items[key] = it;
+    setRep(name, date, { items: r.items });
+    toast("LINEに通知しました", `${name}／${label}`);
+    renderModal();
+  } catch (e) {
+    // 失敗時は notified を立てない（次の機会に再送）
+  }
+}
+
 /* ===== スプレッドシートへ状況を送る（GASが読んで③④の自動通知に使う） ===== */
 function buildStatusRows(date) {
   const list = sched[date] || [];
@@ -2015,6 +2370,7 @@ function buildStatusRows(date) {
         ngList.push({ item: it.label, text: c.text || "", deadline: c.deadline || "", notified: !!c.notified });
       }
     });
+    (r.todos || []).forEach((t) => { if (!t.fixed) { ngOpen++; ngList.push({ item: t.item, text: t.text || "", deadline: "", notified: false }); } });
     return {
       date, property: n, address: p.addr || "",
       status: r.status,                    // yet / doing / done
@@ -2046,6 +2402,7 @@ async function syncToSheet(date, silent) {
 async function sendMail() {
   const s = dayStats(selDate);
   if (s.done !== s.total || !s.total) return;
+  await preloadReportImages(selDate);   // fileId の写真を base64 に解決してから報告HTMLを組む
   const html = buildReportHTML(selDate);
 
   if (!cfg.gas) {
@@ -2384,148 +2741,6 @@ function ktStripDeleted() {
   });
 }
 // サーバーへ保存（送信のみ。ローカルは上書きしない＝隣接日の誤マージを防ぐ）
-/* ===== 清掃の同期（物件・予定・記録／写真はフェーズ2）===== */
-// 記録から写真(base64)を除いたコピーを返す（スプレッドシート同期用。写真同期はフェーズ2）
-function repsWithoutPhotos(src) {
-  const out = {};
-  Object.keys(src || {}).forEach((id) => {
-    const r = src[id];
-    const c = JSON.parse(JSON.stringify(r));  // 深いコピー
-    if (c.items) {
-      Object.keys(c.items).forEach((k) => {
-        const it = c.items[k];
-        // ドライブURL(http)は残し、base64(data:)は除く
-        const keepUrl = (arr) => (arr || []).filter((s) => typeof s === "string" && s.indexOf("data:") !== 0);
-        it.photos = keepUrl(it.photos);
-        it.before = keepUrl(it.before);
-        it.after  = keepUrl(it.after);
-      });
-    }
-    out[id] = c;
-  });
-  return out;
-}
-async function cmPush() {
-  if (!cfg.cmGas) return;                 // 清掃同期URL未設定なら何もしない
-  try {
-    await fetch(cfg.cmGas, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      // seisou GAS 仕様：トップレベルに reports/props/sched/_schedMeta。写真base64は除く
-      body: JSON.stringify({
-        action: "save",
-        reports: repsWithoutPhotos(reps),
-        props,
-        sched,
-        _schedMeta: schedMeta,
-      }),
-    });
-    // 返り値でローカルは上書きしない。取り込みは起動時/手動(cmPull)で行う。
-  } catch (e) { /* 通信失敗時はローカル維持。次回送信で反映 */ }
-}
-// サーバーから清掃データを取り込む（起動時・手動）
-async function cmPull(silent) {
-  if (!cfg.cmGas) { if (!silent) toast("清掃 同期URLが未設定です", "LINE設定で清掃同期URLを保存してください"); return; }
-  try {
-    const res = await fetch(cfg.cmGas, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "load" }),
-    });
-    const data = await res.json();
-    if (data && data.ok) {
-      // seisou GAS 仕様：payloadで包まず data トップレベルに reports/props/sched/_schedMeta
-      // 物件：名前キーで統合（サーバーとローカル両方の物件を残す）
-      if (Array.isArray(data.props)) { props = cmMergeProps(data.props, props); save(K.props, props); }
-      // 予定メタ：新しい操作(_t)を採用してからschedを再構築
-      schedMeta = cmMergeMeta(data._schedMeta || {}, schedMeta, data.sched || {}, sched);
-      sched = cmSchedFromMeta(schedMeta);
-      save(K.schedMeta, schedMeta); save(K.sched, sched);
-      // 記録：ts が新しい方を採用。サーバー側は写真base64を持たないので、ローカルの写真は保持
-      if (data.reports && typeof data.reports === "object") {
-        reps = cmMergeReps(data.reports, reps);
-        save(K.reps, reps);
-      }
-      if (typeof renderCal === "function" && document.getElementById("cal-grid")) renderCal();
-      if (typeof renderProps === "function" && document.getElementById("p-grid")) renderProps();
-      if (!silent) toast("清掃を同期しました", "最新の物件・予定・記録を取り込みました");
-    } else if (!silent) {
-      toast("同期できませんでした", (data && data.error) ? data.error : "応答が不正です");
-    }
-  } catch (e) {
-    if (!silent) toast("同期できませんでした", "通信状況とURLを確認してください");
-  }
-}
-// 物件：名前キーで統合（両方の物件を保持。同名は後（サーバー）優先）
-function cmMergeProps(server, local) {
-  const map = {};
-  (local || []).forEach((p) => { if (p && p.name) map[p.name] = p; });
-  (server || []).forEach((p) => { if (p && p.name) map[p.name] = p; });
-  return Object.keys(map).map((k) => map[k]);
-}
-// 予定メタ：名前ごとに _t が新しい操作（追加/削除）を採用。schedからも_t=0で補完
-function cmMergeMeta(sMeta, lMeta, sSched, lSched) {
-  const meta = {};
-  const put = (m) => { Object.keys(m || {}).forEach((nm) => {
-    const t = Number(m[nm]._t) || 0;
-    if (!meta[nm] || t >= meta[nm]._t) meta[nm] = { d: m[nm].d, _t: t, del: !!m[nm].del };
-  }); };
-  const putSched = (s) => { Object.keys(s || {}).forEach((day) => {
-    (s[day] || []).forEach((nm) => { if (!meta[nm]) meta[nm] = { d: day, _t: 0, del: false }; });
-  }); };
-  put(lMeta); put(sMeta); putSched(lSched); putSched(sSched);
-  return meta;
-}
-function cmSchedFromMeta(meta) {
-  const sched = {};
-  Object.keys(meta || {}).forEach((nm) => {
-    const e = meta[nm];
-    if (e.del || !e.d) return;
-    sched[e.d] = sched[e.d] || [];
-    if (sched[e.d].indexOf(nm) < 0) sched[e.d].push(nm);
-  });
-  return sched;
-}
-// 記録：ts が新しい方を採用。ただし写真base64はローカル側を必ず引き継ぐ（サーバーは写真を持たないため）
-function cmMergeReps(server, local) {
-  const out = {};
-  const keys = {};
-  Object.keys(server || {}).forEach((k) => keys[k] = 1);
-  Object.keys(local || {}).forEach((k) => keys[k] = 1);
-  // ローカル記録から写真だけ取り出す
-  const localPhotos = (r) => {
-    const m = {};
-    Object.keys((r && r.items) || {}).forEach((k) => {
-      const it = r.items[k] || {};
-      const b64 = (arr) => (arr || []).filter((s) => typeof s === "string" && s.indexOf("data:") === 0);
-      m[k] = { photos: b64(it.photos), before: b64(it.before), after: b64(it.after) };
-    });
-    return m;
-  };
-  Object.keys(keys).forEach((id) => {
-    const ra = server[id], rb = local[id];
-    let chosen;
-    if (ra && !rb) chosen = ra;
-    else if (!ra && rb) chosen = rb;
-    else chosen = ((Number(rb.ts) || 0) >= (Number(ra.ts) || 0)) ? rb : ra;
-    // サーバー側を採用したときは、ローカルにあった写真base64を各項目に戻す
-    if (chosen === ra && rb) {
-      chosen = JSON.parse(JSON.stringify(ra));
-      const lp = localPhotos(rb);
-      chosen.items = chosen.items || {};
-      Object.keys(lp).forEach((k) => {
-        chosen.items[k] = chosen.items[k] || { photos: [], before: [], after: [], ok: false, ng: false, fixed: false };
-        // サーバー由来のURL(http)＋ローカルのbase64を結合
-        chosen.items[k].photos = (chosen.items[k].photos || []).concat(lp[k].photos);
-        chosen.items[k].before = (chosen.items[k].before || []).concat(lp[k].before);
-        chosen.items[k].after  = (chosen.items[k].after  || []).concat(lp[k].after);
-      });
-    }
-    out[id] = chosen;
-  });
-  return out;
-}
-
 async function ktPush() {
   if (!cfg.ktGas) return;                 // 同期URL未設定なら何もしない（ローカルのみ）
   try {
@@ -3410,9 +3625,6 @@ function goGroup(g) {
 /* ===== 起動 ===== */
 function boot() {
   document.querySelectorAll(".hd-nav button").forEach((b) => { b.onclick = () => goGroup(b.dataset.group); });
-  // 清掃管理ロゴをタップで再読み込み（最新データを取り込む・表示リセット）
-  const brand = document.getElementById("hd-brand");
-  if (brand) brand.onclick = () => location.reload();
   document.querySelectorAll(".hd-sub button").forEach((b) => { b.onclick = () => go(b.dataset.tab); });
   document.getElementById("cal-prev").onclick = () => {
     cursor = cursor.m === 0 ? { y: cursor.y - 1, m: 11 } : { y: cursor.y, m: cursor.m - 1 };
@@ -3503,22 +3715,14 @@ function boot() {
 
   document.getElementById("cfg-mail").value = cfg.mail;
   document.getElementById("cfg-gas").value = cfg.gas;
-  document.getElementById("cfg-cmgas").value = cfg.cmGas || "";
   document.getElementById("cfg-start").value = cfg.start || "09:00";
   document.getElementById("cfg-save").onclick = () => {
     cfg.mail = document.getElementById("cfg-mail").value.trim();
     cfg.gas = document.getElementById("cfg-gas").value.trim();
-    cfg.cmGas = document.getElementById("cfg-cmgas").value.trim();
     cfg.start = document.getElementById("cfg-start").value || "09:00";
     save(K.cfg, cfg);
     toast("設定を保存しました", `定時 ${cfg.start}${cfg.mail ? `／${cfg.mail}` : ""}`);
     renderSide();
-    if (cfg.cmGas) cmPull(true);   // 保存直後に一度取り込む
-  };
-  document.getElementById("cfg-cmsync").onclick = async () => {
-    if (!cfg.cmGas) { cfg.cmGas = document.getElementById("cfg-cmgas").value.trim(); save(K.cfg, cfg); }
-    await cmPush();       // まずローカルをサーバーへ
-    await cmPull(false);  // 次にサーバーの最新を取り込む
   };
   document.getElementById("cfg-import").onclick = openImport;
   document.getElementById("cfg-backup").onclick = doBackup;
@@ -3527,9 +3731,8 @@ function boot() {
     if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); }
   });
   go("cal");
-  // 起動時：同期URLが設定済みなら最新を取り込む
+  // 起動時：勤怠同期URLが設定済みなら最新を取り込む
   if (cfg.ktGas) { ktPull(true); }
-  if (cfg.cmGas) { cmPull(true); }
 }
 document.addEventListener("DOMContentLoaded", boot);
 </script>
