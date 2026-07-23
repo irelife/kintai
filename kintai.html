@@ -398,6 +398,11 @@ main{padding:1.5rem 0 4rem;}
   border:1.5px solid var(--am-400,#fbbf24);background:#fff;color:var(--am-700);
   font-size:15px;font-weight:800;padding:.7rem .8rem;border-radius:.55rem;cursor:pointer;
   transition:background-color .15s,color .15s,border-color .15s;}
+.pcard-ok{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  margin-top:auto;border:2px solid var(--border);background:#fff;
+  font-size:15px;font-weight:800;padding:.7rem .8rem;border-radius:.55rem;cursor:pointer;
+  transition:background-color .15s,color .15s,border-color .15s;}
+.pcard-ok:hover{background:var(--em-50);border-color:var(--em-500);color:var(--em-700);}
 .pcard-ng:hover{background:var(--am-500);color:#fff;border-color:var(--am-500);}
 .pending-label{display:inline-flex;align-items:center;gap:.4rem;color:var(--am-700,#b45309)!important;font-weight:800!important;}
 /* 要対応中のカードは中身が縦に伸びるので全幅に */
@@ -426,7 +431,16 @@ main{padding:1.5rem 0 4rem;}
   padding:.55rem .9rem;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;}
 .ng-toggle:hover{background:var(--am-50);}
 .ng-toggle.on{background:var(--am-500);color:#fff;border-color:var(--am-500);}
-.itemcard.isng{border-color:var(--am-200);background:#fffbeb80;}
+/* 要対応中の項目は赤枠で強く目立たせる（インラインのカテゴリ色より優先） */
+.itemcard.isng{border-color:#dc2626 !important;border-width:3px !important;
+  background:#fef2f2 !important;box-shadow:0 0 0 3px #fecaca;}
+.itemcard.isng .itemcard-name{border-color:#dc2626 !important;color:#b91c1c !important;}
+.itemcard.isng .ng-deadline label{color:#b91c1c;}
+.itemcard.isng .ngcal-sel{color:#b91c1c;}
+/* 内容・期限がまだ入っていない要対応は、入力を促す帯を出す */
+.ng-todo{margin-top:.7rem;display:flex;align-items:center;gap:.45rem;
+  background:#dc2626;color:#fff;border-radius:.5rem;padding:.6rem .8rem;
+  font-size:15px;font-weight:800;line-height:1.4;}
 .ng-note{width:100%;margin-top:.7rem;min-height:4.5rem;border:2px solid var(--border);border-radius:.5rem;
   padding:.7rem .8rem;font-size:16px;line-height:1.6;background:#fff;resize:vertical;}
 .ng-note:focus{outline:2px solid var(--fg);outline-offset:1px;}
@@ -438,6 +452,11 @@ main{padding:1.5rem 0 4rem;}
 .ng-deadline label{font-size:15px;font-weight:700;color:var(--am-700);}
 .ng-deadline input[type=date]{max-width:14rem;font-size:19px;font-weight:700;padding:.6rem .7rem;
   border:2px solid var(--border);border-radius:.5rem;}
+.ngcal{border:2px solid var(--border);border-radius:.6rem;padding:.6rem;background:#fff;max-width:26rem;}
+.ngcal .mc-t{font-size:16px;font-weight:700;}
+.ngcal .mc-wd{font-size:12px;}
+.ngcal .mc-d{padding:.55rem 0;font-size:15px;font-weight:600;}
+.ngcal-sel{font-size:15px;font-weight:700;color:var(--am-700);}
 .ng-deadline.over label{color:var(--rose-600);}
 .ng-deadline.over input{border-color:var(--rose-500);background:var(--rose-50);}
 .ng-req{font-size:11px;color:var(--am-700);display:inline-flex;align-items:center;gap:.25rem;}
@@ -1695,6 +1714,20 @@ function addShots(target) {
     let arr, limitName;
     if (target.kind === "item") {
       const it = itemOf(r, target.key);
+      // 確認系（清掃系以外）は「異常があるときだけ写真を入れる」運用。
+      // 通常写真を入れた＝異常あり とみなし、その場で要対応に切り替えてビフォーへ送る。
+      const isCheckType = catOf(target.key).key !== "clean";
+      if (isCheckType && !it.ng && target.phase !== "before" && target.phase !== "after") {
+        it.ng = true;
+        it.before = it.before || []; it.after = it.after || []; it.fixed = false;
+        it.deadline = ""; it.notified = false; it.notifiedAt = "";
+        if (it.photos && it.photos.length) {
+          const room0 = catMax(target.key) - it.before.length;
+          it.before.push(...it.photos.slice(0, room0));
+          it.photos = [];
+        }
+        target = { kind: "item", key: target.key, phase: "before" };
+      }
       if (target.phase === "before" || target.phase === "after") {
         it[target.phase] = it[target.phase] || [];
         arr = it[target.phase];
@@ -2049,7 +2082,7 @@ function renderModal() {
   //  未完了(active)  … 写真あり(未チェック) or 要対応(未解決) → 中段に残す
   //  完了(done)      … 完了チェック済みの通常箇所 or 解決済みの要対応 → 下部フォルダ
   const hasContent = (c) =>
-    !!c.ng || ((c.photos || []).length > 0) || ((c.before || []).length > 0) || ((c.after || []).length > 0);
+    !!c.ng || !!c.noIssue || ((c.photos || []).length > 0) || ((c.before || []).length > 0) || ((c.after || []).length > 0);
   const isDoneItem = (c) => (c.ng ? !!c.fixed : !!c.ok);   // 要対応=解決済み／通常=完了チェック
 
   const pendingItems = myItems.filter((it) => !hasContent(itemOf(r, it.key)));
@@ -2070,6 +2103,7 @@ function renderModal() {
 
   const pendingH = pendingSorted.map((it) => {
     const cat = catOf(it.key);
+    const isCheckType = cat.key !== "clean";
     return `<div class="pcard" data-drop="item|${it.key}"
         style="border-color:${cat.bd};background:${cat.bg}">
       <div class="pcard-badge" style="background:${cat.badgeBg}">${ic("alert", 12)} 未登録</div>
@@ -2078,7 +2112,9 @@ function renderModal() {
         <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 14)}</button>
       </div>
       <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
-      <button class="pcard-ng" data-ngtoggle="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("alert", 16)} 要対応にする</button>
+      ${isCheckType
+        ? `<button class="pcard-ok" data-noissue="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("check2", 16)} 異常なし（完了）</button>`
+        : `<button class="pcard-ng" data-ngtoggle="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("alert", 16)} 要対応にする</button>`}
     </div>`;
   }).join("");
 
@@ -2109,9 +2145,11 @@ function renderModal() {
         ${panel("after", "アフター", "a")}
       </div>
       <textarea class="ng-note" data-ngtext="${it.key}" placeholder="要対応の内容（例：放置自転車2台、東側駐輪場。警告札を貼付。撤去手配中。）">${esc(c.text || "")}</textarea>
+      ${(!(c.text && c.text.trim()) || !c.deadline) ? `<div class="ng-todo">${ic("alert", 16)} 異常ありとして記録しました。${!(c.text && c.text.trim()) ? "内容" : ""}${(!(c.text && c.text.trim()) && !c.deadline) ? "と" : ""}${!c.deadline ? "対応期限" : ""}を入力してください</div>` : ""}
       <div class="ng-deadline ${overdue ? "over" : ""}">
         <label>対応期限${overdue ? "（期限切れ）" : ""}</label>
-        <input type="date" class="input" data-ngdate="${it.key}" value="${esc(c.deadline || "")}">
+        <div class="ngcal" data-ngcal="${it.key}"></div>
+        <div class="ngcal-sel">${c.deadline ? `選択中：${fmtDate(c.deadline)}` : "日付を選んでください"}</div>
         ${!c.deadline ? `<span class="ng-req">${ic("alert", 12)} 期限を入れると通知・解決ができます</span>` : ""}
       </div>`;
     } else {
@@ -2394,14 +2432,71 @@ function renderModal() {
     };
   });
   // 要対応：対応期限
-  host.querySelectorAll("[data-ngdate]").forEach((inp) => {
-    inp.onchange = () => {
-      const k = inp.dataset.ngdate, it = itemOf(r, k);
-      it.deadline = inp.value; r.items[k] = it;
-      setRep(name, date, { items: r.items });
-      maybeAutoNotifyNg(name, date, k);   // 内容＋期限が揃えば自動でLINE通知
+  // 要対応の対応期限：ミニカレンダー（日をタップして選ぶ）
+  // 確認系の「異常なし（完了）」：写真を入れずにその場で完了にする
+  host.querySelectorAll("[data-noissue]").forEach((b) => {
+    b.onclick = () => {
+      const k = b.dataset.noissue, it = itemOf(r, k);
+      it.ok = true; it.noIssue = true; it.ng = false;
+      r.items[k] = it;
+      // 全項目が片付いたら清掃完了へ自動昇格（要対応中は判定から除外）
+      const req = itemsFor(name).filter((x) => !x.optional && !itemOf(r, x.key).ng);
+      const checked = req.filter((x) => itemOf(r, x.key).ok).length;
+      const status = (req.length && checked === req.length) ? "done" : (checked > 0 ? "doing" : "yet");
+      setRep(name, date, { items: r.items, status });
       renderModal();
     };
+  });
+  host.querySelectorAll("[data-ngcal]").forEach((el) => {
+    const k = el.dataset.ngcal;
+    const cur = itemOf(r, k).deadline || "";
+    // 表示する月：期限が入っていればその月、なければ今月
+    let vm = (() => {
+      const d = cur ? parseYmd(cur) : new Date();
+      return { y: d.getFullYear(), m: d.getMonth() };
+    })();
+    const draw = () => {
+      const sel = itemOf(r, k).deadline || "";
+      const first = new Date(vm.y, vm.m, 1);
+      const start = new Date(first); start.setDate(1 - first.getDay());
+      let g = "";
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(start); d.setDate(start.getDate() + i);
+        const ds = ymd(d), out = d.getMonth() !== vm.m, dow = d.getDay();
+        const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
+                     ds === sel ? "on" : "", dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
+        g += `<button type="button" class="${cls}" data-pick="${ds}">${d.getDate()}</button>`;
+      }
+      el.innerHTML = `<div class="mc-h">
+          <button type="button" class="mc-nav" data-mv="-1">${ic("left", 15)}</button>
+          <span class="mc-t">${vm.y}年 ${vm.m + 1}月</span>
+          <button type="button" class="mc-nav" data-mv="1">${ic("right", 15)}</button>
+        </div>
+        <div class="mc-wd"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+        <div class="mc-g">${g}</div>`;
+      el.querySelectorAll("[data-mv]").forEach((b) => {
+        b.onclick = (e) => {
+          e.stopPropagation();
+          const mv = Number(b.dataset.mv);
+          const nm = vm.m + mv;
+          vm = { y: vm.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 };
+          draw();
+        };
+      });
+      el.querySelectorAll("[data-pick]").forEach((b) => {
+        b.onclick = (e) => {
+          e.stopPropagation();
+          const it = itemOf(r, k);
+          // 同じ日をもう一度押したら解除できる
+          it.deadline = (it.deadline === b.dataset.pick) ? "" : b.dataset.pick;
+          r.items[k] = it;
+          setRep(name, date, { items: r.items });
+          maybeAutoNotifyNg(name, date, k);   // 内容＋期限が揃えば自動でLINE通知
+          renderModal();
+        };
+      });
+    };
+    draw();
   });
   // 要対応の本文（項目キー単位）
   host.querySelectorAll("[data-ngtext]").forEach((t) => {
