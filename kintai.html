@@ -380,18 +380,21 @@ main{padding:1.5rem 0 4rem;}
 .donefolder-h .df-chev.open{transform:rotate(180deg);}
 .donefolder-body{margin-top:.7rem;}
 /* 残留カード（写真をまだ入れていない箇所：未登録を強調） */
-.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;align-items:start;}
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem;align-items:stretch;}
 .pcard{position:relative;border:2px solid var(--am-300,#fcd34d);border-radius:.7rem;
   background:var(--am-50,#fffbeb);padding:1.2rem .8rem .8rem;display:flex;flex-direction:column;gap:.55rem;
+  height:100%;
   transition:border-color .15s,background-color .15s;box-shadow:0 1px 3px rgba(180,120,0,.08);}
 .pcard.dragover{border-color:var(--teal-700);background:var(--teal-50);box-shadow:0 0 0 3px var(--teal-100);}
 .pcard-badge{position:absolute;top:-10px;left:12px;display:inline-flex;align-items:center;gap:.25rem;
   background:var(--am-500,#f59e0b);color:#fff;font-size:11px;font-weight:800;line-height:1;
   padding:.32rem .55rem;border-radius:999px;box-shadow:0 2px 5px rgba(180,120,0,.3);}
 .pcard-h{display:flex;align-items:center;gap:.4rem;}
-.pcard-l{flex:1;font-size:17px;font-weight:700;color:var(--am-900,#78350f);line-height:1.3;}
-.pcard-msg{font-size:12px;font-weight:600;color:var(--am-700,#b45309);}
+.pcard-l{flex:1;font-size:17px;font-weight:700;color:var(--am-900,#78350f);line-height:1.3;
+  min-height:2.6em;display:flex;align-items:center;}
+.pcard-msg{font-size:12px;font-weight:600;color:var(--am-700,#b45309);flex:1;}
 .pcard-ng{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  margin-top:auto;
   border:1.5px solid var(--am-400,#fbbf24);background:#fff;color:var(--am-700);
   font-size:15px;font-weight:800;padding:.7rem .8rem;border-radius:.55rem;cursor:pointer;
   transition:background-color .15s,color .15s,border-color .15s;}
@@ -2018,7 +2021,18 @@ function renderModal() {
   const doneItems    = myItems.filter((it) => { const c = itemOf(r, it.key); return hasContent(c) && isDoneItem(c); });
 
   // 上部：残留カード（写真をまだ入れていない箇所）。要対応ボタンが大きく出る。
-  const pendingH = pendingItems.map((it) => {
+  // 色がバラバラに並ばないよう、カテゴリ順（薄紫→緑→オレンジ→青）にまとめる。同カテゴリ内は元の並び順を維持。
+  const CAT_ORDER = ["clean", "check", "damage", "box"];
+  const catRank = (k) => {
+    const i = CAT_ORDER.indexOf(catOf(k).key);
+    return i === -1 ? CAT_ORDER.length : i;
+  };
+  const pendingSorted = pendingItems
+    .map((it, i) => ({ it, i }))
+    .sort((a, b) => (catRank(a.it.key) - catRank(b.it.key)) || (a.i - b.i))
+    .map((x) => x.it);
+
+  const pendingH = pendingSorted.map((it) => {
     const cat = catOf(it.key);
     return `<div class="pcard" data-drop="item|${it.key}"
         style="border-color:${cat.bd};background:${cat.bg}">
@@ -2102,8 +2116,12 @@ function renderModal() {
     </div>`;
   };
 
-  const activeH = activeItems.map(cardHTML).join("");
-  const doneH = doneItems.map(cardHTML).join("");
+  const byCat = (arr) => arr
+    .map((it, i) => ({ it, i }))
+    .sort((a, b) => (catRank(a.it.key) - catRank(b.it.key)) || (a.i - b.i))
+    .map((x) => x.it);
+  const activeH = byCat(activeItems).map(cardHTML).join("");
+  const doneH = byCat(doneItems).map(cardHTML).join("");
 
   const todosH = "";
 
