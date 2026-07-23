@@ -1178,15 +1178,16 @@ const cityOf = (addr) =>
 
 /* ===== 清掃箇所のカテゴリ（色・写真枚数・案内文） =====
    ①清掃系=薄紫 / ②異常確認系=緑 / ③破損確認系=オレンジ / ④庫系=青  */
+// 色はすべて緑で統一。要対応（赤）だけが例外的に目立つようにするため。
 const ITEM_CATS = {
   clean:  { key: "clean",  max: 10, hint: "清掃後の写真を登録",
-            bd: "#c4b5fd", bg: "#f5f3ff", fg: "#6d28d9", badgeBg: "#8b5cf6" },        // 薄紫
+            bd: "#6ee7b7", bg: "#ecfdf5", fg: "#047857", badgeBg: "#10b981" },
   check:  { key: "check",  max: 10, hint: "異常があれば写真登録",
-            bd: "#6ee7b7", bg: "#ecfdf5", fg: "#047857", badgeBg: "#10b981" },        // 緑
+            bd: "#6ee7b7", bg: "#ecfdf5", fg: "#047857", badgeBg: "#10b981" },
   damage: { key: "damage", max: 10, hint: "異常があれば写真登録",
-            bd: "#fcd34d", bg: "#fffbeb", fg: "#b45309", badgeBg: "#f59e0b" },        // オレンジ
+            bd: "#6ee7b7", bg: "#ecfdf5", fg: "#047857", badgeBg: "#10b981" },
   box:    { key: "box",    max: 10, hint: "異常があれば写真登録",
-            bd: "#93c5fd", bg: "#eff6ff", fg: "#1d4ed8", badgeBg: "#3b82f6" },        // 青
+            bd: "#6ee7b7", bg: "#ecfdf5", fg: "#047857", badgeBg: "#10b981" },
 };
 // キー → カテゴリ。個別に案内文を上書きしたい箇所は hintOverride を使う。
 const ITEM_CAT_MAP = {
@@ -2127,17 +2128,9 @@ function renderModal() {
   const activeItems  = myItems.filter((it) => { const c = itemOf(r, it.key); return hasContent(c) && !isDoneItem(c); });
   const doneItems    = myItems.filter((it) => { const c = itemOf(r, it.key); return hasContent(c) && isDoneItem(c); });
 
-  // 上部：残留カード（写真をまだ入れていない箇所）。要対応ボタンが大きく出る。
-  // 色がバラバラに並ばないよう、カテゴリ順（薄紫→緑→オレンジ→青）にまとめる。同カテゴリ内は元の並び順を維持。
-  const CAT_ORDER = ["clean", "check", "damage", "box"];
-  const catRank = (k) => {
-    const i = CAT_ORDER.indexOf(catOf(k).key);
-    return i === -1 ? CAT_ORDER.length : i;
-  };
-  const pendingSorted = pendingItems
-    .map((it, i) => ({ it, i }))
-    .sort((a, b) => (catRank(a.it.key) - catRank(b.it.key)) || (a.i - b.i))
-    .map((x) => x.it);
+  // 上部：残留カード（写真をまだ入れていない箇所）。
+  // 色は全て緑に統一したので、並びは本来の項目順のまま（カテゴリ順の並び替えはしない）。
+  const pendingSorted = pendingItems;
 
   const pendingH = pendingSorted.map((it) => {
     const cat = catOf(it.key);
@@ -2233,12 +2226,8 @@ function renderModal() {
     </div>`;
   };
 
-  const byCat = (arr) => arr
-    .map((it, i) => ({ it, i }))
-    .sort((a, b) => (catRank(a.it.key) - catRank(b.it.key)) || (a.i - b.i))
-    .map((x) => x.it);
-  const activeH = byCat(activeItems).map(cardHTML).join("");
-  const doneH = byCat(doneItems).map(cardHTML).join("");
+  const activeH = activeItems.map(cardHTML).join("");
+  const doneH = doneItems.map(cardHTML).join("");
 
   const todosH = "";
 
