@@ -76,7 +76,7 @@ textarea.input{height:auto;min-height:5rem;resize:vertical;line-height:1.6;}
 .req{color:var(--rose-500);}
 
 /* ===== レイアウト ===== */
-.wrap{max-width:80rem;margin:0 auto;padding:0 1.5rem;}
+.wrap{max-width:96rem;margin:0 auto;padding:0 1.5rem;}
 .hd{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border);background:#fff;}
 .hd-in{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 0;}
 .hd-brand{display:flex;align-items:center;gap:.75rem;min-width:0;}
@@ -137,7 +137,7 @@ main{padding:1.5rem 0 4rem;}
 }
 
 .cols{display:grid;gap:1.5rem;}
-@media(min-width:1024px){ .cols{grid-template-columns:1fr 380px;} }
+@media(min-width:1024px){ .cols{grid-template-columns:minmax(0,1fr) 340px;} }
 
 /* カレンダー */
 .cal-h{display:flex;align-items:center;justify-content:space-between;
@@ -148,7 +148,7 @@ main{padding:1.5rem 0 4rem;}
 .cal-wd div{padding:.625rem 0;text-align:center;font-size:12px;font-weight:500;color:var(--muted);}
 .cal-wd div.sun{color:var(--rose-500);} .cal-wd div.sat{color:var(--blue-500);}
 .cal-g{display:grid;grid-template-columns:repeat(7,1fr);}
-.cell{min-height:6rem;border-bottom:1px solid var(--border-soft);border-right:1px solid var(--border-soft);
+.cell{min-height:8.5rem;border-bottom:1px solid var(--border-soft);border-right:1px solid var(--border-soft);
   padding:.5rem;text-align:left;background:transparent;border-top:0;border-left:0;
   display:flex;flex-direction:column;gap:.125rem;transition:background-color .15s;
   min-width:0;overflow:hidden;}
@@ -617,7 +617,7 @@ main{padding:1.5rem 0 4rem;}
   .hd-nav button span{display:none;}
   .hd-nav button{padding:.5rem;}
   .stat{padding:1rem;} .stat-v{font-size:24px;}
-  .cell{min-height:4.5rem;padding:.25rem;}
+  .cell{min-height:5.5rem;padding:.3rem;}
   .pill{font-size:10px;}
   .modal{padding:1.25rem;}
   .phases{grid-template-columns:1fr;}
