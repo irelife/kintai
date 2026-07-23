@@ -1158,20 +1158,21 @@ const TONE = {
   okayama:   { bd: "#6ee7b7", bg: "#f4fdf9" },  // 岡山＝緑
   other:     { bd: "#fcd34d", bg: "#fffdf5" },  // その他＝オレンジ
 };
+// カレンダーと右パネルの通常色。地域で分けず緑に統一し、赤（期限切れ）と黄（要対応）だけが目立つようにする。
+const TONE_NORMAL = { bd: "#6ee7b7", bg: "#f0fdf9" };
+const BADGE_NORMAL = { bg: "#ecfdf5", fg: "#047857" };
 function cardTone(name, ds) {
   if (isOverdue(name, ds)) return TONE.overdue;
   if (hasOpenNg(name, ds)) return TONE.ng;
   if (getRep(name, ds).status === "done") return TONE.done;
-  const p = props.find((x) => x.name === name) || {};
-  return TONE[cityOf(p.addr).key] || TONE.other;
+  return TONE_NORMAL;
 }
-// カレンダー帯の色を決める（優先：赤＞黄＞グレー＞地域色）
+// カレンダー帯の色を決める（優先：赤＞黄＞グレー＞通常の緑）
 function badgeStyle(name, ds) {
   if (isOverdue(name, ds)) return STATUS_STYLE.overdue;
   if (hasOpenNg(name, ds)) return STATUS_STYLE.ng;
   if (getRep(name, ds).status === "done") return STATUS_STYLE.done;
-  const p = props.find((x) => x.name === name) || {};
-  return CITY_STYLE[cityOf(p.addr).key];
+  return BADGE_NORMAL;
 }
 const cityOf = (addr) =>
   CITY_DEFS.find((d) => d.match && String(addr || "").includes(d.match)) || CITY_DEFS[3];
