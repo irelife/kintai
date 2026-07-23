@@ -392,7 +392,7 @@ main{padding:1.5rem 0 4rem;}
 .pcard-h{display:flex;align-items:center;gap:.4rem;}
 .pcard-l{flex:1;font-size:17px;font-weight:700;color:var(--am-900,#78350f);line-height:1.3;
   min-height:2.6em;display:flex;align-items:center;}
-.pcard-msg{font-size:12px;font-weight:600;color:var(--am-700,#b45309);flex:1;}
+.pcard-msg{font-size:15px;font-weight:700;color:var(--am-700,#b45309);flex:1;line-height:1.45;}
 .pcard-ng{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
   margin-top:auto;
   border:1.5px solid var(--am-400,#fbbf24);background:#fff;color:var(--am-700);
@@ -1111,28 +1111,32 @@ const cityOf = (addr) =>
 /* ===== 清掃箇所のカテゴリ（色・写真枚数・案内文） =====
    ①清掃系=薄紫 / ②異常確認系=緑 / ③破損確認系=オレンジ / ④庫系=青  */
 const ITEM_CATS = {
-  clean:  { key: "clean",  max: 3, hint: "清掃・草刈り後の写真を入れてください",
+  clean:  { key: "clean",  max: 10, hint: "清掃後の写真を登録",
             bd: "#c4b5fd", bg: "#f5f3ff", fg: "#6d28d9", badgeBg: "#8b5cf6" },        // 薄紫
-  check:  { key: "check",  max: 3, hint: "異常がなければ写真を入れるだけ。異常があれば「要対応にする」を押してください",
+  check:  { key: "check",  max: 10, hint: "異常があれば写真登録",
             bd: "#6ee7b7", bg: "#ecfdf5", fg: "#047857", badgeBg: "#10b981" },        // 緑
-  damage: { key: "damage", max: 5, hint: "破損・異常がないか確認して写真を入れてください（最大5枚）",
+  damage: { key: "damage", max: 10, hint: "異常があれば写真登録",
             bd: "#fcd34d", bg: "#fffbeb", fg: "#b45309", badgeBg: "#f59e0b" },        // オレンジ
-  box:    { key: "box",    max: 3, hint: "扉・中身の状態を写真に入れてください（最大3枚）",
+  box:    { key: "box",    max: 10, hint: "異常があれば写真登録",
             bd: "#93c5fd", bg: "#eff6ff", fg: "#1d4ed8", badgeBg: "#3b82f6" },        // 青
 };
 // キー → カテゴリ。個別に案内文を上書きしたい箇所は hintOverride を使う。
 const ITEM_CAT_MAP = {
   entrance: "clean", weed: "clean", common: "clean", corridor: "clean", elevator: "clean",
   sign: "check", exterior: "check", bike: "check", parking: "check", illegalpark: "check",
+  delivery: "check",
   masubuta: "damage", equip: "damage", abandoned: "damage",
-  delivery: "box", garbage: "box",
+  garbage: "box",
 };
 const ITEM_HINT_OVERRIDE = {
-  garbage: "ゴミ庫の【外観】と【中身】の両方を写真に入れてください（最大3枚）",
-  weed: "草刈り・剪定・除草後の写真を入れてください",
+  garbage: "中身の画像を映す",
+};
+// 個別に枚数を変えたい箇所（未指定はカテゴリの max を使用）
+const ITEM_MAX_OVERRIDE = {
+  garbage: 5,
 };
 function catOf(key) { return ITEM_CATS[ITEM_CAT_MAP[key]] || ITEM_CATS.check; }
-function catMax(key) { return catOf(key).max; }
+function catMax(key) { return ITEM_MAX_OVERRIDE[key] || catOf(key).max; }
 function catHint(key) { return ITEM_HINT_OVERRIDE[key] || catOf(key).hint; }
 
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
@@ -2042,7 +2046,7 @@ function renderModal() {
         <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 14)}</button>
       </div>
       <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
-      <button class="pcard-ng" data-ngtoggle="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("alert", 16)} 異常あり → 要対応にする</button>
+      <button class="pcard-ng" data-ngtoggle="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("alert", 16)} 要対応にする</button>
     </div>`;
   }).join("");
 
@@ -2592,6 +2596,59 @@ function buildReportHTML(date) {
 ${groups}</body></html>`;
 }
 
+/* ===== 要対応が出たときの対処手順（LINE通知に載せる） ===== */
+const NG_ACTION = {
+  masubuta: [
+    "【マスふたの割れ・破損】",
+    "1. 割れているマスふたの直径を測ってください。",
+    "2. 同じサイズのふたをホームセンターで購入してください。",
+    "3. 購入・交換が済むまで、入居者が踏み抜いてケガをしないよう、",
+    "   駐車禁止のポール（カラーコーン等）を購入して周囲を囲ってください。",
+    "※ 割れたふたは踏まないでください。安全確保を最優先でお願いします。",
+  ],
+  equip: [
+    "【設備の破損】",
+    "1. 建物で加入している火災保険へ連絡してください。",
+    "2. 修繕業者から見積もりを取得してください。",
+    "3. 保険会社とやり取りを進めてください。",
+    "4. 修理・交換の完了と、入金確認まで対応をお願いします。",
+  ],
+  abandoned: [
+    "【放置物】",
+    "1. 入居者のものである可能性がある場合は、文面と写真を用意してください。",
+    "2. 各住戸へ投函してください。",
+    "3. 反応がなければ、しかるべき処置をしたうえで廃棄してください。",
+  ],
+  garbage: [
+    "【ゴミ庫・分別不良】",
+    "1. 分別ができていない場合は、可能であれば分別して捨て直してください。",
+    "2. 量が多い場合は、その物件に依頼しているゴミ回収業者へ連絡してください。",
+  ],
+  illegalpark: [
+    "【迷惑駐車】",
+    "1. 車に傷がつかないよう、ワイパーにメッセージカードを挟んでください。",
+    "2. 「以後は駐車をお控えください」という柔らかめの文面にしてください。",
+    "3. 管理会社の名称は記載しなくて構いません。",
+    "※ 他の入居者の契約区画に停まっている車両向けにも、",
+    "   別のメッセージカードを用意しておいてください。",
+  ],
+  sign: [
+    "【管理会社の看板】",
+    "1. 汚損・破損がある場合は交換してください。",
+    "2. 針金で固めに固定してください。",
+    "3. 雨風で外れて車両や人に当たらないよう十分注意してください。",
+  ],
+  bike: [
+    "【放置自転車】",
+    "対応手順は下記を参照してください。",
+    "https://theredocs.com/pm/claim/left_bicycle",
+  ],
+};
+function ngActionText(key) {
+  const a = NG_ACTION[key];
+  return a ? a.join("\n") : "";
+}
+
 /* ===== 要対応をまとめてLINE通知（この物件の未解決要対応を1通で） ===== */
 async function sendNgNotifyAll(name, date) {
   const p = props.find((x) => x.name === name) || {};
@@ -2618,6 +2675,7 @@ async function sendNgNotifyAll(name, date) {
     item: t.label,
     text: t.c.text || "",
     deadline: t.c.deadline,
+    action: ngActionText(t.key),
     before: t.c.before || [],
     after: t.c.after || [],
   }));
@@ -2674,6 +2732,7 @@ async function maybeAutoNotifyNg(name, date, key) {
       item: label,
       text: it.text || "",
       deadline: it.deadline,
+      action: ngActionText(key),
       before: it.before || [],
       after: it.after || [],
     }],
