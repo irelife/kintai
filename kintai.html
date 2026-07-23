@@ -1762,6 +1762,8 @@ function monthMatches(y, m, filter) {
 const FILTER_LABEL = { total: "予定", done: "完了", ng: "要対応", yet: "未完了" };
 
 /* ===== 描画：カレンダー ===== */
+// セルに物件名を直接出す上限。これを超えた日は件数バッジになり、ホバー一覧の対象になる。
+const PILL_MAX = 2;
 function renderCal() {
   const s = monthStats(cursor.y, cursor.m);   // 上のカードは「今月」の集計（右の一覧と一致）
   document.getElementById("st-total").textContent = s.total;
@@ -1788,7 +1790,7 @@ function renderCal() {
     const list = sched[ds] || [], dow = d.getDay();
     const dcls = ["cell-d", out ? "out" : (ds === today() ? "today" : dow === 0 ? "sun" : dow === 6 ? "sat" : "")].join(" ");
     let pills = "";
-    if (list.length <= 2) {
+    if (list.length <= PILL_MAX) {
       // 少ない日：物件名の帯をそのまま表示
       pills = list.map((n) => {
         const st = badgeStyle(n, ds);
@@ -1823,9 +1825,9 @@ function renderCal() {
         <span class="daycount-bands">${bands}</span>
       </span>`;
     }
-    // 要望① ホバー時に出る一覧（PCのみCSSで表示。色は cardTone に統一）
+    // 要望① ホバー時に出る一覧。物件名が隠れる日（3件以上＝件数バッジ表示）だけに出す。
     let pop = "";
-    if (list.length) {
+    if (list.length > PILL_MAX) {
       const rows = list.map((n) => {
         const t = cardTone(n, ds);
         const r = getRep(n, ds);
