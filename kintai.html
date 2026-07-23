@@ -1012,6 +1012,16 @@ function hasOpenNg(name, ds) {
   const items = getRep(name, ds).items || {};
   return Object.values(items).some((c) => c && c.ng && !c.fixed);
 }
+// 物件に「未完了の予定」が残っているか（＝物件管理から隠す条件）
+// 完了(status==="done")になった予定は対象外＝カレンダーがグレーアウトした時点でカードが復活する
+function hasPendingSched(name) {
+  for (const ds in sched) {
+    const list = sched[ds] || [];
+    if (!list.includes(name)) continue;
+    if (getRep(name, ds).status !== "done") return true;
+  }
+  return false;
+}
 // カレンダー帯の色を決める（優先：赤＞黄＞グレー＞地域色）
 function badgeStyle(name, ds) {
   if (isOverdue(name, ds)) return STATUS_STYLE.overdue;
@@ -1848,11 +1858,12 @@ function sendCardHTML() {
 function renderProps() {
   const list = props.filter((p) =>
     (filterCity === "all" || cityOf(p.addr).key === filterCity) &&
-    (!filterQ || p.name.includes(filterQ) || String(p.addr || "").includes(filterQ)));
+    (!filterQ || p.name.includes(filterQ) || String(p.addr || "").includes(filterQ)) &&
+    !hasPendingSched(p.name));
   document.getElementById("p-count").textContent = `${list.length}件`;
   const wrap = document.getElementById("p-grid");
   if (!list.length) {
-    wrap.innerHTML = `<div class="card empty" style="grid-column:1/-1">該当する物件がありません。条件を変えて探してください。</div>`;
+    wrap.innerHTML = `<div class="card empty" style="grid-column:1/-1">表示できる物件がありません。予定に入っている物件は、清掃が完了するとここに戻ります。</div>`;
     return;
   }
   wrap.innerHTML = list.map((p) => {
@@ -2248,6 +2259,7 @@ function renderModal() {
     save(K.sched, sched);
     toast("予定から外しました", name);
     closeM();
+    if (tab === "prop") renderProps();
   };
 }
 
