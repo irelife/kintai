@@ -1879,7 +1879,7 @@ function renderSide() {
     (r.todos || []).forEach((t) => { b += (t.before || []).length; a += (t.after || []).length; });
     const ng = openNg(r);
     const sst = cardTone(n, selDate);
-    const badge = r.status === "done" ? `<span class="badge badge-emerald">清掃完了</span>`
+    const badge = r.status === "done" ? `<span class="badge badge-slate">清掃完了</span>`
       : r.status === "doing" ? `<span class="badge badge-amber">清掃中</span>`
       : `<span class="badge badge-slate">清掃前</span>`;
     return `<div class="card scard" data-n="${esc(n)}" style="border-color:${sst.bd};background:${sst.bg}">
