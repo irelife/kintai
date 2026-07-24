@@ -138,7 +138,7 @@ main{padding:1.5rem 0 4rem;}
 }
 
 .cols{display:grid;gap:1.5rem;}
-@media(min-width:1024px){ .cols{grid-template-columns:300px minmax(0,1fr) 340px;} }
+@media(min-width:1024px){ .cols{grid-template-columns:minmax(0,1fr) 340px;} }
 /* カレンダー左の物件一覧 */
 .proplist{display:flex;flex-direction:column;gap:.6rem;padding:1rem;max-height:calc(100vh - 12rem);}
 .proplist-h{display:flex;align-items:center;justify-content:space-between;}
@@ -1123,16 +1123,6 @@ img[data-photo]{cursor:pointer;}
     </div>
 
     <div class="cols">
-      <div class="card proplist">
-        <div class="proplist-h">
-          <h3>物件一覧</h3>
-          <span class="proplist-n" id="pl-count">0件</span>
-        </div>
-        <input class="input proplist-q" id="pl-q" placeholder="物件名・住所で絞り込む">
-        <div class="proplist-f" id="pl-filters"></div>
-        <div class="proplist-b" id="pl-list"></div>
-        <button class="btn btn-outline btn-sm proplist-add" id="pl-add">＋ 物件を追加</button>
-      </div>
       <div class="card">
         <div class="cal-h">
           <h2 id="cal-title">—</h2>
