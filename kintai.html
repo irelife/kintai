@@ -1149,7 +1149,7 @@ img[data-photo]{cursor:pointer;}
           <span class="cll"><i class="cll-dot" style="background:#fef3c7;border-color:#d97706"></i>要対応（未解決）</span>
           <span class="cll"><i class="cll-dot" style="background:#fef2f2;border-color:#dc2626"></i>期限切れ</span>
           <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
-          <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>完了</span>
+          <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>完了（要対応なし）</span>
         </div>
       </div>
 
@@ -1431,7 +1431,7 @@ const TONE_NORMAL = { bd: "#6ee7b7", bg: "#f0fdf9" };
 const BADGE_NORMAL = { bg: "#ecfdf5", fg: "#047857" };
 function cardTone(name, ds) {
   if (isOverdue(name, ds)) return TONE.overdue;
-  if (hasOpenNg(name, ds)) return TONE.doing;   // 要対応＝紫
+  if (hasOpenNg(name, ds)) return TONE.ng;   // 要対応＝黄（完了していても要対応が残っていれば黄が優先）
   const st = getRep(name, ds).status;
   if (st === "done") return TONE.done;
   if (st === "doing") return TONE.doing;   // 入力途中＝紫
@@ -1440,7 +1440,7 @@ function cardTone(name, ds) {
 // カレンダー帯の色を決める（優先：赤＞黄＞グレー＞通常の緑）
 function badgeStyle(name, ds) {
   if (isOverdue(name, ds)) return STATUS_STYLE.overdue;
-  if (hasOpenNg(name, ds)) return STATUS_STYLE.doing;   // 要対応＝紫
+  if (hasOpenNg(name, ds)) return STATUS_STYLE.ng;   // 要対応＝黄（完了していても要対応が残っていれば黄が優先）
   const st = getRep(name, ds).status;
   if (st === "done") return STATUS_STYLE.done;
   if (st === "doing") return STATUS_STYLE.doing;   // 入力途中＝紫
@@ -2762,7 +2762,7 @@ function renderModal() {
             </div>
           </div>
 
-          <div class="howto-no">${ic("x", 20)} <b>糞尿・陶器物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
+          <div class="howto-no">${ic("x", 20)} <b>糞尿・嘔吐物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
         </div>
         <div class="field" style="margin-bottom:-.4rem">
           ${(r.status !== "done" && date < today() && !r.lateReason) ? "" : `
