@@ -68,6 +68,8 @@ textarea.input{height:auto;min-height:5rem;resize:vertical;line-height:1.6;}
   font-size:12px;font-weight:500;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .06);white-space:nowrap;}
 .badge-slate{background:var(--border-soft);color:var(--muted);}
 .badge-violet{background:#ede9fe;color:#6d28d9;}
+.badge-blue{background:#dbeafe;color:#1d4ed8;}
+.scard-late-r{margin-top:.4rem;font-size:12px;font-weight:600;color:#1e40af;line-height:1.5;}
 .badge-emerald{background:var(--em-50);color:var(--em-700);}
 .badge-amber{background:var(--am-50);color:var(--am-700);}
 .badge-rose{background:var(--rose-50);color:var(--rose-700);}
@@ -199,6 +201,7 @@ main{padding:1.5rem 0 4rem;}
   display:flex;align-items:center;gap:.25rem;}
 .pill-late:hover{filter:brightness(.95);}
 .pill-late{flex-wrap:wrap;}
+.pill-late-p{flex-basis:100%;font-size:9px;font-weight:800;color:#1e40af;line-height:1.3;opacity:.95;}
 .pill-late-r{flex-basis:100%;font-size:9px;font-weight:600;color:#1e40af;line-height:1.3;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pill-late-t{flex:none;font-size:9px;font-weight:800;background:#2563eb;color:#fff;
@@ -215,6 +218,11 @@ main{padding:1.5rem 0 4rem;}
   font-size:14px;font-weight:800;color:var(--em-700);}
 /* 未登録カードの写真スロット（項目→写真の順で入れる） */
 .pshots{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:auto;}
+.pcard-tap{display:inline-flex;align-items:center;gap:.35rem;font-size:13px;font-weight:800;
+  color:#fff;background:var(--am-500,#f59e0b);border-radius:999px;
+  padding:.35rem .7rem;margin:.1rem 0 .5rem;align-self:flex-start;}
+.pshot-tap{font-size:11px;font-weight:800;color:var(--am-700,#b45309);
+  background:var(--am-100,#fef3c7);border-radius:999px;padding:.05rem .5rem;margin-top:.2rem;}
 .pshot{position:relative;aspect-ratio:1/1;border-radius:.5rem;overflow:hidden;border:1px solid var(--border);}
 .pshot img{width:100%;height:100%;object-fit:cover;display:block;}
 .pshot button{position:absolute;top:4px;right:4px;width:1.6rem;height:1.6rem;border-radius:9999px;
@@ -483,7 +491,12 @@ main{padding:1.5rem 0 4rem;}
 .inbox-shot img{width:100%;height:100%;object-fit:cover;display:block;}
 .inbox-tag{position:absolute;left:0;right:0;bottom:0;background:rgba(15,118,110,.88);color:#fff;font-size:10px;font-weight:800;text-align:center;padding:3px 0;}
 .inbox-del{position:absolute;top:3px;right:3px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
-.inbox-hint{font-size:13px;color:var(--teal-800,#115e59);margin-top:.6rem;font-weight:800;display:inline-flex;align-items:center;gap:.35rem;background:var(--am-50,#fffbeb);border:1px solid var(--am-200,#fde68a);border-radius:8px;padding:.5rem .7rem;}
+.inbox-hint{font-size:13px;color:var(--teal-800,#115e59);margin-top:.6rem;font-weight:800;
+  display:grid;grid-template-columns:auto 1fr;align-items:start;gap:.35rem;
+  background:var(--am-50,#fffbeb);border:1px solid var(--am-200,#fde68a);border-radius:8px;
+  padding:.5rem .7rem;line-height:1.7;}
+.inbox-hint svg{margin-top:.2rem;}
+.inbox-hint b{font-weight:800;color:#92400e;}
 .inbox-empty{font-size:12px;color:var(--muted-2);padding:.3rem 0;}
 /* 振り分け先の選択オーバーレイ */
 .assign{background:#fff;border-radius:18px;width:min(94vw,460px);max-height:88vh;overflow:auto;padding:1.1rem;box-shadow:0 20px 60px rgba(0,0,0,.3);}
@@ -578,7 +591,9 @@ main{padding:1.5rem 0 4rem;}
   transition:background-color .15s,color .15s,border-color .15s;}
 .pcard-ok:hover{background:var(--em-50);border-color:var(--em-500);color:var(--em-700);}
 .pcard-ng:hover{background:var(--am-500);color:#fff;border-color:var(--am-500);}
-.pending-label{display:inline-flex;align-items:center;gap:.4rem;color:var(--am-700,#b45309)!important;font-weight:800!important;}
+.pending-label{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:.4rem;
+  color:var(--am-700,#b45309)!important;font-weight:800!important;line-height:1.6;}
+.pending-label svg{margin-top:.15rem;}
 /* 要対応中のカードは中身が縦に伸びるので全幅に */
 .itemcard.isng{grid-column:1/-1;}
 .itemcard{border:2px solid var(--border);border-radius:.8rem;background:#fff;padding:1.1rem 1.2rem;
@@ -1004,8 +1019,15 @@ img[data-photo]{cursor:pointer;}
 @media(max-width:768px){
   .wrap{padding:0 1rem;}
   .stat{padding:1rem;} .stat-v{font-size:24px;}
-  .cell{min-height:5.5rem;padding:.3rem;}
-  .pill{font-size:10px;}
+  .cell{min-height:8.5rem;padding:.3rem .25rem;}
+  .cell-d{height:1.35rem;min-width:1.35rem;font-size:12px;}
+  .pill{font-size:11px;padding:.2rem .3rem;gap:.1rem;}
+  /* スマホは横幅が狭いので、物件名を1文字で切らず2行まで折り返す（Googleカレンダー方式） */
+  .pill .pill-nm{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    line-height:1.25;word-break:break-all;}
+  .pill span{white-space:normal;}
+  .pill-x{align-self:flex-start;}
+  .pill-why{font-size:9px;}
   .modal{padding:1.25rem;}
   .phases{grid-template-columns:1fr;}
   .shot,.add-shot{height:6.5rem;width:6.5rem;}
@@ -1703,7 +1725,8 @@ function shrink(f) {
 }
 function pickFiles(cb) {
   const inp = document.createElement("input");
-  inp.type = "file"; inp.accept = "image/*"; inp.capture = "environment"; inp.multiple = true;
+  // capture は付けない：付けるとスマホでカメラが起動し、複数枚の一括選択ができなくなる
+  inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
   inp.onchange = () => cb(Array.from(inp.files || []));
   inp.click();
 }
@@ -2390,9 +2413,12 @@ function renderCal() {
       // 少ない日：物件名の帯をそのまま表示
       pills = list.map((n) => {
         const st = badgeStyle(n, ds);
-        const done = getRep(n, ds).status === "done";
+        const rn = getRep(n, ds);
+        const done = rn.status === "done";
         let reason = overdueReason(n, ds);
         const hard = reason === "期限切れ";   // 要対応の期限切れ＝最重要
+        // 遅れて完了したものは、いつ完了したかを赤帯にも出す（完了日の青帯と対で見えるように）
+        if (hard && isLateDone(rn, ds)) reason = `期限切れ → ${fmtDate(rn.doneDate)}に完了`;
         // 期限切れでなくても、未解決の要対応があれば「要対応」ラベルを出す（黄帯）
         if (!reason && hasOpenNg(n, ds)) reason = "要対応";
         const styleStr = hard ? "background:#dc2626;color:#fff" : `background:${st.bg};color:${st.fg}`;
@@ -2445,6 +2471,7 @@ function renderCal() {
       `<span class="pill pill-late" data-popopen="${esc(x.name)}|${esc(x.planned)}"
         title="${esc(fmtDate(x.planned))}の予定を、この日に完了${x.reason ? "／理由：" + esc(x.reason) : ""}">
         <span class="pill-n">${esc(x.name)}</span><span class="pill-late-t">遅延完了</span>
+        <span class="pill-late-p">${esc(fmtDate(x.planned))}の予定</span>
         ${x.reason ? `<span class="pill-late-r">${esc(x.reason)}</span>` : ""}</span>`
     ).join("");
     pills += latePills;
@@ -2530,10 +2557,48 @@ function renderSide() {
   /* 通常の日別ビュー */
   document.getElementById("side-date").textContent = fmtDate(selDate);
   const list = sched[selDate] || [];
-  document.getElementById("side-count").textContent = `${list.length}件`;
+  // この日に「遅れて完了した」記録（予定日は別の日）も一緒に出す
+  const lateHere = [];
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|");
+    if (sep < 0) return;
+    const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
+    const rr = reps[rk] || {};
+    if (rr.doneDate === selDate && isLateDone(rr, planned)) lateHere.push({ name: nm, planned });
+  });
+  document.getElementById("side-count").textContent = `${list.length + lateHere.length}件`;
 
-  if (!list.length) {
+  if (!list.length && !lateHere.length) {
     wrap.innerHTML = `<div class="card empty">予定はありません。<br>物件管理から清掃を予定してください。</div>`;
+    return;
+  }
+  // 遅延完了ぶんのカード（青枠。押すと予定日の記録が開く）
+  const lateH = lateHere.map((x) => {
+    const p = props.find((y) => y.name === x.name) || { addr: "" };
+    const r = getRep(x.name, x.planned);
+    const c = cityOf(p.addr), st = CITY_STYLE[c.key];
+    let ph = 0;
+    Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; });
+    const ng = openNg(r);
+    return `<div class="card scard latecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
+        style="border-color:#60a5fa;background:#eff6ff">
+      <div class="scard-h"><div class="scard-n">${esc(x.name)}</div>
+        <span class="badge badge-blue">遅延完了</span></div>
+      <div class="scard-a">${esc(p.addr)}</div>
+      <div class="scard-m">
+        <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
+        <span class="mini">${ic("calendar", 12)} ${fmtDate(x.planned)}の予定</span>
+        <span class="mini">${ic("camera", 12)} ${ph}枚</span>
+        ${ng ? `<span class="badge badge-amber">要対応 ${ng}</span>` : ""}
+      </div>
+      ${r.lateReason ? `<div class="scard-late-r">理由：${esc(r.lateReason)}</div>` : ""}
+    </div>`;
+  }).join("");
+  if (!list.length) {
+    wrap.innerHTML = lateH;
+    wrap.querySelectorAll(".latecard").forEach((c) => {
+      c.onclick = () => { openRep = { name: c.dataset.n, date: c.dataset.d }; openItem = null; renderModal(); };
+    });
     return;
   }
   wrap.innerHTML = list.map((n) => {
@@ -2567,10 +2632,14 @@ function renderSide() {
         return `<div class="sgeo-row">${box(g.open, "到着")}${box(g.done, "完了")}</div>`;
       })()}
       </div>`;
-  }).join("") + sendCardHTML();
+  }).join("") + lateH + sendCardHTML();
 
   wrap.querySelectorAll(".scard").forEach((c) => {
-    c.onclick = () => { openRep = { name: c.dataset.n, date: selDate }; openItem = null; renderModal(); };
+    c.onclick = () => {
+      // 遅延完了カードは予定日の記録を開く（data-d を持っている）
+      openRep = { name: c.dataset.n, date: c.dataset.d || selDate };
+      openItem = null; renderModal();
+    };
   });
   const sb = document.getElementById("send-btn");
   if (sb) sb.onclick = sendMail;
@@ -2698,9 +2767,10 @@ function renderModal() {
       <div class="pcard-badge" style="background:${cat.badgeBg}">${ic("alert", 12)} 未登録</div>
       <div class="pcard-h">
         <span class="pcard-l" style="color:${cat.fg}">${esc(itemShort(it.key, it.label))}${it.optional ? `<span class="item-o">任意</span>` : ""}</span>
-        <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 14)}</button>
+        <button class="item-x" data-delitem="${it.key}" title="この項目を削除" aria-label="項目を削除">${ic("x", 14)}</button>
       </div>
       <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
+      <div class="pcard-tap">${ic("camera", 14)} 下の枠をタップして写真を登録</div>
       ${(() => {
         const cur = (itemOf(r, it.key).photos || []).length;
         return `<div class="pshots">
@@ -2708,7 +2778,7 @@ function renderModal() {
             ? `<div class="pshot">${imgTag(itemOf(r, it.key).photos[k])}
                  <button data-del="item|${it.key}||${k}" aria-label="写真を消す">${ic("x", 12)}</button></div>`
             : `<button class="pshot-add" data-pickitem="${it.key}">
-                 ${ic("camera", 26)}<span>${k + 1}枚目</span></button>`).join("")}
+                 ${ic("camera", 26)}<span>${k + 1}枚目</span><span class="pshot-tap">タップ</span></button>`).join("")}
         </div>`;
       })()}
     </div>`;
@@ -2885,7 +2955,7 @@ function renderModal() {
           ${(r.inbox && r.inbox.length) ? `<div class="inbox-strip">${r.inbox.map((src, i) =>
             `<div class="inbox-shot">${imgTag(src)}<button class="inbox-del" data-inbox-del="${i}" aria-label="削除">${ic("x", 11)}</button></div>`
           ).join("")}</div>
-          <div class="inbox-hint">${ic("alert", 13)} 取り込んだ写真 ${r.inbox.length}枚。下の<b>箇所のカード</b>をタップして、その箇所の写真を2枚ずつ選んでください。</div>` : ""}
+          <div class="inbox-hint">${ic("alert", 13)}<span>取り込んだ写真 ${r.inbox.length}枚。下の<b>箇所のカード</b>をタップして、その箇所の写真を2枚ずつ選んでください。</span></div>` : ""}
           `}
         </div>
         ${pendingItems.length ? `<div class="field">
