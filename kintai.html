@@ -67,6 +67,7 @@ textarea.input{height:auto;min-height:5rem;resize:vertical;line-height:1.6;}
 .badge{display:inline-flex;align-items:center;border-radius:var(--r-sm);padding:.125rem .5rem;
   font-size:12px;font-weight:500;box-shadow:inset 0 0 0 1px rgb(0 0 0 / .06);white-space:nowrap;}
 .badge-slate{background:var(--border-soft);color:var(--muted);}
+.badge-violet{background:#ede9fe;color:#6d28d9;}
 .badge-emerald{background:var(--em-50);color:var(--em-700);}
 .badge-amber{background:var(--am-50);color:var(--am-700);}
 .badge-rose{background:var(--rose-50);color:var(--rose-700);}
@@ -171,6 +172,9 @@ main{padding:1.5rem 0 4rem;}
 .pill-late{background:#dbeafe;color:#1d4ed8;border:1px solid #60a5fa;cursor:pointer;
   display:flex;align-items:center;gap:.25rem;}
 .pill-late:hover{filter:brightness(.95);}
+.pill-late{flex-wrap:wrap;}
+.pill-late-r{flex-basis:100%;font-size:9px;font-weight:600;color:#1e40af;line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pill-late-t{flex:none;font-size:9px;font-weight:800;background:#2563eb;color:#fff;
   border-radius:9999px;padding:0 .3rem;}
 /* 遅れた理由の入力 */
@@ -207,10 +211,13 @@ main{padding:1.5rem 0 4rem;}
 /* やることの案内 */
 .howto{border:2px solid var(--teal-200,#99f6e4);background:var(--teal-50,#f0fdfa);
   border-radius:.8rem;padding:1rem 1.2rem;margin-bottom:1rem;}
-.howto-h{display:flex;align-items:center;gap:.4rem;font-size:17px;font-weight:800;color:var(--teal-700);margin-bottom:.5rem;}
-.howto-b{display:flex;flex-direction:column;gap:.15rem;font-size:14px;line-height:1.65;}
-.howto-b b{font-size:15px;font-weight:800;color:var(--fg);margin-top:.35rem;}
-.howto-b span{color:var(--muted);}
+.howto-h{display:flex;align-items:center;gap:.4rem;font-size:22px;font-weight:800;color:var(--teal-700);margin-bottom:.7rem;}
+.howto-b{display:flex;flex-direction:column;gap:.2rem;font-size:17px;line-height:1.7;}
+.howto-b b{font-size:19px;font-weight:800;color:var(--fg);margin-top:.6rem;}
+.howto-b span{color:var(--fg);font-size:16px;}
+.howto-no{display:flex;align-items:center;gap:.5rem;margin-top:.9rem;padding:.7rem .9rem;
+  background:#fef2f2;border:2px solid #fca5a5;border-radius:.6rem;color:#b91c1c;font-size:17px;}
+.howto-no b{font-size:18px;color:#b91c1c;margin:0;}
 /* 項目から写真を選ぶ画面 */
 .pickwrap{width:min(96vw,560px);}
 .pick-guide{font-size:16px;font-weight:700;color:var(--fg);margin:.2rem 0 .8rem;line-height:1.5;}
@@ -1089,6 +1096,7 @@ img[data-photo]{cursor:pointer;}
         <div class="cal-legend">
           <span class="cll"><i class="cll-dot" style="background:#fef3c7;border-color:#d97706"></i>要対応（未解決）</span>
           <span class="cll"><i class="cll-dot" style="background:#fef2f2;border-color:#dc2626"></i>期限切れ</span>
+          <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
           <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>完了</span>
         </div>
       </div>
@@ -1320,6 +1328,7 @@ const STATUS_STYLE = {
   overdue: { dot: "#dc2626", bg: "#fef2f2", fg: "#dc2626" },    // 期限切れ＝赤
   ng: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309" },         // 要対応（未解決・期限内）＝黄
   done: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },       // 完了＝グレー
+  doing: { dot: "#7c3aed", bg: "#f5f3ff", fg: "#6d28d9" },      // 入力途中＝紫
 };
 // その物件・その日の「期限切れ」判定。理由文字列を返す（該当なしは null）
 //  A) 要対応(ng)で対応期限を過ぎて未解決  B) 清掃予定日を過ぎても手つかず(status=yet)
@@ -1331,7 +1340,9 @@ function overdueReason(name, ds) {
     const c = items[k];
     if (c && c.ng && !c.fixed && c.deadline && c.deadline < t0) return "期限切れ";
   }
-  if (ds < t0 && r.status !== "done" && r.status === "yet") return "未着手";
+  if (ds < t0 && r.status !== "done") return "期限切れ";   // 未着手も入力途中も、予定日を過ぎたら期限切れ
+  // 遅れて完了したものは、予定日側に「期限切れ」の記録を残す（実際の完了日には青帯が出る）
+  if (isLateDone(r, ds)) return "期限切れ";
   return null;
 }
 function isOverdue(name, ds) { return !!overdueReason(name, ds); }
@@ -1355,6 +1366,7 @@ const TONE = {
   overdue:   { bd: "#fca5a5", bg: "#fef2f2" },  // 期限切れ＝赤
   ng:        { bd: "#fcd34d", bg: "#fffbeb" },  // 要対応＝黄
   done:      { bd: "#cbd5e1", bg: "#f8fafc" },  // 完了＝グレー
+  doing:     { bd: "#c4b5fd", bg: "#f5f3ff" },  // 入力途中＝紫
 };
 // カレンダーと右パネルの通常色。地域で分けず緑に統一し、赤（期限切れ）と黄（要対応）だけが目立つようにする。
 const TONE_NORMAL = { bd: "#6ee7b7", bg: "#f0fdf9" };
@@ -1362,14 +1374,18 @@ const BADGE_NORMAL = { bg: "#ecfdf5", fg: "#047857" };
 function cardTone(name, ds) {
   if (isOverdue(name, ds)) return TONE.overdue;
   if (hasOpenNg(name, ds)) return TONE.ng;
-  if (getRep(name, ds).status === "done") return TONE.done;
+  const st = getRep(name, ds).status;
+  if (st === "done") return TONE.done;
+  if (st === "doing") return TONE.doing;   // 入力途中＝紫
   return TONE_NORMAL;
 }
 // カレンダー帯の色を決める（優先：赤＞黄＞グレー＞通常の緑）
 function badgeStyle(name, ds) {
   if (isOverdue(name, ds)) return STATUS_STYLE.overdue;
   if (hasOpenNg(name, ds)) return STATUS_STYLE.ng;
-  if (getRep(name, ds).status === "done") return STATUS_STYLE.done;
+  const st = getRep(name, ds).status;
+  if (st === "done") return STATUS_STYLE.done;
+  if (st === "doing") return STATUS_STYLE.doing;   // 入力途中＝紫
   return BADGE_NORMAL;
 }
 const cityOf = (addr) =>
@@ -2117,7 +2133,7 @@ function renderCal() {
     const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
     const rr = reps[rk] || {};
     if (!isLateDone(rr, planned)) return;
-    (lateByDay[rr.doneDate] = lateByDay[rr.doneDate] || []).push({ name: nm, planned });
+    (lateByDay[rr.doneDate] = lateByDay[rr.doneDate] || []).push({ name: nm, planned, reason: rr.lateReason || "" });
   });
 
   let h = "";
@@ -2168,7 +2184,7 @@ function renderCal() {
       const rows = list.map((n) => {
         const t = cardTone(n, ds);
         const r = getRep(n, ds);
-        const stt = r.status === "done" ? "清掃完了" : r.status === "doing" ? "清掃中" : "清掃前";
+        const stt = r.status === "done" ? "清掃完了" : r.status === "doing" ? "入力途中" : "清掃前";
         // 到着・完了の時刻（記録があれば出す）
         const g = r.geo || {};
         const hm = (x) => x ? new Date(x.at).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) : "";
@@ -2183,8 +2199,10 @@ function renderCal() {
     // この日に「遅れて完了した」ものを青帯で足す
     const lateHere = lateByDay[ds] || [];
     const latePills = lateHere.map((x) =>
-      `<span class="pill pill-late" data-popopen="${esc(x.name)}|${esc(x.planned)}" title="${esc(fmtDate(x.planned))}の予定を、この日に完了">
-        <span class="pill-n">${esc(x.name)}</span><span class="pill-late-t">遅延完了</span></span>`
+      `<span class="pill pill-late" data-popopen="${esc(x.name)}|${esc(x.planned)}"
+        title="${esc(fmtDate(x.planned))}の予定を、この日に完了${x.reason ? "／理由：" + esc(x.reason) : ""}">
+        <span class="pill-n">${esc(x.name)}</span><span class="pill-late-t">遅延完了</span>
+        ${x.reason ? `<span class="pill-late-r">${esc(x.reason)}</span>` : ""}</span>`
     ).join("");
     pills += latePills;
 
@@ -2245,7 +2263,7 @@ function renderSide() {
         const ng = openNg(r);
         const sst = cardTone(name, date);
         const badge = r.status === "done" ? `<span class="badge badge-slate">清掃完了</span>`
-          : r.status === "doing" ? `<span class="badge badge-amber">清掃中</span>`
+          : r.status === "doing" ? `<span class="badge badge-violet">入力途中</span>`
           : `<span class="badge badge-slate">清掃前</span>`;
         return `<div class="card scard" data-n="${esc(name)}" data-d="${esc(date)}" style="border-color:${sst.bd};background:${sst.bg}">
           <div class="scard-h"><div class="scard-n">${esc(name)}</div>${badge}</div>
@@ -2284,7 +2302,7 @@ function renderSide() {
     const ng = openNg(r);
     const sst = cardTone(n, selDate);
     const badge = r.status === "done" ? `<span class="badge badge-slate">清掃完了</span>`
-      : r.status === "doing" ? `<span class="badge badge-amber">清掃中</span>`
+      : r.status === "doing" ? `<span class="badge badge-violet">入力途中</span>`
       : `<span class="badge badge-slate">清掃前</span>`;
     return `<div class="card scard" data-n="${esc(n)}" style="border-color:${sst.bd};background:${sst.bg}">
       <div class="scard-h"><div class="scard-n">${esc(n)}</div>${badge}</div>
@@ -2428,7 +2446,7 @@ function renderModal() {
 
   const pendingH = pendingSorted.map((it) => {
     const cat = catOf(it.key);
-    return `<div class="pcard" data-drop="item|${it.key}"
+    return `<div class="pcard" data-drop="item|${it.key}" data-pickitem="${it.key}"
         style="border-color:${cat.bd};background:${cat.bg}">
       <div class="pcard-badge" style="background:${cat.badgeBg}">${ic("alert", 12)} 未登録</div>
       <div class="pcard-h">
@@ -2566,12 +2584,13 @@ function renderModal() {
         <div class="howto">
           <div class="howto-h">${ic("check2", 18)} この記録でやること</div>
           <div class="howto-b">
-            <b>1. 清掃箇所を各2枚ずつ撮影して登録</b>
+            <b>1. 清掃箇所を 各2枚ずつ 撮影して登録</b>
             <span>玄関前（階段）／駐車場／駐輪場／ゴミ庫／植栽／用水路の掃き／拭き掃除</span>
-            <b>2. 異常があり、その日に解決できない場合は「要対応」に登録</b>
-            <span>写真・内容・期限を入れて登録し、期限までにしかるべき対応をして完了させてください。</span>
+            <b>2. その日に直せないものは「要対応」に登録</b>
+            <span>写真・内容・期限を入れて登録。期限までに対応して完了させること。</span>
             <b>要対応にするもの</b>
-            <span>外観（外壁・階段・看板などの破損／汚損）／駐車場（迷惑駐車）／設備（マス蓋を含む）の破損・汚損／その他（糞尿・ゴミ・不法投棄など）</span>
+            <span>外観（外壁・階段・看板などの破損／汚損）／駐車場（迷惑駐車）／設備（マス蓋を含む）の破損・汚損／その他（ゴミ・不法投棄など）</span>
+            <div class="howto-no">${ic("x", 18)} <b>糞尿・陶器物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
           </div>
         </div>
         <div class="field" style="margin-bottom:-.4rem">
@@ -2678,21 +2697,8 @@ function renderModal() {
   const closeM = () => {
     const d = openRep && openRep.date;
     const nm = openRep && openRep.name;
-    if (d && nm) {
-      const rr = getRep(nm, d);
-      const openNgNow = openNg(rr);
-      const anyRecord = Object.values(rr.items || {}).some((it) =>
-        it && (it.ng || (it.photos || []).length || (it.before || []).length || (it.after || []).length || it.ok));
-      if (openNgNow > 0) {
-        // 未解決の要対応あり → 未完了のまま（doneにしない）
-        if (rr.status === "done") setRep(nm, d, { status: "doing" });
-      } else if (anyRecord && rr.status !== "done") {
-        // 要対応なし＋何か記録あり → 完了確認
-        if (confirm("要対応はありません。この清掃を「完了」にしますか？\n（カレンダー上でグレーアウトされます）")) {
-          setRep(nm, d, { status: "done" });
-        }
-      }
-    }
+    // 完了かどうかは写真の枚数だけで決める（途中で閉じても勝手に完了にしない）
+    if (d && nm) refreshStatus(nm, d);
     openRep = null; openItem = null; renderModal(); renderCal();
     if (d && cfg.gas) syncToSheet(d, true);  // 記録を閉じたら静かに同期
   };
@@ -2701,6 +2707,7 @@ function renderModal() {
   // 項目カードから直接その箇所の写真を入れる（項目→写真の順で登録できる）
   host.querySelectorAll("[data-pickitem]").forEach((b) => {
     b.onclick = (e) => {
+      if (e.target.closest("[data-delitem], [data-del], img[data-photo]")) return;  // ×や写真は別処理
       e.stopPropagation();
       const k = b.dataset.pickitem;
       const rr = getRep(name, date);
@@ -3227,7 +3234,11 @@ function fixAllStatus() {
     const need = itemsFor(nm).filter((x) => !x.optional);
     const ok = need.filter((x) => ((rr.items || {})[x.key] || {}).photos?.length >= NEED_SHOTS).length;
     const st = (need.length && ok === need.length) ? "done" : (ok > 0 ? "doing" : "yet");
-    if (rr.status !== st) { rr.status = st; if (st !== "done") rr.doneDate = ""; n++; }
+    if (rr.status !== st) { rr.status = st; n++; }
+    if (st === "done") {
+      // 完了なのに完了日が無い過去データは、予定日に終わったものとみなす（誤って遅延扱いにしない）
+      if (!rr.doneDate) { rr.doneDate = dt; n++; }
+    } else if (rr.doneDate) { rr.doneDate = ""; n++; }
   });
   if (n) save(K.reps, reps);
 }
@@ -4825,6 +4836,7 @@ function renderNgEntry(name, date) {
       setRep(name, date, { ngDraft: rr.ngDraft });
       renderNgEntry(name, date);
     };
+    bindNgListed(host, name, date);   // 登録済みカードの×・写真操作を有効にする
     return;
   }
 
@@ -4976,6 +4988,12 @@ function renderNgEntry(name, date) {
       persist(); renderNgEntry(name, date);
     });
   });
+  bindNgListed(host, name, date);
+}
+
+/* 登録済みの要対応カード：写真の追加・削除・ドロップ・カード削除をまとめて有効にする。
+   下書きの有無にかかわらず必ず呼ぶこと（呼び忘れると×が効かなくなる）。 */
+function bindNgListed(host, name, date) {
   // ドラッグ&ドロップで写真を入れる
   host.querySelectorAll("[data-drop]").forEach((zone) => {
     const parts = zone.dataset.drop.split("|");
