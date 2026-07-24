@@ -1148,15 +1148,11 @@ function hasPendingSched(name) {
   }
   return false;
 }
-// カード枠/背景のトーン（優先：赤＞黄＞グレー＞地域色）。⑤の色統一で共通利用。
+// カード枠/背景のトーン（優先：赤＞黄＞グレー＞通常の緑）。地域別の色分けは廃止。
 const TONE = {
   overdue:   { bd: "#fca5a5", bg: "#fef2f2" },  // 期限切れ＝赤
   ng:        { bd: "#fcd34d", bg: "#fffbeb" },  // 要対応＝黄
   done:      { bd: "#cbd5e1", bg: "#f8fafc" },  // 完了＝グレー
-  fukuyama:  { bd: "#c4b5fd", bg: "#faf9ff" },  // 福山＝紫
-  kurashiki: { bd: "#93c5fd", bg: "#f6faff" },  // 倉敷＝青
-  okayama:   { bd: "#6ee7b7", bg: "#f4fdf9" },  // 岡山＝緑
-  other:     { bd: "#fcd34d", bg: "#fffdf5" },  // その他＝オレンジ
 };
 // カレンダーと右パネルの通常色。地域で分けず緑に統一し、赤（期限切れ）と黄（要対応）だけが目立つようにする。
 const TONE_NORMAL = { bd: "#6ee7b7", bg: "#f0fdf9" };
@@ -2082,7 +2078,7 @@ function renderProps() {
   }
   wrap.innerHTML = list.map((p) => {
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
-    const tn = TONE[c.key] || TONE.other;
+    const tn = TONE_NORMAL;   // 地域で色を変えず緑で統一
     return `<div class="card bcard" style="border-color:${tn.bd};background:${tn.bg}">
       <div class="bcard-h">
         <span class="bcard-i">${ic("building", 15)}</span>
