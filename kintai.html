@@ -1803,20 +1803,6 @@ function addShots(target) {
     let arr, limitName;
     if (target.kind === "item") {
       const it = itemOf(r, target.key);
-      // 確認系（清掃系以外）は「異常があるときだけ写真を入れる」運用。
-      // 通常写真を入れた＝異常あり とみなし、その場で要対応に切り替えてビフォーへ送る。
-      const isCheckType = catOf(target.key).key !== "clean";
-      if (isCheckType && !it.ng && target.phase !== "before" && target.phase !== "after") {
-        it.ng = true;
-        it.before = it.before || []; it.after = it.after || []; it.fixed = false;
-        it.deadline = ""; it.notified = false; it.notifiedAt = "";
-        if (it.photos && it.photos.length) {
-          const room0 = catMax(target.key) - it.before.length;
-          it.before.push(...it.photos.slice(0, room0));
-          it.photos = [];
-        }
-        target = { kind: "item", key: target.key, phase: "before" };
-      }
       if (target.phase === "before" || target.phase === "after") {
         it[target.phase] = it[target.phase] || [];
         arr = it[target.phase];
@@ -2184,7 +2170,6 @@ function renderModal() {
 
   const pendingH = pendingSorted.map((it) => {
     const cat = catOf(it.key);
-    const isCheckType = cat.key !== "clean";
     return `<div class="pcard" data-drop="item|${it.key}"
         style="border-color:${cat.bd};background:${cat.bg}">
       <div class="pcard-badge" style="background:${cat.badgeBg}">${ic("alert", 12)} 未登録</div>
@@ -2193,9 +2178,6 @@ function renderModal() {
         <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 14)}</button>
       </div>
       <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
-      ${isCheckType
-        ? `<button class="pcard-ok" data-noissue="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("check2", 16)} 異常なし（完了）</button>`
-        : `<button class="pcard-ng" data-ngtoggle="${it.key}" style="border-color:${cat.bd};color:${cat.fg}">${ic("alert", 16)} 要対応にする</button>`}
     </div>`;
   }).join("");
 
@@ -2248,15 +2230,10 @@ function renderModal() {
     const tinted = !c.ok;
     const cardStyle = tinted ? `border-color:${cat.bd};background:${cat.bg}` : "";
     const labelStyle = tinted ? `color:${cat.fg}` : "";
-    // 要対応中ボタンもカテゴリ色に（オンのとき塗り、オフのとき枠線）
-    const ngBtnStyle = isNg
-      ? `background:${cat.badgeBg};border-color:${cat.badgeBg};color:#fff`
-      : `background:#fff;border-color:${cat.bd};color:${cat.fg}`;
     return `<div class="itemcard ${c.ok ? "done" : ""} ${isNg ? "isng" : ""}" data-drop="item|${it.key}" style="${cardStyle}">
       <div class="itemcard-top">
         <span class="itemcard-name" style="border-color:${cat.bd};color:${cat.fg};background:#fff">${esc(itemShort(it.key, it.label))}${it.optional ? `<span class="item-o">任意</span>` : ""}</span>
         <span class="itemcard-top-r">
-          <button class="ng-toggle ${isNg ? "on" : ""}" data-ngtoggle="${it.key}" style="${ngBtnStyle}">${ic("alert", 13)} ${isNg ? "要対応中" : "要対応にする"}</button>
           <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 15)}</button>
         </span>
       </div>
@@ -2314,7 +2291,7 @@ function renderModal() {
           <div class="inbox-hint">${ic("alert", 13)} ${r.inbox.length}枚が未振り分けです。写真をタップして、どの箇所か選んでください。</div>` : ""}
         </div>
         ${pendingItems.length ? `<div class="field">
-          <label class="pending-label">${ic("alert", 15)} まだ未登録の箇所が ${pendingItems.length}件あります（写真を入れるか、要対応にしてください）</label>
+          <label class="pending-label">${ic("alert", 15)} まだ写真が未登録の箇所が ${pendingItems.length}件あります</label>
           <div class="pcards">${pendingH}</div>
           <button class="btn btn-outline btn-sm" id="item-add" style="margin-top:.5rem">${ic("plus", 14)} 項目を追加</button>
         </div>` : `<div style="display:flex;justify-content:flex-end">
@@ -2531,53 +2508,6 @@ function renderModal() {
       const persist = () => setRep(name, date, { items: r.items });
       await addPhotosToArray(files.slice(0, room), it.photos, persist, { name, date });
     });
-  });
-  // 要対応トグル（何度押しても重複しない＝項目のフラグを切り替えるだけ）
-  host.querySelectorAll("[data-ngtoggle]").forEach((b) => {
-    b.onclick = () => {
-      const k = b.dataset.ngtoggle, it = itemOf(r, k);
-      const wasNg = !!it.ng;
-      it.ng = !it.ng;
-      if (it.ng && !wasNg) {
-        // 新しく要対応にした時は、期限・通知履歴を必ず空から始める
-        it.before = it.before || []; it.after = it.after || []; it.fixed = false;
-        it.deadline = "";            // 日付は空スタート（入力したら自動通知）
-        it.notified = false; it.notifiedAt = "";
-        // 既にこの箇所へ振り分けた通常写真を、自動でビフォーへ移す
-        if (it.photos && it.photos.length) {
-          const room = catMax(k) - it.before.length;
-          it.before.push(...it.photos.slice(0, room));
-          it.photos = [];
-        }
-      }
-      r.items[k] = it;
-      setRep(name, date, { items: r.items }); renderModal();
-    };
-  });
-  // 要対応：解決済みトグル（期限が入っていないと解決できない）
-  host.querySelectorAll("[data-ngfix]").forEach((b) => {
-    b.onclick = () => {
-      const k = b.dataset.ngfix, it = itemOf(r, k);
-      if (!it.deadline) { toast("先に対応期限を入れてください", "期限のない要対応は解決にできません"); return; }
-      it.fixed = !it.fixed; r.items[k] = it;
-      setRep(name, date, { items: r.items }); renderModal();
-    };
-  });
-  // 要対応：対応期限
-  // 要対応の対応期限：ミニカレンダー（日をタップして選ぶ）
-  // 確認系の「異常なし（完了）」：写真を入れずにその場で完了にする
-  host.querySelectorAll("[data-noissue]").forEach((b) => {
-    b.onclick = () => {
-      const k = b.dataset.noissue, it = itemOf(r, k);
-      it.ok = true; it.noIssue = true; it.ng = false;
-      r.items[k] = it;
-      // 全項目が片付いたら清掃完了へ自動昇格（要対応中は判定から除外）
-      const req = itemsFor(name).filter((x) => !x.optional && !itemOf(r, x.key).ng);
-      const checked = req.filter((x) => itemOf(r, x.key).ok).length;
-      const status = (req.length && checked === req.length) ? "done" : (checked > 0 ? "doing" : "yet");
-      setRep(name, date, { items: r.items, status });
-      renderModal();
-    };
   });
   host.querySelectorAll("[data-ngcal]").forEach((el) => {
     const k = el.dataset.ngcal;
@@ -4508,6 +4438,7 @@ function renderNgEntry(name, date) {
   if (!getNgDraft(name, date)) {
     host.innerHTML = `${listed}
       <button class="ngstart" id="ng-start">${ic("alert", 18)} 要対応を追加する</button>`;
+    hydratePhotos(host);
     const b = document.getElementById("ng-start");
     if (b) b.onclick = () => {
       // 下書きは記録本体（reps）の中に置く。こうしないと写真アップロード完了時の
@@ -4576,6 +4507,7 @@ function renderNgEntry(name, date) {
       </div>
     </div>`;
 
+  hydratePhotos(host);   // プレースホルダに実画像を差し込む
   // 1. 場所
   host.querySelectorAll("[data-place]").forEach((b) => {
     b.onclick = () => { const rr = getRep(name, date); rr.ngDraft.place = b.dataset.place;
