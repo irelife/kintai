@@ -244,8 +244,17 @@ main{padding:1.5rem 0 4rem;}
   color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;}
 .howto-no1.red{background:#dc2626;}
 .howto-step-b{flex:1;min-width:0;}
-.howto-t{font-size:20px;font-weight:800;color:var(--fg);line-height:1.45;margin-bottom:.7rem;}
+.howto-t{font-size:22px;font-weight:800;color:var(--fg);line-height:1.55;margin-bottom:.7rem;}
+/* 手順の中で特に伝えたい語（大きく・色分け）：①=緑／②=赤 */
+.howto-key{font-size:27px;font-weight:900;line-height:1.3;padding:.05em .18em;border-radius:.3rem;
+  display:inline-block;vertical-align:-.06em;}
+.howto-key.teal{color:var(--teal-700,#0f766e);background:var(--teal-50,#f0fdfa);
+  box-shadow:0 3px 0 var(--teal-200,#99f6e4) inset;}
+.howto-key.red{color:#b91c1c;background:#fef2f2;box-shadow:0 3px 0 #fecaca inset;}
+@media(max-width:640px){ .howto-t{font-size:19px;} .howto-key{font-size:23px;} }
 .howto-t2{font-size:16px;font-weight:800;color:var(--muted);margin:.8rem 0 .35rem;}
+.howto-t2.teal{color:var(--teal-700,#0f766e);}
+.howto-t2.red{color:#b91c1c;}
 .howto-two{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
 @media(max-width:640px){ .howto-two{grid-template-columns:1fr;} }
 .howto-card{border:2px solid var(--teal-200,#99f6e4);background:var(--teal-50,#f0fdfa);
@@ -1948,16 +1957,38 @@ async function cleanPull(silent) {
 }
 
 /* ===== まとめて写真 → 各清掃箇所へ振り分け ===== */
-// 未振り分けプールに写真を一括追加
+// あと何枚取り込めるか＝(未完了の必須箇所の残り必要枚数の合計) − (すでにプールにある枚数)
+// これを超える取り込みは受け付けない（写真が余らないようにするため）
+function inboxCapacity(name, date) {
+  const r = getRep(name, date);
+  const req = itemsFor(name).filter((x) => !x.optional);
+  let need = 0;
+  req.forEach((x) => {
+    const have = (itemOf(r, x.key).photos || []).length;
+    need += Math.max(0, NEED_SHOTS - have);
+  });
+  return Math.max(0, need - (r.inbox || []).length);
+}
+// 未振り分けプールに写真を一括追加（必要枚数を超える分は取り込まない）
 function addToInbox() {
+  const cap0 = inboxCapacity(openRep.name, openRep.date);
+  if (cap0 <= 0) {
+    toast("これ以上追加できません", "必要な写真はすべて揃っています。清掃以外で気づいたことは「要対応を追加する」から登録してください。");
+    return;
+  }
   pickFiles(async (files) => {
     files = files.filter((f) => !f.type || /^image\//.test(f.type));
     if (!files.length) return;
+    const cap = inboxCapacity(openRep.name, openRep.date);
+    if (cap <= 0) { toast("これ以上追加できません", "必要な写真はすべて揃っています"); return; }
+    let over = 0;
+    if (files.length > cap) { over = files.length - cap; files = files.slice(0, cap); }
     const r = getRep(openRep.name, openRep.date);
     r.inbox = r.inbox || [];
     const persist = () => setRep(openRep.name, openRep.date, { inbox: r.inbox });
     const added = await addPhotosToArray(files, r.inbox, persist, { name: openRep.name, date: openRep.date });
-    toast(`${added}枚を追加しました`, "写真をタップして各箇所へ振り分けてください");
+    if (over > 0) toast(`${added}枚だけ追加しました`, `必要な枚数を超えるため、${over}枚は取り込みませんでした`);
+    else toast(`${added}枚を追加しました`, "写真をタップして各箇所へ振り分けてください");
   });
 }
 function delInboxPhoto(i) {
@@ -2553,6 +2584,8 @@ function renderModal() {
   const isDoneItem = (c) => (c.photos || []).length >= NEED_SHOTS;
 
   const pendingItems = myItems.filter((it) => !hasContent(itemOf(r, it.key)));
+  // あと何枚プールに取り込めるか（0なら「写真を追加する」を出さない＝余りを作らせない）
+  const _cap = inboxCapacity(name, date);
   const activeItems  = myItems.filter((it) => { const c = itemOf(r, it.key); return hasContent(c) && !isDoneItem(c); });
   const doneItems    = myItems.filter((it) => { const c = itemOf(r, it.key); return hasContent(c) && isDoneItem(c); });
 
@@ -2703,7 +2736,7 @@ function renderModal() {
           <div class="howto-step">
             <div class="howto-no1">1</div>
             <div class="howto-step-b">
-              <div class="howto-t">下の箇所を それぞれ 写真2枚ずつ 登録する</div>
+              <div class="howto-t"><span class="howto-key teal">清掃後</span>に、下の箇所を それぞれ <span class="howto-key teal">写真2枚ずつ</span> 登録する</div>
               <div class="howto-two">
                 <div class="howto-card">
                   <div class="howto-card-h">アパートの場合</div>
@@ -2714,7 +2747,7 @@ function renderModal() {
                   <div class="howto-card-b">エントランス（エレベーターホール含む）／共用部分／駐車場／ゴミ庫／放置自転車</div>
                 </div>
               </div>
-              <div class="howto-t2">やること</div>
+              <div class="howto-t2 teal">やること</div>
               <div class="howto-do">拭き掃除・掃き掃除　／　蜘蛛の巣・ハチの巣の除去　／　ゴミ庫の分別確認と清掃　／　草取り　／　植栽の剪定</div>
             </div>
           </div>
@@ -2722,8 +2755,8 @@ function renderModal() {
           <div class="howto-step">
             <div class="howto-no1 red">2</div>
             <div class="howto-step-b">
-              <div class="howto-t">その日に解決できないものは「要対応」に登録する</div>
-              <div class="howto-t2">要対応にするもの</div>
+              <div class="howto-t">その日に<span class="howto-key red">解決できないもの</span>は<span class="howto-key red">「要対応」</span>に登録する</div>
+              <div class="howto-t2 red">要対応にするもの</div>
               <div class="howto-ng">放置物　／　迷惑駐車　／　外壁・マス蓋・雨樋・管理看板の破損　／　その他 設備・アスファルト・階段の破損や重度の汚損　／　ゴミの不法投棄・分別違反　／　大量の草抜き　／　植栽の剪定・伐採　／　用水路の掃除</div>
               <div class="howto-add">写真・内容・期限を入れて登録し、期限までに対応して「解決済み」にすること。</div>
             </div>
@@ -2733,16 +2766,20 @@ function renderModal() {
         </div>
         <div class="field" style="margin-bottom:-.4rem">
           ${(r.status !== "done" && date < today() && !r.lateReason) ? "" : `
-          ${pendingItems.length ? `
+          ${pendingItems.length ? (_cap > 0 ? `
           <label>① まず写真をここに入れる（ドラッグ＆ドロップ or タップ）</label>
           <div class="dropbox" id="dropbox">
             <div class="dropbox-inner" id="dropbox-inner">
               <div class="dropbox-ico">${ic("camera", 40)}</div>
               <div class="dropbox-big">ここに写真をドラッグ、またはタップして選ぶ</div>
-              <div class="dropbox-sub">スマホは下のボタンから撮影・選択できます</div>
+              <div class="dropbox-sub">あと <b>${_cap}枚</b> まで追加できます</div>
               <button class="btn btn-default dropbox-btn" id="inbox-add">${ic("plus", 18)} 写真を追加する</button>
             </div>
           </div>` : `
+          <div class="dropbox-done">${ic("check2", 26)}
+            <b>必要な写真はすべて取り込み済みです</b>
+            <span>下の<b>箇所のカード</b>をタップして、写真を振り分けてください。</span>
+          </div>`) : `
           <div class="dropbox-done">${ic("check2", 26)}
             <b>清掃写真はすべて登録済みです（各箇所2枚）</b>
             <span>これ以上は追加できません。清掃以外で気づいたことは<br>下の<b>「要対応を追加する」</b>から登録してください。</span>
@@ -2916,12 +2953,17 @@ function renderModal() {
     dropbox.addEventListener("dragleave", () => dropbox.classList.remove("dragover"));
     dropbox.addEventListener("drop", async (e) => {
       e.preventDefault(); dropbox.classList.remove("dragover");
-      const files = Array.from(e.dataTransfer.files || []).filter((f) => /^image\//.test(f.type));
+      let files = Array.from(e.dataTransfer.files || []).filter((f) => /^image\//.test(f.type));
       if (!files.length) return;
+      const cap = inboxCapacity(name, date);
+      if (cap <= 0) { toast("これ以上追加できません", "必要な写真はすべて揃っています"); return; }
+      let over = 0;
+      if (files.length > cap) { over = files.length - cap; files = files.slice(0, cap); }
       const rr = getRep(name, date); rr.inbox = rr.inbox || [];
       const persist = () => setRep(name, date, { inbox: rr.inbox });
       const added = await addPhotosToArray(files, rr.inbox, persist, { name, date });
-      toast(`${added}枚を追加しました`, "写真をタップして各箇所へ振り分けてください");
+      if (over > 0) toast(`${added}枚だけ追加しました`, `必要な枚数を超えるため、${over}枚は取り込みませんでした`);
+      else toast(`${added}枚を追加しました`, "写真をタップして各箇所へ振り分けてください");
     });
   }
   // プールの写真をタップ → 振り分け先を選ぶ
