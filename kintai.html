@@ -1839,7 +1839,7 @@ function addShots(target) {
       arr = todoShots(t, target.phase);
       limitName = target.phase === "before" ? "ビフォー" : "アフター";
     }
-    const maxN = (target.kind === "item") ? catMax(target.key) : SHOT_MAX;
+    const maxN = (target.kind === "item") ? NEED_SHOTS : SHOT_MAX;
     const room = maxN - arr.length;
     if (room <= 0) { toast("これ以上追加できません", `${limitName}は最大${maxN}枚です`); return; }
     const use = files.slice(0, room);
@@ -2223,7 +2223,7 @@ function renderModal() {
     const c = itemOf(r, it.key);
     const isNg = !!c.ng;
     const cat = catOf(it.key);
-    const maxN = cat.max;
+    const maxN = NEED_SHOTS;   // 清掃箇所は2枚まで
 
     let shotsBlock;
     if (isNg) {
