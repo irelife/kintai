@@ -523,6 +523,8 @@ main{padding:1.5rem 0 4rem;}
   aspect-ratio:1/1;border:2px solid var(--border);border-radius:.6rem;background:#fff;}
 .sgeo-l{font-size:13px;font-weight:800;color:var(--muted);}
 .sgeo-t{font-size:24px;font-weight:800;color:var(--fg);line-height:1;}
+.sgeo-a{font-size:11px;font-weight:700;color:var(--teal-700);text-align:center;line-height:1.3;
+  padding:0 .3rem;overflow:hidden;text-overflow:ellipsis;}
 .sgeo.empty{border-style:dashed;}
 .sgeo.empty .sgeo-t{color:var(--muted-3);}
 /* カレンダーのホバーに出す到着・完了 */
@@ -564,6 +566,7 @@ img[data-photo]{cursor:pointer;}
 .geo-ico{color:var(--teal-700);}
 .geo-t{font-size:32px;font-weight:800;line-height:1.1;}
 .geo-d{font-size:15px;font-weight:700;color:var(--muted);}
+.geo-addr{font-size:14px;font-weight:700;color:var(--teal-700);line-height:1.35;}
 .geocard.far{border-color:#fca5a5;background:#fff5f5;}
 .geocard.empty{color:var(--muted-2);border-style:dashed;}
 .geocard.empty b{font-size:20px;}
@@ -2318,7 +2321,8 @@ function renderSide() {
         if (!g.open && !g.done) return "";
         const hm = (x) => x ? new Date(x.at).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) : "—";
         const box = (x, lbl) => `<div class="sgeo ${x ? "" : "empty"}">
-          <span class="sgeo-l">${lbl}</span><span class="sgeo-t">${hm(x)}</span></div>`;
+          <span class="sgeo-l">${lbl}</span><span class="sgeo-t">${hm(x)}</span>
+          ${x && x.addr ? `<span class="sgeo-a">${esc(x.addr)}</span>` : ""}</div>`;
         return `<div class="sgeo-row">${box(g.open, "到着")}${box(g.done, "完了")}</div>`;
       })()}
       </div>`;
@@ -2643,6 +2647,7 @@ function renderModal() {
                   <b>${lbl}</b>
                   <span class="geo-t">${d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}</span>
                   <span class="geo-d">${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日</span>
+                  ${x.addr ? `<span class="geo-addr">${esc(x.addr)}</span>` : ""}
                   ${x.dist != null ? `<span class="geodist">物件から${x.dist}m</span>` : ""}
                   <span class="geomap">地図で見る</span></a>`;
               };
@@ -3170,6 +3175,23 @@ function distM(a, b) {
   return Math.round(2 * R * Math.asin(Math.sqrt(s)));
 }
 // 住所から座標を取る（国土地理院。日本の住所向け・無料）
+// 座標から大まかな住所を引く（国土地理院の逆ジオコーダ）。
+// muniCd（市区町村コード）は名称表を持たないため、返ってくる町名（lv01Nm）を主に使う。
+const _revCache = {};
+async function reverseGeo(lat, lng) {
+  const key = lat.toFixed(4) + "," + lng.toFixed(4);   // 約10m単位に丸めて使い回す
+  if (_revCache[key] !== undefined) return _revCache[key];
+  try {
+    const u = "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=" + lat + "&lon=" + lng;
+    const res = await fetch(u);
+    const j = await res.json();
+    const town = (j && j.results && j.results.lv01Nm) || "";
+    const out = (town && town !== "\uff0d") ? town : "";
+    _revCache[key] = out;
+    return out;
+  } catch (e) { _revCache[key] = ""; return ""; }
+}
+
 async function geocodeAddr(addr) {
   if (!addr) return null;
   try {
@@ -3221,6 +3243,15 @@ async function stampPos(name, date, phase) {
   pos.dist = d;
   r.geo[phase] = pos;
   setRep(name, date, { geo: r.geo });
+  // 住所は後追いで足す（電波が悪くても位置の記録自体は先に残す）
+  reverseGeo(pos.lat, pos.lng).then((addr) => {
+    if (!addr) return;
+    const rr = getRep(name, date);
+    if (!rr.geo || !rr.geo[phase]) return;
+    rr.geo[phase].addr = addr;
+    setRep(name, date, { geo: rr.geo });
+    if (openRep && openRep.name === name && openRep.date === date) renderModal();
+  }).catch(() => {});
   return pos;
 }
 
