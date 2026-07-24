@@ -442,6 +442,8 @@ main{padding:1.5rem 0 4rem;}
 .georow.far .geodist{color:#b91c1c;}
 .geomap{margin-left:auto;font-size:13px;font-weight:700;color:var(--teal-700);}
 
+.ngstep-note{font-size:13px;color:var(--muted-2);margin-top:.5rem;}
+
 /* ===== 要対応の段階入力 ===== */
 .ngstart{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
   border:2px dashed #fca5a5;background:#fff5f5;color:#b91c1c;border-radius:.7rem;
@@ -538,13 +540,13 @@ main{padding:1.5rem 0 4rem;}
 .itemcard-hint{font-size:12px;font-weight:600;margin-top:.35rem;line-height:1.45;opacity:.95;}
 .itemcard-shot-h{display:flex;justify-content:flex-end;margin-top:.5rem;}
 .itemcard-cnt{font-size:14px;font-weight:800;color:var(--muted-2);}
-.ishot{position:relative;width:7.5rem;height:7.5rem;border-radius:.6rem;overflow:hidden;
+.ishot{position:relative;width:9rem;height:9rem;border-radius:.6rem;overflow:hidden;
   border:1px solid var(--border);background:var(--border-soft);}
 .ishot img{width:100%;height:100%;object-fit:cover;display:block;}
 .ishot button{position:absolute;top:4px;right:4px;width:1.7rem;height:1.7rem;border-radius:9999px;
   border:0;background:rgb(15 23 42 / .65);color:#fff;display:flex;align-items:center;justify-content:center;
   cursor:pointer;padding:0;}
-.iadd{width:7.5rem;height:7.5rem;border-radius:.6rem;border:2px dashed var(--muted-3);background:#fff;
+.iadd{width:9rem;height:9rem;border-radius:.6rem;border:2px dashed var(--muted-3);background:#fff;
   color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;
   cursor:pointer;font-size:13px;transition:border-color .15s,background-color .15s;}
 .iadd:hover{border-color:var(--teal-700);background:var(--teal-50);color:var(--teal-700);}
@@ -581,13 +583,13 @@ main{padding:1.5rem 0 4rem;}
 .phase-t.a{color:var(--em-700);}
 .phase-c{font-size:14px;font-weight:700;color:var(--muted-2);}
 .shots{display:flex;flex-wrap:wrap;gap:.5rem;}
-.shot{position:relative;height:7rem;width:7rem;border-radius:.6rem;overflow:hidden;
+.shot{position:relative;height:9rem;width:9rem;border-radius:.6rem;overflow:hidden;
   border:1px solid var(--border);background:var(--border-soft);}
 .shot img{height:100%;width:100%;object-fit:cover;display:block;}
-.shot button{position:absolute;top:4px;right:4px;height:1.7rem;width:1.7rem;border-radius:9999px;
+.shot button{position:absolute;top:5px;right:5px;height:2rem;width:2rem;border-radius:9999px;
   border:0;background:rgb(15 23 42 / .65);color:#fff;display:flex;align-items:center;justify-content:center;
   line-height:0;padding:0;}
-.add-shot{display:flex;height:7rem;width:7rem;align-items:center;justify-content:center;
+.add-shot{display:flex;height:9rem;width:9rem;align-items:center;justify-content:center;
   border-radius:.6rem;border:2px dashed var(--muted-3);background:#fff;color:var(--muted);
   transition:border-color .15s,background-color .15s;}
 .add-shot:hover{border-color:var(--muted);background:var(--bg);}
@@ -740,8 +742,8 @@ main{padding:1.5rem 0 4rem;}
   .pill{font-size:10px;}
   .modal{padding:1.25rem;}
   .phases{grid-template-columns:1fr;}
-  .shot,.add-shot{height:5.5rem;width:5.5rem;}
-  .ishot,.iadd{width:6rem;height:6rem;}
+  .shot,.add-shot{height:6.5rem;width:6.5rem;}
+  .ishot,.iadd{width:6.5rem;height:6.5rem;}
   .toast{left:1rem;right:1rem;width:auto;}
 }
 @media(prefers-reduced-motion:reduce){ *{transition:none !important;animation:none !important;} }
@@ -2489,13 +2491,28 @@ function renderModal() {
   });
   // 写真：ドラッグ&ドロップ（項目枠に直接）
   host.querySelectorAll("[data-drop]").forEach((zone) => {
-    const [, key] = zone.dataset.drop.split("|");
+    const parts = zone.dataset.drop.split("|");
+    const kind = parts[0], key = parts[1];
     zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
     zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
     zone.addEventListener("drop", async (e) => {
       e.preventDefault(); zone.classList.remove("dragover");
       const files = Array.from(e.dataTransfer.files || []).filter((f) => /^image\//.test(f.type));
       if (!files.length) return;
+      if (kind === "ng") {
+        // 要対応のビフォー／アフターへ直接入れる
+        e.stopPropagation();
+        const ph = parts[2] || "before";
+        const rr = getRep(name, date);
+        const g = (rr.ngs || [])[+key]; if (!g) return;
+        g[ph] = g[ph] || [];
+        const room2 = 10 - g[ph].length;
+        if (room2 <= 0) return;
+        const persist2 = () => setRep(name, date, { ngs: rr.ngs });
+        await addPhotosToArray(files.slice(0, room2), g[ph], persist2, { name, date });
+        persist2(); renderNgEntry(name, date);
+        return;
+      }
       const it = itemOf(r, key); it.photos = it.photos || [];
       const room = catMax(key) - it.photos.length;
       if (room <= 0) return;
@@ -4431,22 +4448,38 @@ function renderNgEntry(name, date) {
   if (!host) return;
   const r = getRep(name, date);
   // 登録済みの要対応（この日の分）
-  const listed = (r.ngs || []).map((g, i) => `
-    <div class="ngitem">
+  const listed = (r.ngs || []).map((g, i) => {
+    g.before = g.before || []; g.after = g.after || [];
+    const panel = (ph, lbl, cls) => `
+      <div class="phase" data-drop="ng|${i}|${ph}">
+        <div class="phase-h">
+          <span class="phase-t ${cls}">${lbl}</span>
+          <span class="phase-c">${g[ph].length}/10枚</span>
+        </div>
+        <div class="shots">
+          ${g[ph].map((src, k) => `<div class="shot">${imgTag(src)}
+            <button data-ngshotdel="${i}|${ph}|${k}" aria-label="削除">${ic("x", 12)}</button></div>`).join("")}
+          ${g[ph].length < 10 ? `<button class="add-shot" data-ngshotadd="${i}|${ph}">${ic("camera", 22)}</button>` : ""}
+        </div>
+      </div>`;
+    return `
+    <div class="ngitem" data-drop="ng|${i}|before">
       <div class="ngitem-h">
         <span class="ngitem-p">${esc(placeLabel(g.place))}</span>
         <span class="ngitem-k">${esc(kindLabel(g.kind))}</span>
         <button class="ngitem-x" data-ngdel="${i}" aria-label="削除">${ic("x", 15)}</button>
       </div>
       <div class="ngitem-t">${esc(g.text || "")}</div>
+      <div class="phases" style="margin-top:.7rem">${panel("before", "ビフォー", "")}${panel("after", "アフター", "a")}</div>
       <div class="ngitem-m">期限 ${esc(g.deadline ? fmtDate(g.deadline) : "未設定")}${g.notified ? "　通知済み" : ""}</div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 
   if (!ngDraft) {
     host.innerHTML = `${listed}
       <button class="ngstart" id="ng-start">${ic("alert", 18)} 要対応を追加する</button>`;
     const b = document.getElementById("ng-start");
-    if (b) b.onclick = () => { ngDraft = { place: "", kind: "", text: "", deadline: "", photos: [] }; renderNgEntry(name, date); };
+    if (b) b.onclick = () => { ngDraft = { place: "", kind: "", text: "", deadline: "" }; renderNgEntry(name, date); };
     return;
   }
 
@@ -4472,15 +4505,9 @@ function renderNgEntry(name, date) {
       </div>
 
       <div class="ngstep ${!step3 ? "off" : (step4 ? "done" : "now")}">
-        <div class="ngstep-l">3. 内容と写真</div>
+        <div class="ngstep-l">3. 内容</div>
         <textarea class="ng-note" id="ng-text" placeholder="例：外壁の一部が剥がれている。1階北側。" ${step3 ? "" : "disabled"}>${esc(d.text || "")}</textarea>
-        <div class="phase" style="margin-top:.6rem">
-          <div class="phase-h"><span class="phase-t">写真</span><span class="phase-c">${d.photos.length}/10枚</span></div>
-          <div class="shots">
-            ${d.photos.map((src, i) => `<div class="shot">${imgTag(src)}<button data-ngphdel="${i}" aria-label="削除">${ic("x", 12)}</button></div>`).join("")}
-            ${d.photos.length < 10 ? `<button class="add-shot" id="ng-ph" ${step3 ? "" : "disabled"}>${ic("camera", 20)}</button>` : ""}
-          </div>
-        </div>
+        <div class="ngstep-note">写真は登録後に「ビフォー／アフター」で追加できます</div>
       </div>
 
       <div class="ngstep ${!step4 ? "off" : "now"}">
@@ -4519,14 +4546,6 @@ function renderNgEntry(name, date) {
     ta.oninput = () => { d.text = ta.value; };
     ta.onblur = () => { d.text = ta.value; renderNgEntry(name, date); };
   }
-  const phBtn = document.getElementById("ng-ph");
-  if (phBtn) phBtn.onclick = () => pickFiles(async (files) => {
-    await addPhotosToArray(files.slice(0, 10 - d.photos.length), d.photos, () => {}, { name, date });
-    renderNgEntry(name, date);
-  });
-  host.querySelectorAll("[data-ngphdel]").forEach((b) => {
-    b.onclick = () => { d.photos.splice(+b.dataset.ngphdel, 1); renderNgEntry(name, date); };
-  });
   // 4. 期限
   if (step4) drawNgDraftCal(name, date);
   // 保存・取消
@@ -4535,13 +4554,63 @@ function renderNgEntry(name, date) {
   if (sv) sv.onclick = async () => {
     const rr = getRep(name, date);
     rr.ngs = rr.ngs || [];
-    rr.ngs.push({ place: d.place, kind: d.kind, text: d.text, deadline: d.deadline, photos: d.photos, notified: false });
+    rr.ngs.push({ place: d.place, kind: d.kind, text: d.text, deadline: d.deadline, before: [], after: [], notified: false });
     setRep(name, date, { ngs: rr.ngs });
     const wasUrgent = isUrgentItem(d.place);
     ngDraft = null;
     renderNgEntry(name, date); renderModal(); renderNgBadge();
     if (wasUrgent) await notifyNgDraft(name, date, rr.ngs.length - 1);
   };
+  // ドラッグ&ドロップで写真を入れる
+  host.querySelectorAll("[data-drop]").forEach((zone) => {
+    const parts = zone.dataset.drop.split("|");
+    if (parts[0] !== "ng") return;
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); zone.classList.add("dragover"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("drop", async (e) => {
+      e.preventDefault(); e.stopPropagation(); zone.classList.remove("dragover");
+      const files = Array.from(e.dataTransfer.files || []).filter((f) => /^image\//.test(f.type));
+      if (!files.length) return;
+      const ph = parts[2] || "before";
+      const rr = getRep(name, date);
+      const g = (rr.ngs || [])[+parts[1]]; if (!g) return;
+      g[ph] = g[ph] || [];
+      const room = 10 - g[ph].length;
+      if (room <= 0) { toast("写真は10枚までです", ""); return; }
+      const persist = () => setRep(name, date, { ngs: rr.ngs });
+      await addPhotosToArray(files.slice(0, room), g[ph], persist, { name, date });
+      persist(); renderNgEntry(name, date);
+    });
+  });
+  // 登録済みの写真：追加
+  host.querySelectorAll("[data-ngshotadd]").forEach((b) => {
+    b.onclick = () => {
+      const [i, ph] = b.dataset.ngshotadd.split("|");
+      pickFiles(async (files) => {
+        const rr = getRep(name, date);
+        const g = (rr.ngs || [])[+i]; if (!g) return;
+        g[ph] = g[ph] || [];
+        const room = 10 - g[ph].length;
+        if (room <= 0) { toast("写真は10枚までです", ""); return; }
+        await addPhotosToArray(files.slice(0, room), g[ph], () => {
+          setRep(name, date, { ngs: rr.ngs });
+        }, { name, date });
+        setRep(name, date, { ngs: rr.ngs });
+        renderNgEntry(name, date);
+      });
+    };
+  });
+  // 登録済みの写真：削除
+  host.querySelectorAll("[data-ngshotdel]").forEach((b) => {
+    b.onclick = () => {
+      const [i, ph, k] = b.dataset.ngshotdel.split("|");
+      const rr = getRep(name, date);
+      const g = (rr.ngs || [])[+i]; if (!g) return;
+      (g[ph] || []).splice(+k, 1);
+      setRep(name, date, { ngs: rr.ngs });
+      renderNgEntry(name, date);
+    };
+  });
   // 登録済みの削除
   host.querySelectorAll("[data-ngdel]").forEach((b) => {
     b.onclick = () => {
@@ -4597,7 +4666,7 @@ async function notifyNgDraft(name, date, idx) {
     property: name, address: p.addr || "", date,
     items: [{ item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`, text: g.text || "",
               deadline: g.deadline, action: ngActionText(g.place),
-              before: g.photos || [], after: [] }],
+              before: g.before || [], after: g.after || [] }],
   };
   try {
     await fetch(cfg.gas, { method: "POST", mode: "no-cors",
