@@ -183,6 +183,34 @@ main{padding:1.5rem 0 4rem;}
   padding:.7rem .8rem;font-size:16px;line-height:1.6;background:#fff;resize:vertical;}
 .late-ok{margin-top:.6rem;display:inline-flex;align-items:center;gap:.35rem;
   font-size:14px;font-weight:800;color:var(--em-700);}
+/* 未登録カードの写真スロット（項目→写真の順で入れる） */
+.pshots{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:auto;}
+.pshot{position:relative;aspect-ratio:1/1;border-radius:.5rem;overflow:hidden;border:1px solid var(--border);}
+.pshot img{width:100%;height:100%;object-fit:cover;display:block;}
+.pshot button{position:absolute;top:4px;right:4px;width:1.6rem;height:1.6rem;border-radius:9999px;
+  border:0;background:rgb(15 23 42 / .65);color:#fff;display:flex;align-items:center;justify-content:center;padding:0;}
+.pshot-add{aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;
+  border:2px dashed var(--muted-3);border-radius:.5rem;background:#fff;color:var(--muted);
+  font-size:12px;font-weight:700;cursor:pointer;}
+.pshot-add:hover{border-color:var(--teal-700);background:var(--teal-50);color:var(--teal-700);}
+/* 予定カレンダーに既存予定を出す */
+.mc-d.hasjob{font-weight:800;}
+.mc-jobs{display:block;font-size:9px;font-weight:800;color:#fff;background:var(--teal-700);
+  border-radius:9999px;margin-top:1px;line-height:1.4;}
+.mc-dn{display:block;}
+.selview-d{font-size:14px;font-weight:700;color:var(--fg);}
+.selview-l{font-size:12px;font-weight:700;color:var(--teal-700);margin-top:.4rem;}
+.selview-l.none{color:var(--muted-2);}
+.selview-n{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.25rem;}
+.selview-n span{font-size:12px;font-weight:700;background:var(--teal-50);color:var(--teal-700);
+  border:1px solid var(--teal-200,#99f6e4);border-radius:9999px;padding:.15rem .5rem;}
+/* やることの案内 */
+.howto{border:2px solid var(--teal-200,#99f6e4);background:var(--teal-50,#f0fdfa);
+  border-radius:.8rem;padding:1rem 1.2rem;margin-bottom:1rem;}
+.howto-h{display:flex;align-items:center;gap:.4rem;font-size:17px;font-weight:800;color:var(--teal-700);margin-bottom:.5rem;}
+.howto-b{display:flex;flex-direction:column;gap:.15rem;font-size:14px;line-height:1.65;}
+.howto-b b{font-size:15px;font-weight:800;color:var(--fg);margin-top:.35rem;}
+.howto-b span{color:var(--muted);}
 .latedone{border:2px solid #60a5fa;background:#eff6ff;border-radius:.7rem;
   padding:.8rem 1rem;margin-bottom:1rem;color:#1d4ed8;font-size:16px;font-weight:700;
   display:flex;flex-direction:column;gap:.3rem;}
@@ -1914,6 +1942,7 @@ function assignInboxPhoto(i, key) {
   r.items[key] = it;
   (r.inbox || []).splice(i, 1);   // プールから取り除く
   setRep(openRep.name, openRep.date, { items: r.items, inbox: r.inbox });
+  refreshStatus(openRep.name, openRep.date);   // 2枚揃ったかを再判定
   renderModal();
   toast("振り分けました", lbl);
 }
@@ -2372,9 +2401,17 @@ function renderModal() {
         <span class="pcard-l" style="color:${cat.fg}">${esc(itemShort(it.key, it.label))}${it.optional ? `<span class="item-o">任意</span>` : ""}</span>
         <button class="item-x" data-delitem="${it.key}" aria-label="項目を削除">${ic("x", 14)}</button>
       </div>
-      <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}
-        <span class="pcard-need">${(itemOf(r, it.key).photos || []).length}/${NEED_SHOTS}枚</span>
-      </div>
+      <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
+      ${(() => {
+        const cur = (itemOf(r, it.key).photos || []).length;
+        return `<div class="pshots">
+          ${[0, 1].map((k) => cur > k
+            ? `<div class="pshot">${imgTag(itemOf(r, it.key).photos[k])}
+                 <button data-del="item|${it.key}||${k}" aria-label="写真を消す">${ic("x", 12)}</button></div>`
+            : `<button class="pshot-add" data-pickitem="${it.key}">
+                 ${ic("camera", 26)}<span>${k + 1}枚目</span></button>`).join("")}
+        </div>`;
+      })()}
     </div>`;
   }).join("");
 
@@ -2489,6 +2526,17 @@ function renderModal() {
             ${r.lateReason ? `<div class="late-ok">${ic("check2", 15)} 入力済みです。写真の登録に進めます。</div>` : ""}
           </div>`;
         })()}
+        <div class="howto">
+          <div class="howto-h">${ic("check2", 18)} この記録でやること</div>
+          <div class="howto-b">
+            <b>1. 清掃箇所を各2枚ずつ撮影して登録</b>
+            <span>玄関前（階段）／駐車場／駐輪場／ゴミ庫／植栽／用水路の掃き／拭き掃除</span>
+            <b>2. 異常があり、その日に解決できない場合は「要対応」に登録</b>
+            <span>写真・内容・期限を入れて登録し、期限までにしかるべき対応をして完了させてください。</span>
+            <b>要対応にするもの</b>
+            <span>外観（外壁・階段・看板などの破損／汚損）／駐車場（迷惑駐車）／設備（マス蓋を含む）の破損・汚損／その他（糞尿・ゴミ・不法投棄など）</span>
+          </div>
+        </div>
         <div class="field" style="margin-bottom:-.4rem">
           ${(r.status !== "done" && date < today() && !r.lateReason) ? "" : `
           ${pendingItems.length ? `
@@ -2613,6 +2661,24 @@ function renderModal() {
   };
   q("#m-x").onclick = closeM;
   q("#m-cancel").onclick = closeM;
+  // 項目カードから直接その箇所の写真を入れる（項目→写真の順で登録できる）
+  host.querySelectorAll("[data-pickitem]").forEach((b) => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      const k = b.dataset.pickitem;
+      pickFiles(async (files) => {
+        const rr = getRep(name, date);
+        const it = itemOf(rr, k);
+        it.photos = it.photos || [];
+        const room = NEED_SHOTS - it.photos.length;
+        if (room <= 0) { toast("この箇所は2枚まで", ""); return; }
+        rr.items[k] = it;
+        const persist = () => setRep(name, date, { items: rr.items });
+        await addPhotosToArray(files.slice(0, room), it.photos, persist, { name, date });
+        persist(); refreshStatus(name, date); renderModal();
+      });
+    };
+  });
   // 遅れた理由（入力すると写真の登録に進める）
   const lateEl = q("#late-note");
   if (lateEl) {
@@ -2837,7 +2903,12 @@ function openSched(name) {
       const ds = ymd(d), out = d.getMonth() !== _pc.m, dow = d.getDay();
       const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
                    ds === _pick ? "on" : "", dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
-      g += `<button type="button" class="${cls}" data-pick="${ds}">${d.getDate()}</button>`;
+      // その日にすでに入っている予定を出す（予定を組みやすくするため）
+      const already = (sched[ds] || []);
+      const names = already.length
+        ? `<span class="mc-jobs" title="${esc(already.join("／"))}">${already.length}件</span>` : "";
+      g += `<button type="button" class="${cls} ${already.length ? "hasjob" : ""}" data-pick="${ds}">
+        <span class="mc-dn">${d.getDate()}</span>${names}</button>`;
     }
     el.innerHTML = `<div class="mc-h">
         <button type="button" class="mc-nav" id="mc-prev">${ic("left", 15)}</button>
@@ -2861,7 +2932,13 @@ function openSched(name) {
         drawMini();
       };
     });
-    host.querySelector("#s-selview").textContent = `選択中：${fmtDate(_pick)}`;
+    const already = sched[_pick] || [];
+    host.querySelector("#s-selview").innerHTML =
+      `<div class="selview-d">選択中：${fmtDate(_pick)}</div>` +
+      (already.length
+        ? `<div class="selview-l">この日の予定（${already.length}件）</div>
+           <div class="selview-n">${already.map((x) => `<span>${esc(x)}</span>`).join("")}</div>`
+        : `<div class="selview-l none">この日の予定はまだありません</div>`);
   };
   drawMini();
   host.querySelector("#s-ok").onclick = () => {
@@ -3104,6 +3181,21 @@ async function stampPos(name, date, phase) {
   r.geo[phase] = pos;
   setRep(name, date, { geo: r.geo });
   return pos;
+}
+
+/* 全記録のステータスを写真枚数から再計算する（2枚ルールへの移行で食い違うため） */
+function fixAllStatus() {
+  let n = 0;
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|"); if (sep < 0) return;
+    const nm = rk.slice(0, sep), dt = rk.slice(sep + 1);
+    const rr = reps[rk] || {};
+    const need = itemsFor(nm).filter((x) => !x.optional);
+    const ok = need.filter((x) => ((rr.items || {})[x.key] || {}).photos?.length >= NEED_SHOTS).length;
+    const st = (need.length && ok === need.length) ? "done" : (ok > 0 ? "doing" : "yet");
+    if (rr.status !== st) { rr.status = st; if (st !== "done") rr.doneDate = ""; n++; }
+  });
+  if (n) save(K.reps, reps);
 }
 
 /* ===== 写真の拡大表示 ===== */
@@ -3540,8 +3632,11 @@ function convertKintai(bundle) {
 
       // ステータス：kintai は明示ステータスを持たない
       //   noIssue か、写真/チェックが1つでもあれば「完了」、それ以外「未着手」
-      const hasContent = Object.keys(items).length || todos.length || kr.noIssue;
-      const status = hasContent ? "done" : "yet";
+      // 全箇所が必要枚数（2枚）そろって初めて完了。1枚でも足りなければ「作業中」。
+      const need = itemsFor(name).filter((x) => !x.optional);
+      const okN = need.filter((x) => ((items[x.key] || {}).photos || []).length >= NEED_SHOTS).length;
+      const status = (need.length && okN === need.length) ? "done"
+                   : (okN > 0 || Object.keys(items).length) ? "doing" : "yet";
 
       out.reps[`${name}|${date}`] = {
         status, staff: "", note: kr.noIssue ? "（要対応なしで登録）" : "",
@@ -5171,6 +5266,7 @@ function boot() {
   });
   { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "cal"); }
   cleanupRemovedItems();   // 要対応へ移した旧項目の過去データを掃除（初回のみ）
+  fixAllStatus();          // 写真枚数とステータスの食い違いを直す（2枚ルールに揃える）
   // 起動時：勤怠同期URLが設定済みなら最新を取り込む
   if (cfg.ktGas) { ktPull(true); }
   // 起動時：GAS Webhook URL があれば清掃データも最新を取り込む（空ガードで潰さない）
