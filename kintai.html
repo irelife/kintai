@@ -212,13 +212,28 @@ main{padding:1.5rem 0 4rem;}
 .howto-b b{font-size:15px;font-weight:800;color:var(--fg);margin-top:.35rem;}
 .howto-b span{color:var(--muted);}
 /* 項目から写真を選ぶ画面 */
-.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem;}
-.pickcell{position:relative;padding:0;border:2px solid var(--border);border-radius:.6rem;
+.pickwrap{width:min(96vw,560px);}
+.pick-guide{font-size:16px;font-weight:700;color:var(--fg);margin:.2rem 0 .8rem;line-height:1.5;}
+.pick-guide b{color:var(--teal-700);font-size:18px;}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.6rem;}
+.pickcell{position:relative;padding:0;border:3px solid var(--border);border-radius:.6rem;
   overflow:hidden;background:#fff;cursor:pointer;aspect-ratio:1/1;}
 .pickcell img{width:100%;height:100%;object-fit:cover;display:block;}
-.pickcell:hover{border-color:var(--teal-700);}
-.pickcell-t{position:absolute;left:0;right:0;bottom:0;background:var(--teal-700);color:#fff;
-  font-size:12px;font-weight:800;padding:.3rem;}
+.pickcell.on{border-color:#2563eb;box-shadow:0 0 0 3px #bfdbfe;}
+.pickcell.on img{opacity:.75;}
+.pickcell-no{position:absolute;top:6px;left:6px;width:2rem;height:2rem;border-radius:9999px;
+  background:#2563eb;color:#fff;font-size:16px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;}
+.pick-f{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem;
+  position:sticky;bottom:0;background:#fff;padding-top:.8rem;}
+.pick-ok{background:#2563eb;color:#fff;border:0;font-size:16px;font-weight:800;
+  display:inline-flex;align-items:center;gap:.4rem;padding:.8rem 1.2rem;}
+.pick-ok:disabled{opacity:.4;}
+@media(max-width:640px){
+  .pickgrid{grid-template-columns:1fr 1fr;}
+  .pick-f{flex-direction:column-reverse;}
+  .pick-f .btn{width:100%;justify-content:center;}
+}
 .latedone{border:2px solid #60a5fa;background:#eff6ff;border-radius:.7rem;
   padding:.8rem 1rem;margin-bottom:1rem;color:#1d4ed8;font-size:16px;font-weight:700;
   display:flex;flex-direction:column;gap:.3rem;}
@@ -1891,132 +1906,80 @@ function openPickForItem(key) {
   const host = document.getElementById("assign-host");
   if (!host) return;
   const name = openRep.name, date = openRep.date;
-  const r = getRep(name, date);
-  const it = itemOf(r, key);
-  const cur = (it.photos || []).length;
-  const need = NEED_SHOTS - cur;
-  const pool = r.inbox || [];
   const lbl = (itemsFor(name).find((x) => x.key === key) || {}).label || key;
+  let sel = [];   // 選択中の inbox インデックス（確定するまで写真は動かさない）
 
   const draw = () => {
     const rr = getRep(name, date);
-    const c2 = (itemOf(rr, key).photos || []).length;
-    const left = NEED_SHOTS - c2;
+    const have = (itemOf(rr, key).photos || []).length;
+    const left = NEED_SHOTS - have - sel.length;
     const list = rr.inbox || [];
     host.innerHTML = `<div class="mask" id="pick-mask">
-      <div class="assign">
+      <div class="assign pickwrap">
         <div class="assign-h">
-          <span>${esc(lbl)} に入れる写真を選ぶ
-            <span class="assign-remain">あと ${left}枚</span></span>
+          <span>${esc(lbl)}<span class="assign-remain">${sel.length + have}/${NEED_SHOTS}枚</span></span>
           <button class="x" id="pick-x">${ic("x", 18)}</button>
         </div>
-        ${left <= 0
-          ? `<div class="assign-empty">${ic("check2", 22)}
-              <b>${esc(lbl)} は2枚そろいました</b>
-              <span>この箇所は完了です。閉じて次の箇所を選んでください。</span></div>`
-          : (list.length
-            ? `<div class="pickgrid">${list.map((src, i) =>
-                `<button class="pickcell" data-pk="${i}">${imgTag(src)}
-                   <span class="pickcell-t">これを入れる</span></button>`).join("")}</div>`
-            : `<div class="assign-empty">${ic("alert", 22)}
-                <b>選べる写真がありません</b>
-                <span>先に上の「写真を追加する」から写真を取り込んでください。</span></div>`)}
+        <div class="pick-guide">${left > 0
+          ? `写真を <b>${left}枚</b> えらんでください`
+          : `<b>${NEED_SHOTS}枚えらべました。</b>下の「この箇所を完了にする」を押してください`}</div>
+        ${list.length
+          ? `<div class="pickgrid">${list.map((src, i) => {
+              const on = sel.indexOf(i) >= 0;
+              return `<button class="pickcell ${on ? "on" : ""}" data-pk="${i}">
+                ${imgTag(src)}
+                ${on ? `<span class="pickcell-no">${sel.indexOf(i) + 1}</span>` : ""}
+              </button>`;
+            }).join("")}</div>`
+          : `<div class="assign-empty">${ic("alert", 22)}
+              <b>選べる写真がありません</b>
+              <span>閉じて「写真を追加する」から取り込んでください。</span></div>`}
+        <div class="pick-f">
+          <button class="btn btn-default" id="pick-cancel">キャンセル</button>
+          <button class="btn pick-ok" id="pick-ok" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
+            ${ic("check2", 17)} この箇所を完了にする
+          </button>
+        </div>
       </div></div>`;
+
     const close = () => { host.innerHTML = ""; renderModal(); };
     host.querySelector("#pick-x").onclick = close;
+    host.querySelector("#pick-cancel").onclick = close;
     host.querySelector("#pick-mask").onclick = (e) => { if (e.target.id === "pick-mask") close(); };
+
+    // 写真を選ぶ／選び直す
     host.querySelectorAll("[data-pk]").forEach((b) => {
       b.onclick = () => {
-        const idx = +b.dataset.pk;
-        const rr2 = getRep(name, date);
-        const src2 = (rr2.inbox || [])[idx];
-        if (!src2) return;
-        const it2 = itemOf(rr2, key);
-        it2.photos = it2.photos || [];
-        if (it2.photos.length >= NEED_SHOTS) { toast("この箇所は2枚まで", ""); return; }
-        it2.photos.push(src2);
-        rr2.items[key] = it2;
-        rr2.inbox.splice(idx, 1);              // 選んだ写真はプールから消す
-        setRep(name, date, { items: rr2.items, inbox: rr2.inbox });
-        refreshStatus(name, date);
-        // 2枚そろったら自動で閉じる（次の箇所に進みやすいように）
-        if ((itemOf(getRep(name, date), key).photos || []).length >= NEED_SHOTS) { close(); return; }
+        const i = +b.dataset.pk;
+        const at = sel.indexOf(i);
+        if (at >= 0) sel.splice(at, 1);                       // もう一度押したら取り消し
+        else if (sel.length + have < NEED_SHOTS) sel.push(i);   // 上限まで選べる
+        else toast(`${NEED_SHOTS}枚まで`, "選び直す場合は写真をもう一度押してください");
         draw();
       };
     });
+
+    // 完了：選んだ写真をこの箇所へ移し、inbox から取り除く
+    const ok = host.querySelector("#pick-ok");
+    if (ok) ok.onclick = () => {
+      const r2 = getRep(name, date);
+      const it2 = itemOf(r2, key);
+      it2.photos = it2.photos || [];
+      // 添字がずれないよう、大きい方から取り出す
+      const picked = sel.slice().sort((a, b) => b - a).map((i) => (r2.inbox || []).splice(i, 1)[0]);
+      picked.reverse().forEach((src) => { if (src) it2.photos.push(src); });
+      r2.items[key] = it2;
+      setRep(name, date, { items: r2.items, inbox: r2.inbox });
+      refreshStatus(name, date);
+      host.innerHTML = ""; renderModal();
+      toast("完了にしました", lbl);
+    };
     hydratePhotos(host);
   };
   draw();
 }
 
-function openAssign(i) {
-  _assignIdx = i;
-  const r = getRep(openRep.name, openRep.date);
-  const src = (r.inbox || [])[i];
-  if (!src) return;
-  const myItems = itemsFor(openRep.name);
-  // 未登録（写真なし・非要対応）の箇所だけを候補にする。登録済みは消えて残りが分かりやすい。
-  // 各箇所2枚ずつ登録させる。1枚入っていれば「2枚目」として案内する。
-  const shotCount = (c) => (c.photos || []).length;
-  const openItems = myItems.filter((it) => shotCount(itemOf(r, it.key)) < NEED_SHOTS);
-  const host = document.getElementById("assign-host");
-  const remainShots = myItems.reduce((s, it) => s + Math.max(0, NEED_SHOTS - shotCount(itemOf(r, it.key))), 0);
-  host.innerHTML = `<div class="mask" id="assign-mask">
-    <div class="assign">
-      <div class="assign-h">
-        <span>この写真をどの箇所に？<span class="assign-remain">あと ${remainShots}枚</span></span>
-        <button class="x" id="assign-x">${ic("x", 18)}</button>
-      </div>
-      <div class="assign-preview">${imgTag(src)}</div>
-      ${openItems.length ? `<div class="assign-grid">
-        ${openItems.map((it) => {
-          const n = shotCount(itemOf(r, it.key));
-          return `<button class="assign-item" data-assign="${it.key}">
-            <span class="ai-l">${esc(it.label)}</span>
-            <span class="ai-n">${n + 1}枚目</span>
-          </button>`;
-        }).join("")}
-      </div>` : `<div class="assign-empty">
-        ${ic("check2", 22)}
-        <b>すべての箇所が2枚ずつ登録済みです</b>
-        <span>清掃以外で気づいたこと（破損・迷惑駐車など）があれば、<br>
-        この画面を閉じて下の<b>「要対応を追加する」</b>ボタンから、<br>
-        場所・種類・写真・期限を登録してください。</span>
-        <span class="assign-empty-x">この写真が不要なら × で削除してください。</span>
-      </div>`}
-    </div>
-  </div>`;
-  hydratePhotos(host);   // プレビュー写真を解決して表示
-  const q = (s) => host.querySelector(s);
-  const close = () => { host.innerHTML = ""; _assignIdx = null; };
-  q("#assign-x").onclick = close;
-  q("#assign-mask").onclick = (e) => { if (e.target.id === "assign-mask") close(); };
-  host.querySelectorAll("[data-assign]").forEach((b) => {
-    b.onclick = () => { assignInboxPhoto(i, b.dataset.assign); close(); };
-  });
-}
 // プールの写真を指定の箇所へ移動（通常写真として。最大2枚まで）
-function assignInboxPhoto(i, key) {
-  const r = getRep(openRep.name, openRep.date);
-  const src = (r.inbox || [])[i];
-  if (!src) return;
-  const it = itemOf(r, key);
-  it.photos = it.photos || [];
-  const MAXN = catMax(key);
-  const myItems = itemsFor(openRep.name);
-  const lbl = (myItems.find((x) => x.key === key) || {}).label || "";
-  if (it.photos.length >= MAXN) {
-    toast("これ以上追加できません", `${lbl}は写真${MAXN}枚までです`);
-    return;
-  }
-  it.photos.push(src);
-  r.items[key] = it;
-  (r.inbox || []).splice(i, 1);   // プールから取り除く
-  setRep(openRep.name, openRep.date, { items: r.items, inbox: r.inbox });
-  refreshStatus(openRep.name, openRep.date);   // 2枚揃ったかを再判定
-  renderModal();
-  toast("振り分けました", lbl);
-}
 
 /* target: {kind:"item", key} または {kind:"todo", id, phase} */
 function addShots(target) {
@@ -2628,9 +2591,9 @@ function renderModal() {
             <span>これ以上は追加できません。清掃以外で気づいたことは<br>下の<b>「要対応を追加する」</b>から登録してください。</span>
           </div>`}
           ${(r.inbox && r.inbox.length) ? `<div class="inbox-strip">${r.inbox.map((src, i) =>
-            `<div class="inbox-shot" data-inbox-open="${i}">${imgTag(src)}<span class="inbox-tag">タップで振り分け</span><button class="inbox-del" data-inbox-del="${i}" aria-label="削除">${ic("x", 11)}</button></div>`
+            `<div class="inbox-shot">${imgTag(src)}<button class="inbox-del" data-inbox-del="${i}" aria-label="削除">${ic("x", 11)}</button></div>`
           ).join("")}</div>
-          <div class="inbox-hint">${ic("alert", 13)} ${r.inbox.length}枚が未振り分けです。下の<b>箇所のカード</b>をタップして、その箇所の写真を2枚ずつ選んでください。</div>` : ""}
+          <div class="inbox-hint">${ic("alert", 13)} 取り込んだ写真 ${r.inbox.length}枚。下の<b>箇所のカード</b>をタップして、その箇所の写真を2枚ずつ選んでください。</div>` : ""}
           `}
         </div>
         ${pendingItems.length ? `<div class="field">
@@ -2816,12 +2779,6 @@ function renderModal() {
     });
   }
   // プールの写真をタップ → 振り分け先を選ぶ
-  host.querySelectorAll("[data-inbox-open]").forEach((el) => {
-    el.onclick = (e) => {
-      if (e.target.closest("[data-inbox-del]")) return;   // ×は別処理
-      openAssign(+el.dataset.inboxOpen);
-    };
-  });
   host.querySelectorAll("[data-inbox-del]").forEach((b) => {
     b.onclick = (e) => { e.stopPropagation(); delInboxPhoto(+b.dataset.inboxDel); };
   });
@@ -3299,7 +3256,6 @@ document.addEventListener("click", (e) => {
   const img = e.target.closest("img[data-photo]");
   if (!img) return;
   if (e.target.closest("button")) return;            // 削除ボタンは除外
-  if (e.target.closest("[data-inbox-open]")) return; // 振り分け待ちは従来どおり振り分け画面へ
   if (e.target.closest(".assign-preview")) return;   // 振り分け画面のプレビューも除外
   e.preventDefault(); e.stopPropagation();
   openLightbox(img.dataset.photo);
