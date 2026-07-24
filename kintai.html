@@ -209,38 +209,31 @@ main{padding:1.5rem 0 4rem;}
 .selview-n span{font-size:12px;font-weight:700;background:var(--teal-50);color:var(--teal-700);
   border:1px solid var(--teal-200,#99f6e4);border-radius:9999px;padding:.15rem .5rem;}
 /* やることの案内 */
-.howto{border:2px solid var(--teal-200,#99f6e4);background:var(--teal-50,#f0fdfa);
-  border-radius:.8rem;padding:1rem 1.2rem;margin-bottom:1rem;}
-.howto-h{display:flex;align-items:center;gap:.4rem;font-size:22px;font-weight:800;color:var(--teal-700);margin-bottom:.7rem;}
-.howto-b{display:flex;flex-direction:column;gap:.2rem;font-size:17px;line-height:1.7;}
-.howto-b b{font-size:19px;font-weight:800;color:var(--fg);margin-top:.6rem;}
-.howto-b span{color:var(--fg);font-size:16px;}
-.howto-no{display:flex;align-items:center;gap:.5rem;margin-top:.9rem;padding:.7rem .9rem;
-  background:#fef2f2;border:2px solid #fca5a5;border-radius:.6rem;color:#b91c1c;font-size:17px;}
-.howto-no b{font-size:18px;color:#b91c1c;margin:0;}
-/* 項目から写真を選ぶ画面 */
-.pickwrap{width:min(96vw,560px);}
-.pick-guide{font-size:16px;font-weight:700;color:var(--fg);margin:.2rem 0 .8rem;line-height:1.5;}
-.pick-guide b{color:var(--teal-700);font-size:18px;}
-.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.6rem;}
-.pickcell{position:relative;padding:0;border:3px solid var(--border);border-radius:.6rem;
-  overflow:hidden;background:#fff;cursor:pointer;aspect-ratio:1/1;}
-.pickcell img{width:100%;height:100%;object-fit:cover;display:block;}
-.pickcell.on{border-color:#2563eb;box-shadow:0 0 0 3px #bfdbfe;}
-.pickcell.on img{opacity:.75;}
-.pickcell-no{position:absolute;top:6px;left:6px;width:2rem;height:2rem;border-radius:9999px;
-  background:#2563eb;color:#fff;font-size:16px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;}
-.pick-f{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem;
-  position:sticky;bottom:0;background:#fff;padding-top:.8rem;}
-.pick-ok{background:#2563eb;color:#fff;border:0;font-size:16px;font-weight:800;
-  display:inline-flex;align-items:center;gap:.4rem;padding:.8rem 1.2rem;}
-.pick-ok:disabled{opacity:.4;}
-@media(max-width:640px){
-  .pickgrid{grid-template-columns:1fr 1fr;}
-  .pick-f{flex-direction:column-reverse;}
-  .pick-f .btn{width:100%;justify-content:center;}
-}
+.howto{border:3px solid var(--teal-400,#2dd4bf);background:#fff;
+  border-radius:1rem;padding:1.2rem 1.3rem;margin-bottom:1.2rem;}
+.howto-h{display:flex;align-items:center;gap:.5rem;font-size:24px;font-weight:800;
+  color:var(--teal-700);margin-bottom:1rem;}
+.howto-step{display:flex;gap:.9rem;align-items:flex-start;margin-bottom:1.1rem;}
+.howto-no1{flex:none;width:2.6rem;height:2.6rem;border-radius:9999px;background:var(--teal-700);
+  color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.howto-no1.red{background:#dc2626;}
+.howto-step-b{flex:1;min-width:0;}
+.howto-t{font-size:20px;font-weight:800;color:var(--fg);line-height:1.45;margin-bottom:.7rem;}
+.howto-t2{font-size:16px;font-weight:800;color:var(--muted);margin:.8rem 0 .35rem;}
+.howto-two{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+@media(max-width:640px){ .howto-two{grid-template-columns:1fr;} }
+.howto-card{border:2px solid var(--teal-200,#99f6e4);background:var(--teal-50,#f0fdfa);
+  border-radius:.7rem;padding:.8rem .9rem;}
+.howto-card-h{font-size:16px;font-weight:800;color:var(--teal-700);margin-bottom:.35rem;}
+.howto-card-b{font-size:17px;font-weight:700;color:var(--fg);line-height:1.6;}
+.howto-do{font-size:17px;font-weight:700;color:var(--fg);line-height:1.7;
+  border-left:5px solid var(--teal-400,#2dd4bf);padding-left:.8rem;}
+.howto-ng{font-size:17px;font-weight:700;color:var(--fg);line-height:1.7;
+  border-left:5px solid #dc2626;padding-left:.8rem;}
+.howto-add{font-size:15px;color:var(--muted);line-height:1.6;margin-top:.6rem;}
+.howto-no{display:flex;align-items:center;gap:.5rem;margin-top:.5rem;padding:.8rem 1rem;
+  background:#fef2f2;border:2px solid #fca5a5;border-radius:.7rem;color:#b91c1c;font-size:18px;}
+.howto-no b{font-size:19px;color:#b91c1c;margin:0;}
 .latedone{border:2px solid #60a5fa;background:#eff6ff;border-radius:.7rem;
   padding:.8rem 1rem;margin-bottom:1rem;color:#1d4ed8;font-size:16px;font-weight:700;
   display:flex;flex-direction:column;gap:.3rem;}
@@ -594,7 +587,10 @@ img[data-photo]{cursor:pointer;}
 .ngphase .phase-t,.ngitem .phase-t{font-size:16px;font-weight:800;}
 .add-shot{flex-direction:column;gap:.3rem;font-size:14px;font-weight:700;}
 .add-shot-l{font-size:14px;font-weight:700;}
-.ngphase{border-color:#fca5a5;background:#fff;}
+.ngphase{border-color:#fca5a5;background:#fff;min-height:14rem;}
+.ngphase .shots{min-height:11rem;align-content:flex-start;}
+.ngitem .phase{min-height:14rem;}
+.ngitem .phase .shots{min-height:11rem;align-content:flex-start;}
 .ngphase.dragover,.ngitem .phase.dragover{border-color:#dc2626;background:#fee2e2;}
 @media(max-width:768px){
   .ngphase .shot,.ngphase .add-shot,.ngitem .shot,.ngitem .add-shot{height:8.5rem;width:8.5rem;}
@@ -642,6 +638,11 @@ img[data-photo]{cursor:pointer;}
 .ngitem-x{margin-left:auto;border:0;background:transparent;color:var(--muted-2);cursor:pointer;padding:.2rem;}
 .ngitem-t{font-size:15px;line-height:1.5;color:var(--fg);}
 .ngitem-m{font-size:13px;color:var(--muted-2);margin-top:.3rem;}
+.ngfix-btn{width:100%;margin-top:.7rem;background:#dc2626;color:#fff;border:0;
+  font-size:16px;font-weight:800;padding:.8rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;}
+.ngfix-btn:disabled{background:#fca5a5;cursor:default;font-size:14px;}
+.ngitem-done{margin-top:.7rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
+  font-size:16px;font-weight:800;color:var(--em-700);}
 
 .ngsend-btn{width:100%;margin-top:1rem;display:inline-flex;align-items:center;justify-content:center;
   gap:.5rem;background:var(--teal-700);color:#fff;border:0;border-radius:.6rem;
@@ -1280,7 +1281,7 @@ img[data-photo]{cursor:pointer;}
 <div class="toast hide" id="toast" role="status" aria-live="polite"></div>
 
 <script>const SEED_PROPS=[{"name":"アイディール","addr":"広島県福山市今津町６丁目18-17","mno":"0019"},{"name":"アシンプトート","addr":"広島県福山市明神町２丁目８-２６","mno":"0041"},{"name":"アプリシティ","addr":"広島県福山市曙町６丁目２-28","mno":"0007"},{"name":"アミティー山崎","addr":"岡山県岡山市中区山崎14-1","mno":"0212"},{"name":"アメリア","addr":"広島県福山市駅家町大字倉光１１０-１","mno":"0015"},{"name":"アルカディア","addr":"広島県福山市大門町３丁目２７-６","mno":"0026"},{"name":"アルカンシェル","addr":"広島県福山市大門町５丁目２０－１０","mno":"0037"},{"name":"アルスアイパワー","addr":"岡山県倉敷市宮前352-1","mno":"0217"},{"name":"アルデバラン","addr":"広島県福山市曙町３丁目24-10-1","mno":"0117"},{"name":"アルトゥーラ","addr":"岡山県倉敷市平田47-3","mno":"0183"},{"name":"アルファステイツ福山駅前Ⅱ","addr":"広島県福山市三之丸町4-8","mno":"0114"},{"name":"アルヴィータ","addr":"広島県福山市神辺町字道上2983-1","mno":"0039"},{"name":"アロモント","addr":"広島県福山市南今津町９７","mno":"0055"},{"name":"アンブルネージュ","addr":"岡山県倉敷市安江588-5","mno":"0206"},{"name":"ウィステリア","addr":"岡山県岡山市南区西市505-8","mno":"0144"},{"name":"エクラス","addr":"岡山県岡山市中区平井１丁目16-38","mno":"0150"},{"name":"S place bld.","addr":"岡山県総社市駅前１丁目3-43","mno":"0119"},{"name":"エスリードホウセン","addr":"岡山県岡山市南区芳泉２丁目7-12","mno":"0151"},{"name":"エルキュール","addr":"広島県福山市東手城町３丁目２９-３０","mno":"0043"},{"name":"オルカアネックス","addr":"岡山県岡山市中区雄町456-3","mno":"0148"},{"name":"オルタナ","addr":"岡山県岡山市北区奥田南町4-8","mno":"0152"},{"name":"オンワード","addr":"岡山県岡山市北区奥田西町3-15","mno":"0146"},{"name":"KASUGAエコパティオ","addr":"広島県福山市春日町浦上1948-5","mno":"0087"},{"name":"カルムコート","addr":"広島県福山市草戸町５丁目６-１０-２","mno":"0017"},{"name":"カルムプロムナード","addr":"岡山県岡山市北区辛川市場655-1","mno":"0201"},{"name":"カーサアンフルール","addr":"岡山県岡山市北区高松原古才609-1","mno":"0158"},{"name":"カーサグランデ学南町","addr":"岡山県岡山市北区学南町１丁目1-11","mno":"0153"},{"name":"ガーデンヒルズ","addr":"広島県福山市大門町２丁目１８−３","mno":"0033"},{"name":"ガーデンヒルズ東手城","addr":"広島県福山市東手城町１丁目３４−１７−５","mno":"0034"},{"name":"キッキーエーカー","addr":"岡山県倉敷市北畝３丁目5-4","mno":"0194"},{"name":"キャシュリーココ","addr":"岡山県倉敷市片島町113","mno":"0210"},{"name":"クラリス","addr":"広島県福山市草戸町４丁目２７-１１","mno":"0016"},{"name":"クレアコート","addr":"岡山県岡山市南区青江６丁目6-32","mno":"0173"},{"name":"クレアール","addr":"岡山県岡山市南区千鳥町13-8","mno":"0193"},{"name":"クレスト","addr":"岡山県岡山市東区宍甘61-1","mno":"0137"},{"name":"クロスロードツー","addr":"岡山県岡山市東区宍甘159-2","mno":"0202"},{"name":"グランエール","addr":"広島県福山市大門町４丁目２３−１４","mno":"0049"},{"name":"グランフルール庭瀬","addr":"岡山県岡山市北区庭瀬130-1","mno":"0191"},{"name":"グロリオサ","addr":"広島県福山市東町３丁目４-２９","mno":"0001"},{"name":"ココライズ","addr":"岡山県倉敷市福田町古新田916-4","mno":"0185"},{"name":"サブライム","addr":"岡山県総社市総社862-5","mno":"0186"},{"name":"サンサリーレ富原","addr":"岡山県岡山市北区富原720-1","mno":"0218"},{"name":"サントーシャ","addr":"広島県福山市千田町２丁目48-15","mno":"0008"},{"name":"シエスタ","addr":"岡山県岡山市中区四御神85-6","mno":"0149"},{"name":"シティハイツみどり","addr":"広島県福山市手城町３丁目7-13","mno":"0113"},{"name":"シャトー秋桜","addr":"岡山県倉敷市生坂133-1","mno":"0197"},{"name":"シャンティ","addr":"広島県福山市伊勢丘４丁目４−１０","mno":"0009"},{"name":"シャンティーコア","addr":"岡山県倉敷市連島中央４丁目13-4","mno":"0214"},{"name":"シルヴィア","addr":"岡山県岡山市南区新福２丁目5-24","mno":"0159"},{"name":"シンティランテ","addr":"広島県福山市瀬戸町大字長和１０６６ー7","mno":"0014"},{"name":"ジャロウ","addr":"岡山県総社市駅南１丁目8-47","mno":"0188"},{"name":"スカイヴィスタ","addr":"岡山県岡山市中区四御神700-47","mno":"0163"},{"name":"スパーブコート","addr":"広島県福山市千田町３丁目５５-１９","mno":"0057"},{"name":"スピネルデュオ","addr":"広島県福山市千田町2丁目44-2","mno":"0092"},{"name":"スリジエ","addr":"岡山県倉敷市酒津2754","mno":"0190"},{"name":"スーマ","addr":"岡山県岡山市北区宿513-1","mno":"0154"},{"name":"セシリア","addr":"岡山県岡山市東区瀬戸町瀬戸234-2","mno":"0162"},{"name":"セレナーデ","addr":"岡山県岡山市東区西大寺中２丁目","mno":"0164"},{"name":"セントラルスティード","addr":"岡山県岡山市東区瀬戸町下433-2","mno":"0143"},{"name":"ソアヴィータ","addr":"広島県福山市瀬戸町大字長和２０６-１","mno":"0036"},{"name":"操南ハイツ","addr":"岡山県岡山市中区倉田488-2","mno":"0216"},{"name":"創和ハイツ","addr":"岡山県岡山市北区京町1-20","mno":"0213"},{"name":"ソルトグラス","addr":"広島県福山市千田町３丁目14-1","mno":"0046"},{"name":"ソレイユ","addr":"広島県福山市千田町大字千田3055","mno":"0024"},{"name":"タストフル","addr":"岡山県岡山市北区田益1325-1","mno":"0157"},{"name":"タリスヴィータ","addr":"岡山県倉敷市玉島乙島6850-2","mno":"0093"},{"name":"チュールベール","addr":"岡山県倉敷市連島町連島142-321","mno":"0195"},{"name":"ティアラ新倉敷","addr":"岡山県倉敷市玉島八島892-1","mno":"0199"},{"name":"テタンジェ","addr":"岡山県倉敷市玉島乙島7128-1","mno":"0078"},{"name":"テラストリア","addr":"広島県尾道市高須町4840-6","mno":"0120"},{"name":"ディアレスト","addr":"広島県福山市大門町４丁目5-1","mno":"0021"},{"name":"デルニエ","addr":"岡山県岡山市中区長岡513-1","mno":"0139"},{"name":"ドルセットセブン","addr":"広島県福山市大門町大門４９３−１","mno":"0050"},{"name":"ドルチェヴィータ","addr":"岡山県岡山市中区平井６丁目16-3","mno":"0140"},{"name":"ナチュラルプラン","addr":"岡山県倉敷市中畝４丁目10-18","mno":"0198"},{"name":"ナディア","addr":"岡山県倉敷市中畝７丁目7-15","mno":"0129"},{"name":"ナビータ","addr":"岡山県岡山市中区長岡554","mno":"0203"},{"name":"ナルサス","addr":"岡山県倉敷市中畝５丁目3-12","mno":"0184"},{"name":"ニューアーク","addr":"岡山県岡山市中区西川原148-16","mno":"0147"},{"name":"ネクサス","addr":"岡山県岡山市中区中井３丁目9-3","mno":"0142"},{"name":"ノブリス","addr":"広島県福山市奈良津町３丁目１２−4","mno":"0022"},{"name":"ハイクレア","addr":"岡山県倉敷市東塚５丁目11-23","mno":"0189"},{"name":"ハイサニー","addr":"広島県福山市水呑町3305-1","mno":"0090"},{"name":"ハイツ福居","addr":"岡山県岡山市北区津島福居１丁目5-8","mno":"0127"},{"name":"ハルモニア","addr":"広島県福山市引野町南１丁目１０-３-３","mno":"0020"},{"name":"ハーベスト","addr":"岡山県岡山市中区浜１丁目14-27","mno":"0141"},{"name":"ハーベストムーン","addr":"岡山県岡山市中区浜１丁目2-3","mno":"0165"},{"name":"パイクプレイス","addr":"岡山県岡山市中区浜２丁目6-15","mno":"0166"},{"name":"パシフィコ","addr":"岡山県岡山市中区土田198-3","mno":"0169"},{"name":"ヒラリアス","addr":"広島県福山市引野町４丁目12-10","mno":"0110"},{"name":"ヒーストン","addr":"岡山県倉敷市東塚３丁目","mno":"0192"},{"name":"ビラ芳翠","addr":"広島県福山市南松永町２丁目15-12-5","mno":"0135"},{"name":"フェリックス","addr":"広島県福山市引野町３丁目１９-１４","mno":"0002"},{"name":"プティメゾン","addr":"広島県福山市新涯町４丁目12-14","mno":"0069"},{"name":"ヘスティア","addr":"広島県福山市引野町２丁目13-7","mno":"0138"},{"name":"ヘリオス","addr":"岡山県岡山市中区平井７丁目27-5","mno":"0174"},{"name":"ベラカーササウス","addr":"岡山県倉敷市老松町３丁目6-39","mno":"0111"},{"name":"ベラカーサノース","addr":"岡山県倉敷市老松町３丁目7-20","mno":"0112"},{"name":"松永町AP3","addr":"広島県福山市松永町４丁目17-6","mno":"0222"},{"name":"マロウ","addr":"岡山県倉敷市宮前458-5","mno":"0196"},{"name":"マースフル","addr":"広島県福山市南蔵王町６丁目21-20","mno":"0134"},{"name":"マートル","addr":"広島県福山市松永町４丁目32-11","mno":"0176"},{"name":"マーベラス","addr":"広島県福山市南今津町２５","mno":"0003"},{"name":"ミステール","addr":"広島県福山市松永町487-1","mno":"0126"},{"name":"ミラヴィルタス","addr":"広島県福山市千田町３丁目１７-４","mno":"0005"},{"name":"ミルドレッド","addr":"広島県福山市南松永町２丁目15-3","mno":"0125"},{"name":"ミーティア","addr":"広島県福山市水呑町3443-1","mno":"0030"},{"name":"メゾンドリヴァージュ","addr":"広島県福山市南本庄５丁目５-２０","mno":"0010"},{"name":"メリッサ","addr":"広島県福山市南手城町１丁目8-18","mno":"0121"},{"name":"メルヴェイユ","addr":"広島県福山市南手城町２丁目27-10","mno":"0178"},{"name":"モノリス番長","addr":"岡山県岡山市北区番町２丁目13-3","mno":"0145"},{"name":"ラコリーヌ","addr":"広島県福山市伊勢丘５丁目6-28","mno":"0060"},{"name":"ラナンキュラス","addr":"広島県福山市大門町野々浜２２９−１","mno":"0047"},{"name":"ラピスラズリ","addr":"岡山県倉敷市稲荷町8-28","mno":"0211"},{"name":"リドレイ","addr":"岡山県岡山市北区辛川市場287","mno":"0208"},{"name":"リーフガーデン","addr":"岡山県岡山市北区西辛川482-1","mno":"0167"},{"name":"ルミエール静","addr":"広島県福山市沖野上町５丁目２５－７","mno":"0012"},{"name":"ルミナス","addr":"広島県福山市西新涯町２丁目１１−２４","mno":"0052"},{"name":"レッジェーロ","addr":"岡山県倉敷市林240-1","mno":"0204"},{"name":"レパント","addr":"岡山県岡山市東区宍甘198-4","mno":"0168"},{"name":"ローレルコート","addr":"広島県福山市曙町５丁目29-45-1","mno":"0182"},{"name":"ワイエスエヌスタイル","addr":"岡山県総社市真壁1179-3","mno":"0187"},{"name":"ヴァンヴェール","addr":"岡山県岡山市南区西市448","mno":"0156"},{"name":"ヴィラソレイル","addr":"岡山県倉敷市八王寺町263-27","mno":"0205"},{"name":"アルバ","addr":"広島県福山市曙町２丁目19-12-2","mno":"0073"},{"name":"アンティカベラカーサ","addr":"岡山県倉敷市老松町１丁目2-30","mno":"0067"},{"name":"エバーグリーン福山西町","addr":"広島県福山市西町１丁目3-30","mno":"0118"},{"name":"カルコーサ","addr":"広島県福山市神村町50-4","mno":"0123"},{"name":"ガーデンヒルズ長者町","addr":"広島県福山市長者町1-9","mno":"0099"},{"name":"シティハイツ暁の星","addr":"広島県福山市西深津町１丁目７ー８","mno":"0061"},{"name":"スピネル","addr":"広島県福山市千田町２丁目44-5","mno":"0079"},{"name":"セラータ","addr":"広島県福山市千田町２丁目31-2","mno":"0072"},{"name":"ソフィア","addr":"広島県福山市千田町３丁目４７-２","mno":"0058"},{"name":"タラッサ","addr":"岡山県倉敷市玉島乙島7172-11","mno":"0066"},{"name":"フレンディア常光","addr":"広島県福山市引野町２丁目19-7","mno":"0063"},{"name":"プレジール高橋","addr":"広島県福山市今津町６丁目2-34","mno":"0076"},{"name":"ベラカーサフェリーチェ","addr":"岡山県倉敷市老松町３丁目12-23","mno":"0068"},{"name":"ペルシュ城山","addr":"岡山県笠岡市笠岡2388番地58","mno":"0082"},{"name":"マジェステ","addr":"広島県福山市南松永町３丁目10-23","mno":"0080"},{"name":"マルヴィナ","addr":"広島県福山市南松永町３丁目9-17","mno":"0124"},{"name":"モデルノ","addr":"広島県福山市南手城町２丁目15-6","mno":"0071"},{"name":"ローレルコート霞町","addr":"広島県福山市霞町１丁目9-14","mno":"0084"}];
-const ITEMS=[{"key": "entrance", "label": "エントランス", "guide": "床・扉まわり・郵便受け前を掃く／拭く。", "do": "チラシやゴミが散乱していたら回収して処分。", "optional": false}, {"key": "elevator", "label": "エレベーター（あれば）", "guide": "かご内の床・鏡・操作盤を拭く。異音・扉の動きを確認。", "do": "動きがおかしければ止めずに撮影・すぐ連絡。", "optional": true}, {"key": "common", "label": "共用部分（ホール・階段）", "guide": "階段・踊り場・手すりを掃く／拭く。照明が切れていないか。", "do": "電球切れは玉番を控えて報告→交換手配。", "optional": false}, {"key": "corridor", "label": "共用廊下", "guide": "各階の廊下を端から端まで掃く。排水溝の詰まりを見る。", "do": "詰まりがあれば除去。私物がはみ出していたら住戸番号を控える。", "optional": false}, {"key": "weed", "label": "草刈り・植栽", "guide": "敷地内の雑草を抜く／刈る。植栽が伸びきって歩行や視界を妨げていないか。", "do": "伸びすぎは剪定。手に負えない量なら範囲を撮影して報告。", "optional": false}, {"key": "garbage", "label": "ゴミ庫・ゴミ置場", "guide": "庫内を掃く。臭い・液だれ・カラス対策ネットの状態。回収されず残っているゴミ。", "do": "ルール外ゴミが放置されていたら撮影して報告。", "optional": false}, {"key": "bike", "label": "放置自転車", "guide": "使われていない・埃をかぶった自転車がないか。", "do": "あれば撮影＋警告札を貼る。台数と場所を備考に記録し、撤去手配まで追う。", "optional": false}];
+const ITEMS=[{"key": "entrance", "label": "エントランス（玄関前）", "guide": "床・扉まわり・郵便受け前を掃く／拭く。", "do": "チラシやゴミが散乱していたら回収して処分。", "optional": false}, {"key": "elevator", "label": "エレベーター（あれば）", "guide": "かご内の床・鏡・操作盤を拭く。異音・扉の動きを確認。", "do": "動きがおかしければ止めずに撮影・すぐ連絡。", "optional": true}, {"key": "common", "label": "共用部分（ホール・階段）", "guide": "階段・踊り場・手すりを掃く／拭く。照明が切れていないか。", "do": "電球切れは玉番を控えて報告→交換手配。", "optional": false}, {"key": "corridor", "label": "共用廊下（各階・非常階段含む）", "guide": "各階の廊下を端から端まで掃く。排水溝の詰まりを見る。", "do": "詰まりがあれば除去。私物がはみ出していたら住戸番号を控える。", "optional": false}, {"key": "weed", "label": "草刈り・植栽", "guide": "敷地内の雑草を抜く／刈る。植栽が伸びきって歩行や視界を妨げていないか。", "do": "伸びすぎは剪定。手に負えない量なら範囲を撮影して報告。", "optional": false}, {"key": "garbage", "label": "ゴミ庫・ゴミ置場", "guide": "庫内を掃く。臭い・液だれ・カラス対策ネットの状態。回収されず残っているゴミ。", "do": "ルール外ゴミが放置されていたら撮影して報告。", "optional": false}, {"key": "bike", "label": "放置自転車", "guide": "使われていない・埃をかぶった自転車がないか。", "do": "あれば撮影＋警告札を貼る。台数と場所を備考に記録し、撤去手配まで追う。", "optional": false}];
 </script>
 <script>/* ===== lucide 相当のアイコン（SVGパスは lucide のものと同一） ===== */
 const IC = {
@@ -1423,7 +1424,7 @@ const ITEM_MAX_OVERRIDE = {
 };
 // カード左上に出す短縮名（名詞だけ。未定義はラベルをそのまま使う）
 const ITEM_SHORT = {
-  entrance: "エントランス",
+  entrance: "エントランス",   // カード左上は短く
   parking: "駐車場",
   common: "共用部分",
   corridor: "共用廊下",
@@ -1556,8 +1557,10 @@ function getRep(n, d) { return reps[repId(n, d)] || blankRep(); }function setRep
 }
 const itemOf = (r, k) => r.items[k] || { photos: [], ok: false, ng: false, fixed: false, before: [], after: [] };
 // 要対応：項目のうち ng=true かつ未解決の数（重複なし＝項目単位）
-const openNg = (r) => Object.values(r.items || {}).filter((it) => it && it.ng && !it.fixed).length
-  + (r.todos || []).filter((t) => !t.fixed).length; // 旧todosも当面カウント（移行データ互換）
+// 未解決の要対応の数。現行は r.ngs（要対応セクション）。items内のngと旧todosは移行前データ。
+const openNg = (r) => (r.ngs || []).filter((g) => !g.fixed).length
+  + Object.values(r.items || {}).filter((it) => it && it.ng && !it.fixed).length
+  + (r.todos || []).filter((t) => !t.fixed).length;
 /* 要対応は before/after、通常項目は photos（1系統） */
 const todoShots = (t, ph) => (t[ph] = t[ph] || []);
 
@@ -2586,16 +2589,38 @@ function renderModal() {
           </div>`;
         })()}
         <div class="howto">
-          <div class="howto-h">${ic("check2", 18)} この記録でやること</div>
-          <div class="howto-b">
-            <b>1. 清掃箇所を 各2枚ずつ 撮影して登録</b>
-            <span>玄関前（階段）／駐車場／駐輪場／ゴミ庫／植栽／用水路の掃き／拭き掃除</span>
-            <b>2. その日に直せないものは「要対応」に登録</b>
-            <span>写真・内容・期限を入れて登録。期限までに対応して完了させること。</span>
-            <b>要対応にするもの</b>
-            <span>外観（外壁・階段・看板などの破損／汚損）／駐車場（迷惑駐車）／設備（マス蓋を含む）の破損・汚損／その他（ゴミ・不法投棄など）</span>
-            <div class="howto-no">${ic("x", 18)} <b>糞尿・陶器物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
+          <div class="howto-h">${ic("check2", 22)} この記録でやること</div>
+
+          <div class="howto-step">
+            <div class="howto-no1">1</div>
+            <div class="howto-step-b">
+              <div class="howto-t">下の箇所を それぞれ 写真2枚ずつ 登録する</div>
+              <div class="howto-two">
+                <div class="howto-card">
+                  <div class="howto-card-h">アパートの場合</div>
+                  <div class="howto-card-b">玄関前／共用部分／駐車場／ゴミ庫／放置自転車</div>
+                </div>
+                <div class="howto-card">
+                  <div class="howto-card-h">マンションの場合</div>
+                  <div class="howto-card-b">エントランス（エレベーターホール含む）／共用部分／駐車場／ゴミ庫／放置自転車</div>
+                </div>
+              </div>
+              <div class="howto-t2">やること</div>
+              <div class="howto-do">拭き掃除・掃き掃除　／　蜘蛛の巣・ハチの巣の除去　／　ゴミ庫の分別確認と清掃　／　草取り　／　植栽の剪定</div>
+            </div>
           </div>
+
+          <div class="howto-step">
+            <div class="howto-no1 red">2</div>
+            <div class="howto-step-b">
+              <div class="howto-t">その日に解決できないものは「要対応」に登録する</div>
+              <div class="howto-t2">要対応にするもの</div>
+              <div class="howto-ng">放置物　／　迷惑駐車　／　外壁・マス蓋・雨樋・管理看板の破損　／　その他 設備・アスファルト・階段の破損や重度の汚損　／　ゴミの不法投棄・分別違反　／　大量の草抜き　／　植栽の剪定・伐採　／　用水路の掃除</div>
+              <div class="howto-add">写真・内容・期限を入れて登録し、期限までに対応して「解決済み」にすること。</div>
+            </div>
+          </div>
+
+          <div class="howto-no">${ic("x", 20)} <b>糞尿・陶器物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
         </div>
         <div class="field" style="margin-bottom:-.4rem">
           ${(r.status !== "done" && date < today() && !r.lateReason) ? "" : `
@@ -3134,6 +3159,27 @@ ${groups}</body></html>`;
 /* ===== 旧項目（要対応へ移した8項目）の過去データを一度だけ掃除する ===== */
 const REMOVED_ITEM_KEYS = ["parking", "sign", "exterior", "equip", "masubuta", "abandoned", "delivery", "illegalpark"];
 function cleanupRemovedItems() {
+  // 清掃項目に付いていた旧「要対応」フラグを外す（要対応は専用セクションに一本化したため）
+  if (!localStorage.getItem("cm_ngmigrate_v1")) {
+    let m = 0;
+    Object.keys(reps || {}).forEach((rk) => {
+      const r = reps[rk]; if (!r || !r.items) return;
+      Object.values(r.items).forEach((c) => {
+        if (c && c.ng) {
+          c.ng = false; c.fixed = false; c.deadline = ""; c.text = "";
+          c.notified = false; c.notifiedAt = "";
+          // ビフォー/アフターに入れていた写真は通常写真として残す
+          const keep = [...(c.before || []), ...(c.after || [])];
+          c.photos = (c.photos || []).concat(keep).slice(0, NEED_SHOTS);
+          c.before = []; c.after = [];
+          m++;
+        }
+      });
+      if (Array.isArray(r.todos) && r.todos.length) { r.todos = []; m++; }
+    });
+    if (m) save(K.reps, reps);
+    localStorage.setItem("cm_ngmigrate_v1", new Date().toISOString());
+  }
   if (localStorage.getItem("cm_cleanup_v1")) return;   // 実行済みなら何もしない
   let n = 0;
   Object.keys(reps || {}).forEach((rk) => {
@@ -4850,6 +4896,12 @@ function renderNgEntry(name, date) {
       <div class="ngitem-t">${esc(g.text || "")}</div>
       <div class="phases" style="margin-top:.7rem">${panel("before", "ビフォー", "")}${panel("after", "アフター", "a")}</div>
       <div class="ngitem-m">期限 ${esc(g.deadline ? fmtDate(g.deadline) : "未設定")}${g.notified ? "　通知済み" : ""}</div>
+      ${g.fixed
+        ? `<div class="ngitem-done">${ic("check2", 16)} 解決済み${g.fixedAt ? `（${esc(fmtDate(g.fixedAt))}）` : ""}
+             <button class="btn btn-outline btn-sm" data-ngunfix="${i}">未解決に戻す</button></div>`
+        : `<button class="btn ngfix-btn" data-ngfix="${i}" ${(g.after || []).length ? "" : "disabled"}>
+             ${ic("check2", 17)} ${(g.after || []).length ? "解決済みにする" : "アフター写真を入れると解決できます"}
+           </button>`}
     </div>`;
   }).join("");
 
@@ -5073,6 +5125,26 @@ function bindNgListed(host, name, date) {
       (g[ph] || []).splice(+k, 1);
       setRep(name, date, { ngs: rr.ngs });
       renderNgEntry(name, date);
+    };
+  });
+  // 解決済みにする／未解決に戻す
+  host.querySelectorAll("[data-ngfix]").forEach((b) => {
+    b.onclick = () => {
+      const rr = getRep(name, date);
+      const g = (rr.ngs || [])[+b.dataset.ngfix]; if (!g) return;
+      g.fixed = true; g.fixedAt = today();
+      setRep(name, date, { ngs: rr.ngs });
+      renderNgEntry(name, date); renderModal(); renderNgBadge();
+      toast("解決済みにしました", placeLabel(g.place));
+    };
+  });
+  host.querySelectorAll("[data-ngunfix]").forEach((b) => {
+    b.onclick = () => {
+      const rr = getRep(name, date);
+      const g = (rr.ngs || [])[+b.dataset.ngunfix]; if (!g) return;
+      g.fixed = false; g.fixedAt = "";
+      setRep(name, date, { ngs: rr.ngs });
+      renderNgEntry(name, date); renderModal(); renderNgBadge();
     };
   });
   // 登録済みの削除
