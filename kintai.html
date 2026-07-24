@@ -431,6 +431,17 @@ main{padding:1.5rem 0 4rem;}
   padding:.55rem .9rem;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;}
 .ng-toggle:hover{background:var(--am-50);}
 .ng-toggle.on{background:var(--am-500);color:#fff;border-color:var(--am-500);}
+.geobox{display:flex;flex-direction:column;gap:.5rem;}
+.georow{display:flex;align-items:center;gap:.6rem;text-decoration:none;
+  border:2px solid var(--border);border-radius:.6rem;padding:.7rem .9rem;
+  font-size:15px;color:var(--fg);background:#fff;}
+.georow b{font-weight:800;}
+.georow:hover{border-color:var(--teal-700);}
+.georow.far{border-color:#fca5a5;background:#fff5f5;}
+.geodist{font-size:13px;font-weight:700;color:var(--muted);}
+.georow.far .geodist{color:#b91c1c;}
+.geomap{margin-left:auto;font-size:13px;font-weight:700;color:var(--teal-700);}
+
 /* ===== 要対応の段階入力 ===== */
 .ngstart{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
   border:2px dashed #fca5a5;background:#fff5f5;color:#b91c1c;border-radius:.7rem;
@@ -2300,6 +2311,22 @@ function renderModal() {
           <label>要対応（清掃以外で気づいたこと）</label>
           <div id="ngentry"></div>
         </div>
+        ${(() => {
+          const g = r.geo || {};
+          if (!g.open && !g.done) return "";
+          const row = (k, lbl) => {
+            const x = g[k]; if (!x) return "";
+            const far = (x.dist != null && x.dist > 300);
+            return `<a class="georow ${far ? "far" : ""}" target="_blank" rel="noopener"
+              href="https://www.google.com/maps?q=${x.lat},${x.lng}">
+              ${ic("pin", 15)} <b>${lbl}</b>
+              <span>${new Date(x.at).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}</span>
+              ${x.dist != null ? `<span class="geodist">物件から${x.dist}m</span>` : ""}
+              <span class="geomap">地図で見る</span></a>`;
+          };
+          return `<div class="field"><label>作業場所の記録</label>
+            <div class="geobox">${row("open", "到着")}${row("done", "完了")}</div></div>`;
+        })()}
         ${activeItems.length ? `<div class="field">
           <label>対応中・未完了の箇所</label>
           <div class="itemcards">${activeH}</div>
@@ -2368,6 +2395,7 @@ function renderModal() {
   q("#m-x").onclick = closeM;
   q("#m-cancel").onclick = closeM;
   renderNgEntry(name, date);
+  stampPos(name, date, "open");   // 到着時の位置を1回だけ残す
   const ngSend = q("#m-ngsend");
   if (ngSend) ngSend.onclick = async () => {
     ngSend.disabled = true;
@@ -2391,7 +2419,9 @@ function renderModal() {
       if (req.length && checked === req.length) status = "done";
       else if (checked > 0) status = "doing";
       else status = "yet";
-      setRep(name, date, { items: r.items, status }); renderModal();
+      setRep(name, date, { items: r.items, status });
+      if (status === "done") stampPos(name, date, "done");   // 完了時の位置を残す
+      renderModal();
     };
   });
   // 項目削除（この物件の項目リストから）
@@ -2800,6 +2830,86 @@ function buildReportHTML(date) {
 <h1>定期清掃報告書</h1>
 <p class="sub">${fmtDate(date)}　物件${s.total}件／完了${s.done}件${s.ng ? `／要対応${s.ng}件` : ""}</p>
 ${groups}</body></html>`;
+}
+
+/* ===== 旧項目（要対応へ移した8項目）の過去データを一度だけ掃除する ===== */
+const REMOVED_ITEM_KEYS = ["parking", "sign", "exterior", "equip", "masubuta", "abandoned", "delivery", "illegalpark"];
+function cleanupRemovedItems() {
+  if (localStorage.getItem("cm_cleanup_v1")) return;   // 実行済みなら何もしない
+  let n = 0;
+  Object.keys(reps || {}).forEach((rk) => {
+    const r = reps[rk];
+    if (!r || !r.items) return;
+    REMOVED_ITEM_KEYS.forEach((k) => {
+      if (r.items[k]) { delete r.items[k]; n++; }
+    });
+  });
+  // 物件ごとのカスタム項目リストからも取り除く
+  Object.keys(itemlists || {}).forEach((nm) => {
+    const arr = itemlists[nm];
+    if (!Array.isArray(arr)) return;
+    itemlists[nm] = arr.filter((it) => !REMOVED_ITEM_KEYS.includes(it.key));
+  });
+  if (n) { save(K.reps, reps); save(K.itemlists, itemlists); }
+  localStorage.setItem("cm_cleanup_v1", new Date().toISOString());
+  if (n) console.log("旧項目データを削除しました:", n + "件");
+}
+
+/* ===== 位置情報（記録を開いた時と完了時の2点を残す） ===== */
+function getPos() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude,
+                       acc: Math.round(p.coords.accuracy), at: new Date().toISOString() }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  });
+}
+// 2点間の距離（m）。物件の座標と照合して「現地にいたか」を見る。
+function distM(a, b) {
+  if (!a || !b) return null;
+  const R = 6371000, toR = (d) => d * Math.PI / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(s)));
+}
+// 住所から座標を取る（国土地理院。日本の住所向け・無料）
+async function geocodeAddr(addr) {
+  if (!addr) return null;
+  try {
+    const u = "https://msearch.gsi.go.jp/address-search/AddressSearch?q=" + encodeURIComponent(addr);
+    const res = await fetch(u);
+    const j = await res.json();
+    if (Array.isArray(j) && j[0] && j[0].geometry && j[0].geometry.coordinates) {
+      const [lng, lat] = j[0].geometry.coordinates;
+      return { lat, lng };
+    }
+  } catch (e) {}
+  return null;
+}
+// 物件の座標を取得（未取得なら住所から引いて保存）
+async function propCoord(name) {
+  const p = props.find((x) => x.name === name);
+  if (!p) return null;
+  if (p.lat && p.lng) return { lat: p.lat, lng: p.lng };
+  const c = await geocodeAddr(p.addr);
+  if (c) { p.lat = c.lat; p.lng = c.lng; save(K.props, props); }
+  return c;
+}
+// 記録に位置を残す（phase: "open" 到着時 / "done" 完了時）
+async function stampPos(name, date, phase) {
+  const pos = await getPos();
+  if (!pos) return null;
+  const r = getRep(name, date);
+  r.geo = r.geo || {};
+  if (r.geo[phase]) return r.geo[phase];   // 同じ記録で二重に残さない
+  const pc = await propCoord(name);
+  pos.dist = pc ? distM(pos, pc) : null;
+  r.geo[phase] = pos;
+  setRep(name, date, { geo: r.geo });
+  return pos;
 }
 
 /* ===== 要対応の入力（場所→種類→内容→期限の順に進む） ===== */
@@ -4701,6 +4811,7 @@ function boot() {
     if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); }
   });
   { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "cal"); }
+  cleanupRemovedItems();   // 要対応へ移した旧項目の過去データを掃除（初回のみ）
   // 起動時：勤怠同期URLが設定済みなら最新を取り込む
   if (cfg.ktGas) { ktPull(true); }
   // 起動時：GAS Webhook URL があれば清掃データも最新を取り込む（空ガードで潰さない）
