@@ -225,8 +225,11 @@ main{padding:1.5rem 0 4rem;}
 .pshot-add:hover{border-color:var(--teal-700);background:var(--teal-50);color:var(--teal-700);}
 /* 予定カレンダーに既存予定を出す */
 .mc-d.hasjob{font-weight:800;}
-.mc-jobs{display:block;font-size:9px;font-weight:800;color:#fff;background:var(--teal-700);
-  border-radius:9999px;margin-top:1px;line-height:1.4;}
+.mc-jobs{display:flex;flex-direction:column;gap:1px;margin-top:2px;width:100%;}
+.mc-job{display:block;font-size:10px;font-weight:800;color:#fff;background:var(--teal-700);
+  border-radius:.25rem;line-height:1.45;padding:0 3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
+.mc-job.more{background:var(--sl-100,#f1f5f9);color:var(--muted);}
 .mc-dn{display:block;}
 .selview-d{font-size:14px;font-weight:700;color:var(--fg);}
 .selview-l{font-size:12px;font-weight:700;color:var(--teal-700);margin-top:.4rem;}
@@ -343,16 +346,19 @@ main{padding:1.5rem 0 4rem;}
 .mc-nav:hover{background:var(--bg);}
 .mc-wd{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;
   color:var(--muted);margin-bottom:.15rem;}
-.mc-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.mc-d{border:0;background:transparent;border-radius:.4rem;padding:.45rem 0;font-size:13px;
-  cursor:pointer;color:var(--fg,#0f172a);}
+.mc-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.mc-d{border:0;background:transparent;border-radius:.4rem;padding:.35rem .2rem;font-size:13px;
+  cursor:pointer;color:var(--fg,#0f172a);
+  min-height:4.4rem;display:flex;flex-direction:column;align-items:stretch;overflow:hidden;}
+.mc-d .mc-dn{text-align:center;flex:none;}
 .mc-d:hover{background:var(--bg);}
 .mc-d.out{color:var(--muted-3);}
 .mc-d.sun{color:var(--rose-500);} .mc-d.sat{color:var(--blue-500);}
 .mc-d.today{box-shadow:inset 0 0 0 1px var(--teal-700);font-weight:600;}
 .mc-d.on{background:var(--teal-700);color:#fff;font-weight:700;}
+.mc-d.on .mc-job{background:#fff;color:var(--teal-800,#115e59);}
 .mini-cal-sel{margin-top:.4rem;font-size:12px;color:var(--muted);}
-@media (max-width:640px){ .mc-d{padding:.6rem 0;font-size:14px;} }
+@media (max-width:640px){ .mc-d{font-size:14px;min-height:4rem;} .mc-job{font-size:9px;} }
 
 /* 右サイドの予定カード（.pcard衝突を避けた専用クラス） */
 .scard{position:relative;padding:1rem;cursor:pointer;border:2px solid var(--border);
@@ -471,14 +477,21 @@ main{padding:1.5rem 0 4rem;}
 .assign-empty svg{vertical-align:-3px;margin-right:.3rem;}
 /* 写真を選ぶオーバーレイ */
 .pickwrap{width:min(94vw,560px);}
+/* 箇所の切り替えタブ（1画面で全項目をまとめて振り分けるため） */
+.picktabs{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.7rem;}
+.picktab{display:inline-flex;align-items:center;gap:.3rem;border:1.5px solid var(--border);
+  background:#fff;color:var(--muted);border-radius:9999px;padding:.35rem .7rem;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.picktab.on{border-color:var(--teal-700,#0f766e);background:var(--teal-50,#f0fdfa);color:var(--teal-700,#0f766e);}
+.picktab-n{font-size:11px;font-weight:800;opacity:.75;}
 .pick-guide{font-size:13px;font-weight:700;color:var(--teal-800,#115e59);background:var(--teal-50,#f0fdfa);border:1px solid var(--teal-200,#99f6e4);border-radius:10px;padding:.55rem .7rem;margin-bottom:.7rem;line-height:1.6;}
 .pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:.5rem;}
 .pickcell{position:relative;aspect-ratio:1/1;width:100%;padding:0;border:2px solid var(--border);border-radius:10px;overflow:hidden;background:#f1f5f9;cursor:pointer;transition:border-color .12s,transform .1s;}
 .pickcell img{width:100%;height:100%;object-fit:cover;display:block;}
 .pickcell.on{border-color:var(--teal-600,#0d9488);transform:translateY(-1px);}
 .pickcell-no{position:absolute;top:4px;left:4px;min-width:20px;height:20px;border-radius:50%;background:var(--teal-600,#0d9488);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;}
-.pick-f{display:flex;gap:.5rem;margin-top:.9rem;}
-.pick-f .btn{flex:1;justify-content:center;}
+.pick-f{display:flex;gap:.5rem;margin-top:.9rem;flex-wrap:wrap;}
+.pick-f .btn{flex:1 1 8rem;justify-content:center;}
 .pick-ok{background:var(--teal-600,#0d9488);color:#fff;border:none;font-weight:800;}
 .pick-ok:disabled{background:#cbd5e1;color:#fff;cursor:not-allowed;}
 @media(max-width:420px){ .pickgrid{grid-template-columns:repeat(3,1fr);} }
@@ -742,7 +755,7 @@ img[data-photo]{cursor:pointer;}
 .ngcal{border:2px solid var(--border);border-radius:.6rem;padding:.6rem;background:#fff;max-width:26rem;}
 .ngcal .mc-t{font-size:16px;font-weight:700;}
 .ngcal .mc-wd{font-size:12px;}
-.ngcal .mc-d{padding:.55rem 0;font-size:15px;font-weight:600;}
+.ngcal .mc-d{padding:.55rem 0;font-size:15px;font-weight:600;min-height:0;display:block;}
 .ngcal-sel{font-size:15px;font-weight:700;color:var(--am-700);}
 .ng-deadline.over label{color:var(--rose-600);}
 .ng-deadline.over input{border-color:var(--rose-500);background:var(--rose-50);}
@@ -2000,27 +2013,77 @@ function delInboxPhoto(i) {
 // 振り分け先を選ぶオーバーレイを開く
 let _assignIdx = null;
 /* ===== 項目から写真を選ぶ（項目タップ → アップ済み写真から選択） ===== */
+/* ===== 項目から写真を選ぶ（1画面で全項目をまとめて振り分け） =====
+   上部で箇所を切り替えながら、閉じずに続けて選べる。key を省略すると未登録の先頭から始まる。 */
 function openPickForItem(key) {
   const host = document.getElementById("assign-host");
   if (!host) return;
   const name = openRep.name, date = openRep.date;
-  const lbl = (itemsFor(name).find((x) => x.key === key) || {}).label || key;
+
+  // 対象の箇所（写真が2枚そろっていないものだけ）
+  const targets = () => {
+    const rr = getRep(name, date);
+    return itemsFor(name).filter((x) => ((itemOf(rr, x.key).photos || []).length) < NEED_SHOTS);
+  };
+  let cur = key;
+  if (!cur || !targets().some((x) => x.key === cur)) {
+    const t0 = targets();
+    if (!t0.length) { toast("すべて登録済みです", "写真が必要な箇所はありません"); return; }
+    cur = t0[0].key;
+  }
   let sel = [];   // 選択中の inbox インデックス（確定するまで写真は動かさない）
+
+  // 選んだ写真をいまの箇所へ確定させる。next=true なら次の未登録へ自動で進む
+  const commit = (next) => {
+    const r2 = getRep(name, date);
+    const it2 = itemOf(r2, cur);
+    it2.photos = it2.photos || [];
+    // 添字がずれないよう、大きい方から取り出す
+    const picked = sel.slice().sort((a, b) => b - a).map((i) => (r2.inbox || []).splice(i, 1)[0]);
+    picked.reverse().forEach((src) => { if (src) it2.photos.push(src); });
+    r2.items[cur] = it2;
+    setRep(name, date, { items: r2.items, inbox: r2.inbox });
+    refreshStatus(name, date);
+    const lbl = (itemsFor(name).find((x) => x.key === cur) || {}).label || cur;
+    sel = [];
+    const rest = targets();
+    if (next && rest.length) {
+      cur = rest[0].key;
+      toast("完了にしました", `${lbl} → 次は「${(rest[0].label || rest[0].key)}」`);
+      draw();
+    } else {
+      host.innerHTML = ""; renderModal();
+      toast("完了にしました", rest.length ? lbl : `${lbl}（すべての箇所が登録済みになりました）`);
+    }
+  };
 
   const draw = () => {
     const rr = getRep(name, date);
-    const have = (itemOf(rr, key).photos || []).length;
+    const lbl = (itemsFor(name).find((x) => x.key === cur) || {}).label || cur;
+    const have = (itemOf(rr, cur).photos || []).length;
     const left = NEED_SHOTS - have - sel.length;
     const list = rr.inbox || [];
+    const rest = targets();
+    const restAfter = rest.filter((x) => x.key !== cur).length;
+
+    // 上部の箇所タブ（登録済みは出さない。現在地と残り枚数がわかるようにする）
+    const tabs = rest.map((x) => {
+      const h = (itemOf(rr, x.key).photos || []).length + (x.key === cur ? sel.length : 0);
+      const on = x.key === cur;
+      return `<button class="picktab ${on ? "on" : ""}" data-ptab="${esc(x.key)}">
+        ${esc(x.label || x.key)}<span class="picktab-n">${h}/${NEED_SHOTS}</span></button>`;
+    }).join("");
+
     host.innerHTML = `<div class="mask" id="pick-mask">
       <div class="assign pickwrap">
         <div class="assign-h">
           <span>${esc(lbl)}<span class="assign-remain">${sel.length + have}/${NEED_SHOTS}枚</span></span>
           <button class="x" id="pick-x">${ic("x", 18)}</button>
         </div>
+        ${rest.length > 1 ? `<div class="picktabs">${tabs}</div>` : ""}
         <div class="pick-guide">${left > 0
-          ? `写真を <b>${left}枚</b> えらんでください`
-          : `<b>${NEED_SHOTS}枚えらべました。</b>下の「この箇所を完了にする」を押してください`}</div>
+          ? `「${esc(lbl)}」の写真を <b>${left}枚</b> えらんでください`
+          : `<b>${NEED_SHOTS}枚えらべました。</b>下のボタンで確定してください`}</div>
         ${list.length
           ? `<div class="pickgrid">${list.map((src, i) => {
               const on = sel.indexOf(i) >= 0;
@@ -2033,9 +2096,12 @@ function openPickForItem(key) {
               <b>選べる写真がありません</b>
               <span>閉じて「写真を追加する」から取り込んでください。</span></div>`}
         <div class="pick-f">
-          <button class="btn btn-default" id="pick-cancel">キャンセル</button>
-          <button class="btn pick-ok" id="pick-ok" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
-            ${ic("check2", 17)} この箇所を完了にする
+          <button class="btn btn-default" id="pick-cancel">閉じる</button>
+          ${restAfter > 0 ? `<button class="btn pick-ok" id="pick-next" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
+            ${ic("check2", 17)} 確定して次へ（残り${restAfter}箇所）
+          </button>` : ""}
+          <button class="btn ${restAfter > 0 ? "btn-outline" : "pick-ok"}" id="pick-ok" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
+            ${ic("check2", 17)} 確定して閉じる
           </button>
         </div>
       </div></div>`;
@@ -2044,6 +2110,11 @@ function openPickForItem(key) {
     host.querySelector("#pick-x").onclick = close;
     host.querySelector("#pick-cancel").onclick = close;
     host.querySelector("#pick-mask").onclick = (e) => { if (e.target.id === "pick-mask") close(); };
+
+    // 箇所の切り替え（選びかけの写真は持ち越さない）
+    host.querySelectorAll("[data-ptab]").forEach((b) => {
+      b.onclick = () => { if (b.dataset.ptab === cur) return; cur = b.dataset.ptab; sel = []; draw(); };
+    });
 
     // 写真を選ぶ／選び直す
     host.querySelectorAll("[data-pk]").forEach((b) => {
@@ -2057,21 +2128,10 @@ function openPickForItem(key) {
       };
     });
 
-    // 完了：選んだ写真をこの箇所へ移し、inbox から取り除く
+    const okNext = host.querySelector("#pick-next");
+    if (okNext) okNext.onclick = () => commit(true);
     const ok = host.querySelector("#pick-ok");
-    if (ok) ok.onclick = () => {
-      const r2 = getRep(name, date);
-      const it2 = itemOf(r2, key);
-      it2.photos = it2.photos || [];
-      // 添字がずれないよう、大きい方から取り出す
-      const picked = sel.slice().sort((a, b) => b - a).map((i) => (r2.inbox || []).splice(i, 1)[0]);
-      picked.reverse().forEach((src) => { if (src) it2.photos.push(src); });
-      r2.items[key] = it2;
-      setRep(name, date, { items: r2.items, inbox: r2.inbox });
-      refreshStatus(name, date);
-      host.innerHTML = ""; renderModal();
-      toast("完了にしました", lbl);
-    };
+    if (ok) ok.onclick = () => commit(false);
     hydratePhotos(host);
   };
   draw();
@@ -3093,7 +3153,7 @@ function openSched(name) {
   const p = props.find((x) => x.name === name) || {};
   const host = document.getElementById("modal-host");
   host.innerHTML = `<div class="mask" id="mask2">
-    <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal wide" role="dialog" aria-modal="true">
       <div class="modal-h"><h2>清掃を予定する</h2><button class="x" id="s-x">${ic("x", 18)}</button></div>
       <div style="display:flex;flex-direction:column;gap:1rem">
         <div class="mbox"><div class="mbox-n">${esc(p.name)}</div><div class="mbox-a">${esc(p.addr)}</div></div>
@@ -3126,9 +3186,14 @@ function openSched(name) {
       const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
                    ds === _pick ? "on" : "", dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
       // その日にすでに入っている予定を出す（予定を組みやすくするため）
+      // 物件名をそのまま並べる。多い日は先頭2件＋「他n件」に省略する。
       const already = (sched[ds] || []);
+      const SHOW = 2;
       const names = already.length
-        ? `<span class="mc-jobs" title="${esc(already.join("／"))}">${already.length}件</span>` : "";
+        ? `<span class="mc-jobs" title="${esc(already.join("／"))}">`
+          + already.slice(0, SHOW).map((nm) => `<span class="mc-job">${esc(nm)}</span>`).join("")
+          + (already.length > SHOW ? `<span class="mc-job more">他${already.length - SHOW}件</span>` : "")
+          + `</span>` : "";
       g += `<button type="button" class="${cls} ${already.length ? "hasjob" : ""}" data-pick="${ds}">
         <span class="mc-dn">${d.getDate()}</span>${names}</button>`;
     }
@@ -5372,8 +5437,8 @@ const NG_DUE_STYLE = {
   over:  { bd: "#dc2626", bg: "#fef2f2", fg: "#b91c1c", t: "期限切れ" },
   today: { bd: "#f59e0b", bg: "#fffbeb", fg: "#b45309", t: "今日まで" },
   soon:  { bd: "#f59e0b", bg: "#fffbeb", fg: "#b45309", t: "まもなく" },
-  later: { bd: "#93c5fd", bg: "#eff6ff", fg: "#1d4ed8", t: "対応中" },
-  none:  { bd: "#cbd5e1", bg: "#f8fafc", fg: "#475569", t: "期限未設定" },
+  later: { bd: "#fcd34d", bg: "#fffbeb", fg: "#b45309", t: "対応中" },
+  none:  { bd: "#fcd34d", bg: "#fffbeb", fg: "#b45309", t: "期限未設定" },
 };
 function renderNgBadge() {
   const el = document.getElementById("ng-badge");
