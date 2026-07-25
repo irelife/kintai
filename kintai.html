@@ -1263,6 +1263,17 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* 清掃完了の見出し（写真がすべて揃ったとき） */
+.cleandone-t{font-size:30px;font-weight:900;letter-spacing:.06em;line-height:1.15;
+  color:var(--em-700,#047857);margin:.35rem 0 .1rem;}
+.cleandone-s{font-size:14px;font-weight:800;color:var(--em-700,#047857);
+  margin-bottom:.6rem;line-height:1.5;}
+.cleandone b{font-size:14px;}
+@media(max-width:768px){
+  .cleandone-t{font-size:25px;}
+  .cleandone-s{font-size:12.5px;}
+}
+
 /* ===== スマホ：年間休日カードが枠からはみ出すのを防ぐ ===== */
 .kt-prog{overflow-wrap:anywhere;}
 .kt-prog-grid > .kp{min-width:0;}
@@ -3348,7 +3359,9 @@ function renderModal() {
             <b>必要な写真はすべて取り込み済みです</b>
             <span>下の<b>箇所のカード</b>をタップして、写真を振り分けてください。</span>
           </div>`) : `
-          <div class="dropbox-done">${ic("check2", 26)}
+          <div class="dropbox-done cleandone">${ic("check2", 26)}
+            <div class="cleandone-t">清掃完了</div>
+            <div class="cleandone-s">所定の場所の清掃はすべて終わっています</div>
             <b>清掃写真はすべて登録済みです（各箇所2枚）</b>
             <span>これ以上は追加できません。清掃以外で気づいたことは<br>下の<b>「要対応を追加する」</b>から登録してください。</span>
           </div>`}
