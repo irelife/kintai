@@ -198,7 +198,9 @@ main{padding:1.5rem 0 4rem;}
 .cell-pop-r:hover{filter:brightness(.96);box-shadow:0 0 0 2px var(--teal-700) inset;}
 /* 遅れて完了した記録（青帯）。予定日に終わらなかったものがこの日に完了した印。 */
 .pill-late{background:#dbeafe;color:#1d4ed8;border:1px solid #60a5fa;cursor:pointer;
-  display:flex;align-items:center;gap:.25rem;}
+  display:flex;align-items:flex-start;gap:.25rem;}
+.pill-late .pill-body{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem;flex:1;min-width:0;}
+.pill-late .pill-x{flex:0 0 auto;align-self:flex-start;}
 .pill-late:hover{filter:brightness(.95);}
 .pill-late{flex-wrap:wrap;}
 .pill-late-p{flex-basis:100%;font-size:9px;font-weight:800;color:#1e40af;line-height:1.3;opacity:.95;}
@@ -206,6 +208,16 @@ main{padding:1.5rem 0 4rem;}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pill-late-t{flex:none;font-size:9px;font-weight:800;background:#2563eb;color:#fff;
   border-radius:9999px;padding:0 .3rem;}
+/* 要対応の対応期限（オレンジ）。過ぎていれば赤で強調 */
+.pill.pill-due{background:#fff7ed;color:#c2410c;border:1px solid #fb923c;cursor:pointer;
+  display:flex;align-items:center;gap:.25rem;}
+.pill.pill-due:hover{filter:brightness(.97);}
+.pill.pill-due .pill-body{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem;min-width:0;}
+.pill.pill-due .pill-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pill.pill-due .pill-due-t{flex:none;font-size:9px;font-weight:800;background:#ea580c;color:#fff;
+  border-radius:9999px;padding:0 .35rem;}
+.pill.pill-due.over{background:#fef2f2;color:#b91c1c;border-color:#f87171;}
+.pill.pill-due.over .pill-due-t{background:#dc2626;}
 /* 遅れた理由の入力 */
 .latebox{border:3px solid #fca5a5;background:#fff5f5;border-radius:.8rem;padding:1.1rem 1.2rem;margin-bottom:1rem;}
 .latebox.filled{border-color:#a7f3d0;background:#ecfdf5;}
@@ -1097,6 +1109,12 @@ img[data-photo]{cursor:pointer;}
 .kt-legend .kl-dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
 .kt-legend .kl-hint{margin-left:auto;font-size:12px;color:var(--muted-2);}
 .kt-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+/* スマホは画面が狭く7列が収まりきらないので、横スクロールにする（セルは読みやすい大きさを保つ） */
+.kt-cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+@media(max-width:768px){
+  .kt-cal{grid-template-columns:repeat(7,minmax(96px,1fr));min-width:720px;gap:6px;}
+  .kt-cal-scroll{margin:0 -.25rem;padding:0 .25rem .3rem;}
+}
 .kt-cal .kc-dow{text-align:center;font-size:14px;font-weight:700;color:var(--muted);padding:.4rem 0;}
 .kt-cal .kc-dow.sun{color:var(--rose-500);} .kt-cal .kc-dow.sat{color:#2563eb;}
 .kt-cal .kc-cell{min-height:104px;border:1px solid var(--border-soft);border-radius:12px;padding:.55rem;cursor:pointer;display:flex;flex-direction:column;gap:.3rem;transition:background-color .12s,border-color .12s;background:#fff;}
@@ -1220,6 +1238,7 @@ img[data-photo]{cursor:pointer;}
         <div class="cal-g" id="cal-grid"></div>
         <div class="cal-legend">
           <span class="cll"><i class="cll-dot" style="background:#fef3c7;border-color:#d97706"></i>要対応（未解決）</span>
+          <span class="cll"><i class="cll-dot" style="background:#fff7ed;border-color:#fb923c"></i>要対応の期限</span>
           <span class="cll"><i class="cll-dot" style="background:#fef2f2;border-color:#dc2626"></i>期限切れ</span>
           <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
           <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>完了（要対応なし）</span>
@@ -1296,7 +1315,7 @@ img[data-photo]{cursor:pointer;}
         <span class="kl"><i class="kl-dot" style="background:#e11d48"></i>欠勤</span>
         <span class="kl-hint">日をタップで打刻できます</span>
       </div>
-      <div id="kt-cal" class="kt-cal"></div>
+      <div class="kt-cal-scroll"><div id="kt-cal" class="kt-cal"></div></div>
     </div>
 
     <div class="card">
@@ -1731,6 +1750,7 @@ function pickFiles(cb) {
   inp.click();
 }
 const SHOT_MAX = 3;
+const NG_SHOT_MAX = 2;   // 要対応のビフォー/アフターの上限（各2枚で充分）
 
 /* ===== 写真をGoogleドライブへ逃がす方式（PIVOT準拠） =====
    localStorage には fileId（または旧 base64）だけを保存。画像本体はメモリ + IndexedDB キャッシュ。
@@ -1842,7 +1862,10 @@ async function uploadPhotoBg(tempId, dataUrl, opts) {
   (rep.todos || []).forEach((t) => { fix(t.before); fix(t.after); });
   (rep.ngs || []).forEach((g) => { fix(g.before); fix(g.after); });
   if (rep.ngDraft) { fix(rep.ngDraft.before); fix(rep.ngDraft.after); }
-  if (fileId) { cacheImage(fileId, dataUrl); delete _imgCache[tempId]; }
+  if (fileId) { cacheImage(fileId, dataUrl); }
+  // temp_ の実体はしばらく残す（差し替え直後の再描画で画像が消えないように）。
+  // 差し替えが済んでいれば参照されないので、少し遅らせて掃除する。
+  if (fileId) setTimeout(() => { delete _imgCache[tempId]; }, 8000);
   save(K.reps, reps);
   if (openRep && openRep.name === opts.name && openRep.date === opts.date) {
     renderModal();
@@ -2402,6 +2425,22 @@ function renderCal() {
     (lateByDay[rr.doneDate] = lateByDay[rr.doneDate] || []).push({ name: nm, planned, reason: rr.lateReason || "" });
   });
 
+  // 要対応の「対応期限」を、その期限日ごとに集める（オレンジ帯で出す）
+  // 現行形式 r.ngs（未解決のみ）＋旧形式 items[].ng を対象にする。
+  const ngDueByDay = {};
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|");
+    if (sep < 0) return;
+    const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
+    const rr = reps[rk] || {};
+    const push = (deadline, text) => {
+      if (!deadline) return;
+      (ngDueByDay[deadline] = ngDueByDay[deadline] || []).push({ name: nm, planned, text: text || "" });
+    };
+    (rr.ngs || []).forEach((g) => { if (g && !g.fixed) push(g.deadline, g.text); });
+    Object.values(rr.items || {}).forEach((c) => { if (c && c.ng && !c.fixed) push(c.deadline, c.text); });
+  });
+
   let h = "";
   for (let i = 0; i < 42; i++) {
     const d = new Date(start); d.setDate(start.getDate() + i);
@@ -2470,11 +2509,28 @@ function renderCal() {
     const latePills = lateHere.map((x) =>
       `<span class="pill pill-late" data-popopen="${esc(x.name)}|${esc(x.planned)}"
         title="${esc(fmtDate(x.planned))}の予定を、この日に完了${x.reason ? "／理由：" + esc(x.reason) : ""}">
-        <span class="pill-n">${esc(x.name)}</span><span class="pill-late-t">遅延完了</span>
-        <span class="pill-late-p">${esc(fmtDate(x.planned))}の予定</span>
-        ${x.reason ? `<span class="pill-late-r">${esc(x.reason)}</span>` : ""}</span>`
+        <span class="pill-body">
+          <span class="pill-n">${esc(x.name)}</span><span class="pill-late-t">遅延完了</span>
+          <span class="pill-late-p">${esc(fmtDate(x.planned))}の予定</span>
+          ${x.reason ? `<span class="pill-late-r">${esc(x.reason)}</span>` : ""}
+        </span>
+        <button class="pill-x" data-latex="${esc(x.name)}|${esc(x.planned)}" title="この記録を消す" aria-label="この記録を消す">×</button></span>`
     ).join("");
     pills += latePills;
+
+    // 要対応の対応期限：オレンジ帯で「期限：物件名」を出す（期限当日にどこが対象か分かるように）
+    const dueHere = ngDueByDay[ds] || [];
+    const overdueDay = ds < today();   // 期限日を過ぎていれば赤寄りで強調
+    const duePills = dueHere.map((x) =>
+      `<span class="pill pill-due ${overdueDay ? "over" : ""}"
+        data-popopen="${esc(x.name)}|${esc(x.planned)}"
+        title="${esc(x.name)}の対応期限${x.text ? "／" + esc(x.text) : ""}">
+        <span class="pill-body">
+          <span class="pill-due-t">${overdueDay ? "期限切れ" : "期限"}</span>
+          <span class="pill-n">${esc(x.name)}</span>
+        </span></span>`
+    ).join("");
+    pills += duePills;
 
     h += `<button class="cell ${out ? "out" : ""} ${ds === selDate ? "sel" : ""}" data-d="${ds}">
       <span class="${dcls}">${d.getDate()}</span>${pills}${pop}</button>`;
@@ -2500,6 +2556,13 @@ function renderCal() {
   document.querySelectorAll("#cal-grid .pill-x").forEach((x) => {
     x.onclick = (ev) => {
       ev.stopPropagation();
+      // 遅延完了カードの×：完了の取り消し／記録ごと削除 を選ばせる
+      if (x.dataset.latex) {
+        const [nm, planned] = String(x.dataset.latex).split("|");
+        if (!nm || !planned) return;
+        openLateDeleteDialog(nm, planned);
+        return;
+      }
       const [ds, nm] = String(x.dataset.unsched || "").split("|");
       if (!ds || !nm) return;
       if (!confirm(`${nm} を ${fmtDate(ds)} の予定から外しますか？\n入力した写真・記録は残ります。`)) return;
@@ -2726,6 +2789,66 @@ function refreshStatus(name, date) {
 // 予定日より後に完了したか（清掃のみの概念。要対応は期限管理で別扱い）
 function isLateDone(r, date) {
   return !!(r && r.status === "done" && r.doneDate && r.doneDate !== date);
+}
+
+// 遅延完了カードの×：完了の取り消し／記録ごと削除 を選ばせる
+function openLateDeleteDialog(name, planned) {
+  const host = document.getElementById("modal-host");
+  if (!host) return;
+  const r = getRep(name, planned);
+  const done = r.doneDate ? fmtDate(r.doneDate) : "";
+  host.innerHTML = `<div class="mask" id="latedel-mask">
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:26rem">
+      <div class="modal-h"><h2>この記録をどうしますか？</h2>
+        <button class="x" id="latedel-x">${ic("x", 18)}</button></div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:1rem">
+        <b style="color:var(--fg)">${esc(name)}</b><br>
+        ${fmtDate(planned)}の予定${done ? `／${done}に完了` : ""}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <button class="btn" id="latedel-undo"
+          style="background:var(--am-500,#f59e0b);color:#fff;border:none;font-weight:800;justify-content:center;padding:.8rem">
+          ${ic("clock", 16)} 完了を取り消す（未完了に戻す）
+        </button>
+        <div style="font-size:12px;color:var(--muted);margin:-.2rem 0 .3rem;line-height:1.5">
+          写真や記録は残します。予定日（${fmtDate(planned)}）の未完了として戻ります。
+        </div>
+        <button class="btn" id="latedel-del"
+          style="background:#dc2626;color:#fff;border:none;font-weight:800;justify-content:center;padding:.8rem">
+          ${ic("trash", 16)} 記録ごと削除（写真も消す）
+        </button>
+        <div style="font-size:12px;color:var(--muted);margin:-.2rem 0 .3rem;line-height:1.5">
+          この日の写真・要対応・記録をすべて削除します。元に戻せません。
+        </div>
+        <button class="btn btn-default" id="latedel-cancel" style="justify-content:center;padding:.7rem">やめる</button>
+      </div>
+    </div></div>`;
+
+  const close = () => { host.innerHTML = ""; };
+  host.querySelector("#latedel-x").onclick = close;
+  host.querySelector("#latedel-cancel").onclick = close;
+  host.querySelector("#latedel-mask").onclick = (e) => { if (e.target.id === "latedel-mask") close(); };
+
+  // 完了を取り消す：写真は残し、status/doneDate だけ戻す
+  host.querySelector("#latedel-undo").onclick = () => {
+    const rr = getRep(name, planned);
+    rr.status = "yet"; rr.doneDate = "";
+    setRep(name, planned, { status: "yet", doneDate: "" });
+    refreshStatus(name, planned);   // 写真が残っていれば doing 等に再判定される
+    close();
+    toast("完了を取り消しました", `${name}／${fmtDate(planned)}の予定`);
+    renderCal();
+  };
+
+  // 記録ごと削除：その日の記録を丸ごと消す
+  host.querySelector("#latedel-del").onclick = () => {
+    if (!confirm(`${name}（${fmtDate(planned)}の予定）の記録を、写真も含めてすべて削除します。\n元に戻せません。よろしいですか？`)) return;
+    delete reps[repId(name, planned)];
+    save(K.reps, reps);
+    close();
+    toast("記録を削除しました", `${name}／${fmtDate(planned)}の予定`);
+    renderCal();
+  };
 }
 
 function renderModal() {
@@ -3168,7 +3291,7 @@ function renderModal() {
         const rr = getRep(name, date);
         const g = (rr.ngs || [])[+key]; if (!g) return;
         g[ph] = g[ph] || [];
-        const room2 = 10 - g[ph].length;
+        const room2 = NG_SHOT_MAX - g[ph].length;
         if (room2 <= 0) return;
         const persist2 = () => setRep(name, date, { ngs: rr.ngs });
         await addPhotosToArray(files.slice(0, room2), g[ph], persist2, { name, date });
@@ -5203,16 +5326,16 @@ function renderNgEntry(name, date) {
       <div class="phase" data-drop="ng|${i}|${ph}">
         <div class="phase-h">
           <span class="phase-t ${cls}">${lbl}</span>
-          <span class="phase-c">${g[ph].length}/10枚</span>
+          <span class="phase-c">${g[ph].length}/${NG_SHOT_MAX}枚</span>
         </div>
         <div class="shots">
           ${g[ph].map((src, k) => `<div class="shot">${imgTag(src)}
             <button data-ngshotdel="${i}|${ph}|${k}" aria-label="削除">${ic("x", 12)}</button></div>`).join("")}
-          ${g[ph].length < 10 ? `<button class="add-shot" data-ngshotadd="${i}|${ph}">${ic("camera", 24)}<span class="add-shot-l">追加</span></button>` : ""}
+          ${g[ph].length < NG_SHOT_MAX ? `<button class="add-shot" data-ngshotadd="${i}|${ph}">${ic("camera", 24)}<span class="add-shot-l">追加</span></button>` : ""}
         </div>
       </div>`;
     return `
-    <div class="ngitem" data-drop="ng|${i}|before">
+    <div class="ngitem">
       <div class="ngitem-h">
         <span class="ngitem-p">${esc(placeLabel(g.place))}</span>
         <span class="ngitem-k">${esc(kindLabel(g.kind))}</span>
@@ -5281,12 +5404,12 @@ function renderNgEntry(name, date) {
             <div class="phase ngphase" data-ddrop="${ph}">
               <div class="phase-h">
                 <span class="phase-t ${ph === "after" ? "a" : ""}">${ph === "before" ? "ビフォー（今の状態）" : "アフター（対応後）"}</span>
-                <span class="phase-c">${d[ph].length}/10枚</span>
+                <span class="phase-c">${d[ph].length}/${NG_SHOT_MAX}枚</span>
               </div>
               <div class="shots">
                 ${d[ph].map((src, k) => `<div class="shot">${imgTag(src)}
                   <button data-ddel="${ph}|${k}" aria-label="削除">${ic("x", 13)}</button></div>`).join("")}
-                ${d[ph].length < 10 ? `<button class="add-shot" data-dadd="${ph}">${ic("camera", 24)}<span class="add-shot-l">追加</span></button>` : ""}
+                ${d[ph].length < NG_SHOT_MAX ? `<button class="add-shot" data-dadd="${ph}">${ic("camera", 24)}<span class="add-shot-l">追加</span></button>` : ""}
               </div>
             </div>`).join("")}
         </div>
@@ -5358,8 +5481,8 @@ function renderNgEntry(name, date) {
         const rr = getRep(name, date);
         if (!rr.ngDraft) return;
         rr.ngDraft[ph] = rr.ngDraft[ph] || [];
-        const room = 10 - rr.ngDraft[ph].length;
-        if (room <= 0) { toast("写真は10枚までです", ""); return; }
+        const room = NG_SHOT_MAX - rr.ngDraft[ph].length;
+        if (room <= 0) { toast(`写真は${NG_SHOT_MAX}枚までです`, ""); return; }
         const persist = () => setRep(name, date, { ngDraft: rr.ngDraft });
         await addPhotosToArray(files.slice(0, room), rr.ngDraft[ph], persist, { name, date });
         persist(); renderNgEntry(name, date);
@@ -5389,8 +5512,8 @@ function renderNgEntry(name, date) {
       const rr = getRep(name, date);
       if (!rr.ngDraft) return;
       rr.ngDraft[ph] = rr.ngDraft[ph] || [];
-      const room = 10 - rr.ngDraft[ph].length;
-      if (room <= 0) { toast("写真は10枚までです", ""); return; }
+      const room = NG_SHOT_MAX - rr.ngDraft[ph].length;
+      if (room <= 0) { toast(`写真は${NG_SHOT_MAX}枚までです`, ""); return; }
       const persist = () => setRep(name, date, { ngDraft: rr.ngDraft });
       await addPhotosToArray(files.slice(0, room), rr.ngDraft[ph], persist, { name, date });
       persist(); renderNgEntry(name, date);
@@ -5416,8 +5539,8 @@ function bindNgListed(host, name, date) {
       const rr = getRep(name, date);
       const g = (rr.ngs || [])[+parts[1]]; if (!g) return;
       g[ph] = g[ph] || [];
-      const room = 10 - g[ph].length;
-      if (room <= 0) { toast("写真は10枚までです", ""); return; }
+      const room = NG_SHOT_MAX - g[ph].length;
+      if (room <= 0) { toast(`写真は${NG_SHOT_MAX}枚までです`, ""); return; }
       const persist = () => setRep(name, date, { ngs: rr.ngs });
       await addPhotosToArray(files.slice(0, room), g[ph], persist, { name, date });
       persist(); renderNgEntry(name, date);
@@ -5431,8 +5554,8 @@ function bindNgListed(host, name, date) {
         const rr = getRep(name, date);
         const g = (rr.ngs || [])[+i]; if (!g) return;
         g[ph] = g[ph] || [];
-        const room = 10 - g[ph].length;
-        if (room <= 0) { toast("写真は10枚までです", ""); return; }
+        const room = NG_SHOT_MAX - g[ph].length;
+        if (room <= 0) { toast(`写真は${NG_SHOT_MAX}枚までです`, ""); return; }
         await addPhotosToArray(files.slice(0, room), g[ph], () => {
           setRep(name, date, { ngs: rr.ngs });
         }, { name, date });
