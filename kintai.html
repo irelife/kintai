@@ -1263,6 +1263,23 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* 要対応の帯は取り消し線を付けない（未解決なので消し込み扱いにしない） */
+.pillu.ng .pillu-nm,.pillu.ng span{text-decoration:none;}
+.pillu.ng{opacity:1;}
+
+/* ===== スマホ：カレンダーを横スクロールにして枠を広く取る ===== */
+@media(max-width:768px){
+  .cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;}
+  .cal-scroll .cal-wd,.cal-scroll .cal-g{min-width:700px;}
+  .cell{min-height:7rem;padding:.4rem .35rem;gap:.2rem;}
+  .cell-d{height:1.6rem;min-width:1.6rem;font-size:13px;}
+  /* 1文字ずつ縦積みになるのを止める：1行に収めて溢れは「…」 */
+  .pillu-nm{-webkit-line-clamp:1;display:block;white-space:nowrap;word-break:normal;
+    overflow:hidden;text-overflow:ellipsis;font-size:11.5px;line-height:1.35;}
+  .pillu-sub{font-size:9.5px;}
+  .pillu{padding:.24rem .4rem;}
+}
+
 /* ===== Googleカレンダー風・拡大表示（このブロックを消せば元に戻ります） ===== */
 @media(min-width:769px){
   .cal-h{padding:1.1rem 1.35rem;}
@@ -1339,10 +1356,12 @@ img[data-photo]{cursor:pointer;}
             <button class="btn btn-ghost btn-icon" id="cal-next" aria-label="次の月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
           </div>
         </div>
+        <div class="cal-scroll">
         <div class="cal-wd">
           <div class="sun">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="sat">土</div>
         </div>
         <div class="cal-g" id="cal-grid"></div>
+        </div>
         <div class="cal-legend">
           <span class="cll"><i class="cll-dot" style="background:#fef3c7;border-color:#d97706"></i>要対応（未解決）</span>
           <span class="cll"><i class="cll-dot" style="background:#fff7ed;border-color:#fb923c"></i>要対応の期限</span>
@@ -2553,6 +2572,24 @@ function calPill(opt) {
     </span>${xbtn}</span>`;
 }
 
+/* 要対応の「対応期限」を期限日ごとに集める（カレンダーと右パネルで共用） */
+function ngDueMap() {
+  const map = {};
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|");
+    if (sep < 0) return;
+    const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
+    const rr = reps[rk] || {};
+    const push = (deadline, text, idx, kind, place) => {
+      if (!deadline) return;
+      (map[deadline] = map[deadline] || []).push({ name: nm, planned, text: text || "", idx, kind, place: place || "" });
+    };
+    (rr.ngs || []).forEach((g, i) => { if (g && !g.fixed) push(g.deadline, g.text, i, "ngs", g.place); });
+    Object.entries(rr.items || {}).forEach(([k, c]) => { if (c && c.ng && !c.fixed) push(c.deadline, c.text, k, "item", ""); });
+  });
+  return map;
+}
+
 function renderCal() {
   const s = monthStats(cursor.y, cursor.m);   // 上のカードは「今月」の集計（右の一覧と一致）
   document.getElementById("st-total").textContent = s.total;
@@ -2585,19 +2622,7 @@ function renderCal() {
 
   // 要対応の「対応期限」を、その期限日ごとに集める（オレンジ帯で出す）
   // 現行形式 r.ngs（未解決のみ）＋旧形式 items[].ng を対象にする。
-  const ngDueByDay = {};
-  Object.keys(reps || {}).forEach((rk) => {
-    const sep = rk.lastIndexOf("|");
-    if (sep < 0) return;
-    const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
-    const rr = reps[rk] || {};
-    const push = (deadline, text, idx, kind, place) => {
-      if (!deadline) return;
-      (ngDueByDay[deadline] = ngDueByDay[deadline] || []).push({ name: nm, planned, text: text || "", idx, kind, place: place || "" });
-    };
-    (rr.ngs || []).forEach((g, i) => { if (g && !g.fixed) push(g.deadline, g.text, i, "ngs", g.place); });
-    Object.entries(rr.items || {}).forEach(([k, c]) => { if (c && c.ng && !c.fixed) push(c.deadline, c.text, k, "item", ""); });
-  });
+  const ngDueByDay = ngDueMap();
 
   let h = "";
   for (let i = 0; i < 42; i++) {
@@ -2630,7 +2655,7 @@ function renderCal() {
           bg: hard ? "#dc2626" : st.bg, fg: hard ? "#fff" : st.fg,
           border: hard ? "#b91c1c" : null,
           badgeInvert: hard,
-          cls: (done && !hard) ? "done" : (hard ? "hard" : ""),
+          cls: ((done && !hard) ? "done" : (hard ? "hard" : "")) + (openng ? " ng" : ""),
           data: { popopen: `${n}|${ds}` },
           xdata: { unsched: `${ds}|${n}` }, xtitle: "予定から外す",
         });
@@ -2828,9 +2853,11 @@ function renderSide() {
     const rr = reps[rk] || {};
     if (rr.doneDate === selDate && isLateDone(rr, planned)) lateHere.push({ name: nm, planned });
   });
-  document.getElementById("side-count").textContent = `${list.length + lateHere.length}件`;
+  // この日が「対応期限」になっている要対応（予定日は別の日）も一緒に出す
+  const dueHere = ngDueMap()[selDate] || [];
+  document.getElementById("side-count").textContent = `${list.length + lateHere.length + dueHere.length}件`;
 
-  if (!list.length && !lateHere.length) {
+  if (!list.length && !lateHere.length && !dueHere.length) {
     wrap.innerHTML = `<div class="card empty">予定はありません。<br>物件管理から清掃を予定してください。</div>`;
     return;
   }
@@ -2856,10 +2883,27 @@ function renderSide() {
       ${r.lateReason ? `<div class="scard-late-r">理由：${esc(r.lateReason)}</div>` : ""}
     </div>`;
   }).join("");
+  // 対応期限のカード（オレンジ枠。押すと元の記録が開く）
+  const dueH = dueHere.map((x) => {
+    const p = props.find((y) => y.name === x.name) || { addr: "" };
+    const place = x.place ? placeLabel(x.place) : "";
+    const over = selDate < today();
+    return `<div class="card scard duecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
+        style="border-color:${over ? "#f87171" : "#fb923c"};background:${over ? "#fef2f2" : "#fff7ed"}">
+      <div class="scard-h"><div class="scard-n">${esc(x.name)}</div>
+        <span class="badge badge-amber">${over ? "期限切れ" : "対応期限"}</span></div>
+      <div class="scard-a">${esc(p.addr)}</div>
+      <div class="scard-m">
+        ${place ? `<span class="mini">${esc(place)}</span>` : ""}
+        <span class="mini">${ic("calendar", 12)} ${fmtDate(x.planned)}の記録</span>
+      </div>
+      ${x.text ? `<div class="scard-late-r">内容：${esc(x.text)}</div>` : ""}
+    </div>`;
+  }).join("");
   if (!list.length) {
-    wrap.innerHTML = lateH;
-    wrap.querySelectorAll(".latecard").forEach((c) => {
-      c.onclick = () => { openRep = { name: c.dataset.n, date: c.dataset.d }; openItem = null; renderModal(); };
+    wrap.innerHTML = lateH + dueH;
+    wrap.querySelectorAll(".scard").forEach((c) => {
+      c.onclick = () => { openRep = { name: c.dataset.n, date: c.dataset.d || selDate }; openItem = null; renderModal(); };
     });
     return;
   }
@@ -2894,7 +2938,7 @@ function renderSide() {
         return `<div class="sgeo-row">${box(g.open, "到着")}${box(g.done, "完了")}</div>`;
       })()}
       </div>`;
-  }).join("") + lateH + sendCardHTML();
+  }).join("") + lateH + dueH + sendCardHTML();
 
   wrap.querySelectorAll(".scard").forEach((c) => {
     c.onclick = () => {
