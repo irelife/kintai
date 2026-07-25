@@ -1263,6 +1263,21 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* 注意書きが縦割りになるのを防ぐ（テキストを1つの塊として扱う） */
+.howto-must-t{flex:1 1 auto;min-width:0;}
+@media(max-width:768px){
+  .howto-must{padding:.75rem .8rem;font-size:14.5px;line-height:1.65;}
+}
+
+/* タブの文字が1文字ずつ縦に折れるのを防ぐ（入らなければ横スクロール） */
+.hd-sub{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.hd-sub::-webkit-scrollbar{display:none;}
+.hd-sub > button{flex:0 0 auto;white-space:nowrap;}
+.hd-sub > button > span{white-space:nowrap;}
+@media(max-width:768px){
+  .hd-sub > button{padding-left:.7rem;padding-right:.7rem;font-size:13px;}
+}
+
 /* 清掃完了の見出し（写真がすべて揃ったとき） */
 .cleandone-t{font-size:30px;font-weight:900;letter-spacing:.06em;line-height:1.15;
   color:var(--em-700,#047857);margin:.35rem 0 .1rem;}
@@ -3340,7 +3355,7 @@ function renderModal() {
             </div>
           </div>
 
-          <div class="howto-must">${ic("alert", 20)} <b>登録したら終わりではありません。</b>写真・内容・期限を入れて登録し、<b>期限までに対応して「解決済み」にすること。</b></div>
+          <div class="howto-must">${ic("alert", 20)}<span class="howto-must-t"><b>登録したら終わりではありません。</b>写真・内容・期限を入れて登録し、<b>期限までに対応して「解決済み」にすること。</b></span></div>
           <div class="howto-no">${ic("x", 20)} <b>糞尿・嘔吐物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
         </div>
         <div class="field" style="margin-bottom:-.4rem">
