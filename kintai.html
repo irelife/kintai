@@ -198,7 +198,7 @@ main{padding:1.5rem 0 4rem;}
 .cell-pop-r{cursor:pointer;transition:filter .12s,box-shadow .12s;}
 .cell-pop-r:hover{filter:brightness(.96);box-shadow:0 0 0 2px var(--teal-700) inset;}
 /* 遅れて完了した記録（青帯）。予定日に終わらなかったものがこの日に完了した印。 */
-.pill-late{background:#dbeafe;color:#1d4ed8;border:1px solid #60a5fa;cursor:pointer;
+.pill-late{cursor:pointer;
   display:flex;align-items:flex-start;gap:.25rem;}
 .pill-late .pill-body{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem;flex:1;min-width:0;}
 .pill-late .pill-x{flex:0 0 auto;align-self:flex-start;}
@@ -298,6 +298,12 @@ main{padding:1.5rem 0 4rem;}
 .howto-no{display:flex;align-items:center;gap:.5rem;margin-top:.5rem;padding:.8rem 1rem;
   background:#fef2f2;border:2px solid #fca5a5;border-radius:.7rem;color:#b91c1c;font-size:18px;}
 .howto-no b{font-size:19px;color:#b91c1c;margin:0;}
+/* 「対応して解決済みにする」＝要対応で一番大事な行動。強く印象づける帯 */
+.howto-must{display:flex;align-items:flex-start;gap:.5rem;margin-top:.7rem;padding:.9rem 1.1rem;
+  background:#fff7ed;border:2px solid #f59e0b;border-radius:.7rem;color:#b45309;
+  font-size:17px;font-weight:700;line-height:1.6;box-shadow:0 2px 8px rgb(245 158 11 / .15);}
+.howto-must svg{margin-top:.15rem;flex:none;color:#d97706;}
+.howto-must b{color:#92400e;font-weight:800;}
 .latedone{border:2px solid #60a5fa;background:#eff6ff;border-radius:.7rem;
   padding:.8rem 1rem;margin-bottom:1rem;color:#1d4ed8;font-size:16px;font-weight:700;
   display:flex;flex-direction:column;gap:.3rem;}
@@ -305,6 +311,9 @@ main{padding:1.5rem 0 4rem;}
 .latedone-r{font-size:14px;font-weight:600;color:var(--fg);line-height:1.6;}
 .cell-pop-h{font-size:10px;color:var(--muted-2);margin-top:.35rem;text-align:center;}
 .cell-pop-n{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cell-pop-x{flex:none;border:0;background:transparent;color:inherit;opacity:.5;cursor:pointer;
+  font-size:15px;line-height:1;padding:.1rem .3rem;border-radius:.3rem;}
+.cell-pop-x:hover{opacity:1;background:rgb(0 0 0 / .12);}
 .cell-pop-s{flex:none;font-size:10px;font-weight:600;opacity:.85;}
 @media(hover:hover) and (min-width:1024px){
   .cell:hover .cell-pop{display:block;}
@@ -563,6 +572,8 @@ main{padding:1.5rem 0 4rem;}
 .pick-f{display:flex;gap:.5rem;margin-top:.9rem;flex-wrap:wrap;}
 .pick-f .btn{flex:1 1 8rem;justify-content:center;}
 .pick-ok{background:var(--teal-600,#0d9488);color:#fff;border:none;font-weight:800;}
+.btn-undo{background:#fff;border:2px solid #f59e0b;color:#b45309;font-weight:800;}
+.btn-undo:hover{background:#fff7ed;}
 .pick-ok:disabled{background:#cbd5e1;color:#fff;cursor:not-allowed;}
 @media(max-width:420px){ .pickgrid{grid-template-columns:repeat(3,1fr);} }
 /* PC・タブレットのみ大きく表示（スマホは従来サイズのまま） */
@@ -708,6 +719,7 @@ img[data-photo]{cursor:pointer;}
 .geo-t{font-size:32px;font-weight:800;line-height:1.1;}
 .geo-d{font-size:15px;font-weight:700;color:var(--muted);}
 .geo-addr{font-size:14px;font-weight:700;color:var(--teal-700);line-height:1.35;}
+.geocard.recorded{background:#e6f7f1;border-color:var(--teal-400,#2dd4bf);}
 .geocard.far{border-color:#fca5a5;background:#fff5f5;}
 .geocard.empty{color:var(--muted-2);border-style:dashed;}
 .geocard.empty b{font-size:20px;}
@@ -752,6 +764,19 @@ img[data-photo]{cursor:pointer;}
 .assign-empty-x{font-size:13px;color:var(--muted-2);}
 .done-mark{display:inline-flex;align-items:center;gap:.4rem;font-size:15px;font-weight:800;color:#1d4ed8;}
 .ngstep-note{font-size:13px;color:var(--muted-2);margin-top:.5rem;}
+.ng-need-before{display:flex;align-items:flex-start;gap:.4rem;font-size:14px;font-weight:700;
+  color:#b45309;background:#fff7ed;border:2px solid #f59e0b;border-radius:.6rem;
+  padding:.6rem .8rem;margin-bottom:.7rem;line-height:1.6;}
+.ng-need-before svg{margin-top:.15rem;flex:none;color:#d97706;}
+.ng-need-before b{color:#92400e;font-weight:800;}
+.phase-req{display:inline-block;margin-left:.4rem;font-size:11px;font-weight:800;color:#fff;
+  background:#dc2626;border-radius:9999px;padding:.05rem .5rem;vertical-align:middle;}
+.phase.need{outline:2px solid #f59e0b;outline-offset:2px;border-radius:.6rem;}
+.phase.locked{opacity:.65;}
+.shot-locked{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;
+  text-align:center;border:2px dashed #cbd5e1;border-radius:.6rem;color:#94a3b8;
+  font-size:12px;font-weight:700;line-height:1.4;min-height:6rem;padding:1rem;background:#f8fafc;}
+.shot-locked svg{color:#cbd5e1;}
 
 /* ===== 要対応の段階入力 ===== */
 .ngstart{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;
@@ -760,6 +785,23 @@ img[data-photo]{cursor:pointer;}
 .ngstart svg{width:48px;height:48px;}
 .ngstart span{font-size:17px;font-weight:700;color:#dc2626;}
 .ngstart:hover{background:#fee2e2;}
+/* 要対応の具体例ガイド（西澤さん向けに、どんな時に登録するか一覧で示す） */
+.ng-guide{border:1px solid #fecaca;background:#fff8f8;border-radius:.7rem;padding:.9rem 1rem;margin-bottom:.8rem;}
+.ng-guide-h{display:flex;align-items:center;gap:.35rem;font-size:15px;font-weight:800;color:#b91c1c;margin-bottom:.6rem;}
+.ng-guide-def{font-size:13px;font-weight:600;color:#7f1d1d;line-height:1.7;
+  background:#fff;border-left:4px solid #b91c1c;border-radius:.4rem;padding:.5rem .75rem;margin-bottom:.7rem;}
+.ng-guide-def b{font-weight:800;color:#b91c1c;}
+.ng-guide-list{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.7rem;}
+.ng-guide-list span{background:#fff;border:1px solid #fca5a5;color:#b91c1c;border-radius:9999px;
+  font-size:13px;font-weight:700;padding:.3rem .7rem;line-height:1.4;}
+.ng-guide-note{display:flex;align-items:flex-start;gap:.3rem;font-size:12px;font-weight:700;color:#047857;line-height:1.5;margin-bottom:.35rem;}
+.ng-guide-note.strong{background:#fff7ed;border:1.5px solid #f59e0b;border-radius:.5rem;
+  padding:.5rem .7rem;font-size:13px;color:#b45309;}
+.ng-guide-note.strong b{color:#92400e;font-weight:800;}
+.ng-guide-note.strong svg{color:#d97706;}
+.ng-guide-note svg{margin-top:.15rem;flex:none;}
+.ng-guide-x{display:flex;align-items:flex-start;gap:.3rem;font-size:12px;font-weight:700;color:#b91c1c;line-height:1.5;}
+.ng-guide-x svg{margin-top:.15rem;flex:none;}
 .ngform{border:2px solid #fca5a5;border-radius:.8rem;background:#fff8f8;padding:1rem;}
 .ngstep{padding:.8rem 0;border-bottom:1px dashed #fecaca;}
 .ngstep:last-of-type{border-bottom:0;}
@@ -796,7 +838,22 @@ img[data-photo]{cursor:pointer;}
   padding:.6rem;font-size:15px;font-family:inherit;resize:vertical;}
 .ngedit-f{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.7rem;}
 .ngitem-t{font-size:15px;line-height:1.5;color:var(--fg);}
-.ngitem-m{font-size:13px;color:var(--muted-2);margin-top:.3rem;}
+/* 対応内容＝何をするか。要対応で一番大事なので大きく枠付きで表示 */
+.ngitem-content{display:flex;flex-direction:column;gap:.3rem;margin:.5rem 0;
+  background:#fff;border:2.5px solid #b91c1c;border-radius:.7rem;padding:.7rem .9rem;}
+.ngitem-content-l{align-self:flex-start;font-size:12px;font-weight:800;color:#fff;
+  background:#b91c1c;border-radius:9999px;padding:.12rem .7rem;}
+.ngitem-content-t{font-size:24px;font-weight:900;color:#7f1d1d;line-height:1.35;word-break:break-word;}
+.ngitem-m{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;margin-top:.6rem;
+  background:#fff7ed;border:2px solid #fb923c;border-radius:.6rem;padding:.6rem .9rem;}
+.ngitem-m-l{font-size:14px;font-weight:800;color:#c2410c;background:#ffedd5;
+  border-radius:9999px;padding:.2rem .7rem;}
+.ngitem-m-d{font-size:22px;font-weight:900;color:#9a3412;line-height:1.1;}
+.ngitem-m-n{font-size:12px;font-weight:700;color:#047857;background:#d1fae5;border-radius:9999px;padding:.15rem .6rem;}
+.ngitem-m.over{background:#fef2f2;border-color:#dc2626;}
+.ngitem-m.over .ngitem-m-l{color:#fff;background:#dc2626;}
+.ngitem-m.over .ngitem-m-d{color:#b91c1c;}
+.ngitem-m-l.none{color:var(--muted);background:var(--border-soft);}
 .ngfix-btn{width:100%;margin-top:.7rem;background:#dc2626;color:#fff;border:0;
   font-size:16px;font-weight:800;padding:.8rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;}
 .ngfix-btn:disabled{background:#fca5a5;cursor:default;font-size:14px;}
@@ -1732,11 +1789,11 @@ let ktMonth = (() => { const t = new Date(); return { y: t.getFullYear(), m: t.g
 
 const repId = (n, d) => `${n}|${d}`;
 const blankRep = () => ({ status: "yet", staff: "", note: "", items: {}, todos: [] });
-function getRep(n, d) { return reps[repId(n, d)] || blankRep(); }function setRep(n, d, patch) {
+function getRep(n, d) { const r = reps[repId(n, d)] || blankRep(); if (!r.items) r.items = {}; return r; }function setRep(n, d, patch) {
   reps[repId(n, d)] = Object.assign(getRep(n, d), patch, { ts: Date.now() });
   save(K.reps, reps);
 }
-const itemOf = (r, k) => r.items[k] || { photos: [], ok: false, ng: false, fixed: false, before: [], after: [] };
+const itemOf = (r, k) => (r.items && r.items[k]) || { photos: [], ok: false, ng: false, fixed: false, before: [], after: [] };
 // 要対応：項目のうち ng=true かつ未解決の数（重複なし＝項目単位）
 // 未解決の要対応の数。現行は r.ngs（要対応セクション）。items内のngと旧todosは移行前データ。
 const openNg = (r) => (r.ngs || []).filter((g) => !g.fixed).length
@@ -2151,6 +2208,7 @@ function openPickForItem(key) {
     cur = t0[0].key;
   }
   let sel = [];   // 選択中の inbox インデックス（確定するまで写真は動かさない）
+  let lastAction = null;   // ひとつ前に戻す用：直前の確定内容（箇所・振り分けた写真）を覚える
 
   // 選んだ写真をいまの箇所へ確定させる。next=true なら次の未登録へ自動で進む
   const commit = (next) => {
@@ -2159,10 +2217,13 @@ function openPickForItem(key) {
     it2.photos = it2.photos || [];
     // 添字がずれないよう、大きい方から取り出す
     const picked = sel.slice().sort((a, b) => b - a).map((i) => (r2.inbox || []).splice(i, 1)[0]);
-    picked.reverse().forEach((src) => { if (src) it2.photos.push(src); });
+    const added = [];
+    picked.reverse().forEach((src) => { if (src) { it2.photos.push(src); added.push(src); } });
     r2.items[cur] = it2;
     setRep(name, date, { items: r2.items, inbox: r2.inbox });
     refreshStatus(name, date);
+    // ひとつ前に戻す用に、いまの振り分けを記録（どの箇所に、どの写真を入れたか）
+    lastAction = { key: cur, photos: added };
     const lbl = (itemsFor(name).find((x) => x.key === cur) || {}).label || cur;
     sel = [];
     const rest = targets();
@@ -2174,6 +2235,29 @@ function openPickForItem(key) {
       host.innerHTML = ""; renderModal();
       toast("完了にしました", rest.length ? lbl : `${lbl}（すべての箇所が登録済みになりました）`);
     }
+  };
+
+  // ひとつ前に戻す：直前に振り分けた写真をその箇所から外し、プールに戻す
+  const undoLast = () => {
+    if (!lastAction) return;
+    const r2 = getRep(name, date);
+    const it2 = itemOf(r2, lastAction.key);
+    it2.photos = it2.photos || [];
+    r2.inbox = r2.inbox || [];
+    // 直前に入れた写真を、その箇所から取り除いてプールへ戻す
+    lastAction.photos.forEach((src) => {
+      const at = it2.photos.lastIndexOf(src);
+      if (at >= 0) { it2.photos.splice(at, 1); r2.inbox.push(src); }
+    });
+    r2.items[lastAction.key] = it2;
+    setRep(name, date, { items: r2.items, inbox: r2.inbox });
+    refreshStatus(name, date);
+    const lbl = (itemsFor(name).find((x) => x.key === lastAction.key) || {}).label || lastAction.key;
+    cur = lastAction.key;   // 戻した箇所に切り替える
+    sel = [];
+    lastAction = null;      // 戻せるのは1回だけ
+    toast("ひとつ前に戻しました", `${lbl}の写真をプールに戻しました`);
+    draw();
   };
 
   const draw = () => {
@@ -2215,6 +2299,7 @@ function openPickForItem(key) {
               <b>選べる写真がありません</b>
               <span>閉じて「写真を追加する」から取り込んでください。</span></div>`}
         <div class="pick-f">
+          ${lastAction ? `<button class="btn btn-undo" id="pick-undo">${ic("left", 16)} ひとつ前に戻す</button>` : ""}
           <button class="btn btn-default" id="pick-cancel">閉じる</button>
           ${restAfter > 0 ? `<button class="btn pick-ok" id="pick-next" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
             ${ic("check2", 17)} 確定して次へ（残り${restAfter}箇所）
@@ -2228,6 +2313,8 @@ function openPickForItem(key) {
     const close = () => { host.innerHTML = ""; renderModal(); };
     host.querySelector("#pick-x").onclick = close;
     host.querySelector("#pick-cancel").onclick = close;
+    const undoBtn = host.querySelector("#pick-undo");
+    if (undoBtn) undoBtn.onclick = undoLast;
     host.querySelector("#pick-mask").onclick = (e) => { if (e.target.id === "pick-mask") close(); };
 
     // 箇所の切り替え（選びかけの写真は持ち越さない）
@@ -2435,7 +2522,7 @@ function renderPropList() {
 // opt: { name, badge, badgeColor, sub, bg, fg, border, cls, data } （data は data-属性の連想配列）
 function calPill(opt) {
   const badge = opt.badge
-    ? `<span class="pillu-b" style="background:${opt.badgeColor || "rgba(0,0,0,.15)"}">${esc(opt.badge)}</span>` : "";
+    ? `<span class="pillu-b" style="${opt.badgeInvert ? "background:#fff;color:#b91c1c" : `background:${opt.badgeColor || "rgba(0,0,0,.15)"}`}">${esc(opt.badge)}</span>` : "";
   const sub = opt.sub ? `<span class="pillu-sub">${esc(opt.sub)}</span>` : "";
   const dataAttr = Object.entries(opt.data || {})
     .map(([k, v]) => `data-${k}="${esc(v)}"`).join(" ");
@@ -2488,12 +2575,12 @@ function renderCal() {
     if (sep < 0) return;
     const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
     const rr = reps[rk] || {};
-    const push = (deadline, text) => {
+    const push = (deadline, text, idx, kind, place) => {
       if (!deadline) return;
-      (ngDueByDay[deadline] = ngDueByDay[deadline] || []).push({ name: nm, planned, text: text || "" });
+      (ngDueByDay[deadline] = ngDueByDay[deadline] || []).push({ name: nm, planned, text: text || "", idx, kind, place: place || "" });
     };
-    (rr.ngs || []).forEach((g) => { if (g && !g.fixed) push(g.deadline, g.text); });
-    Object.values(rr.items || {}).forEach((c) => { if (c && c.ng && !c.fixed) push(c.deadline, c.text); });
+    (rr.ngs || []).forEach((g, i) => { if (g && !g.fixed) push(g.deadline, g.text, i, "ngs", g.place); });
+    Object.entries(rr.items || {}).forEach(([k, c]) => { if (c && c.ng && !c.fixed) push(c.deadline, c.text, k, "item", ""); });
   });
 
   let h = "";
@@ -2524,8 +2611,9 @@ function renderCal() {
           name: n,
           badge, badgeColor,
           sub: reason || "",
-          bg: hard ? "#fff" : st.bg, fg: hard ? "#b91c1c" : st.fg,
-          border: hard ? "#dc2626" : null,
+          bg: hard ? "#dc2626" : st.bg, fg: hard ? "#fff" : st.fg,
+          border: hard ? "#b91c1c" : null,
+          badgeInvert: hard,
           cls: (done && !hard) ? "done" : (hard ? "hard" : ""),
           data: { popopen: `${n}|${ds}` },
           xdata: { unsched: `${ds}|${n}` }, xtitle: "予定から外す",
@@ -2566,7 +2654,8 @@ function renderCal() {
           ? `<span class="cell-pop-g">${g.open ? `到着 ${hm(g.open)}` : ""}${g.open && g.done ? "／" : ""}${g.done ? `完了 ${hm(g.done)}` : ""}</span>`
           : "";
         return `<span class="cell-pop-r" data-popopen="${esc(n)}|${ds}" style="border:1px solid ${t.bd};background:${t.bg}">
-          <span class="cell-pop-n">${esc(n)}${times}</span><span class="cell-pop-s">${stt}</span></span>`;
+          <span class="cell-pop-n">${esc(n)}${times}</span><span class="cell-pop-s">${stt}</span>
+          <button class="cell-pop-x" data-unsched="${esc(ds)}|${esc(n)}" title="予定から外す" aria-label="予定から外す">×</button></span>`;
       }).join("");
       pop = `<span class="cell-pop"><span class="cell-pop-d">${fmtDate(ds)}・${list.length}件</span>${rows}<span class="cell-pop-h">物件をクリックすると記録を開きます</span></span>`;
     }
@@ -2574,10 +2663,10 @@ function renderCal() {
     const lateHere = lateByDay[ds] || [];
     const latePills = lateHere.map((x) => calPill({
       name: x.name,
-      badge: "遅延完了", badgeColor: "#2563eb",
+      badge: "遅延完了", badgeColor: "#64748b",
       sub: `${fmtShort(x.planned)}の予定${x.reason ? "・" + x.reason : ""}`,
-      bg: "#eff6ff", fg: "#1d4ed8", border: "#60a5fa",
-      cls: "pill-late",
+      bg: "#f1f5f9", fg: "#475569", border: "#cbd5e1",
+      cls: "pill-late done",
       data: { popopen: `${x.name}|${x.planned}` },
       title: `${fmtDate(x.planned)}の予定を、この日に完了${x.reason ? "／理由：" + x.reason : ""}`,
       xdata: { latex: `${x.name}|${x.planned}` }, xtitle: "この記録を消す",
@@ -2587,17 +2676,22 @@ function renderCal() {
     // 要対応の対応期限：オレンジ帯で「期限：物件名」を出す（期限当日にどこが対象か分かるように）
     const dueHere = ngDueByDay[ds] || [];
     const overdueDay = ds < today();   // 期限日を過ぎていれば赤で強調
-    const duePills = dueHere.map((x) => calPill({
-      name: x.name,
-      badge: overdueDay ? "期限切れ" : "期限", badgeColor: overdueDay ? "#dc2626" : "#ea580c",
-      sub: x.text || "",
-      bg: overdueDay ? "#fef2f2" : "#fff7ed",
-      fg: overdueDay ? "#b91c1c" : "#c2410c",
-      border: overdueDay ? "#f87171" : "#fb923c",
-      cls: "pill-due" + (overdueDay ? " over" : ""),
-      data: { popopen: `${x.name}|${x.planned}` },
-      title: `${x.name}の対応期限${x.text ? "／" + x.text : ""}`,
-    })).join("");
+    const duePills = dueHere.map((x) => {
+      const place = x.place ? placeLabel(x.place) : "";
+      const sub = [place, x.text].filter(Boolean).join("：");   // 例）駐車場：交換
+      return calPill({
+        name: x.name,
+        badge: overdueDay ? "期限切れ" : "期限", badgeColor: overdueDay ? "#dc2626" : "#ea580c",
+        sub: sub || "",
+        bg: overdueDay ? "#fef2f2" : "#fff7ed",
+        fg: overdueDay ? "#b91c1c" : "#c2410c",
+        border: overdueDay ? "#f87171" : "#fb923c",
+        cls: "pill-due" + (overdueDay ? " over" : ""),
+        data: { popopen: `${x.name}|${x.planned}` },
+        title: `${x.name}の対応期限${sub ? "／" + sub : ""}`,
+        xdata: { duedel: `${x.name}|${x.planned}|${x.kind}|${x.idx}` }, xtitle: "この要対応を削除",
+      });
+    }).join("");
     pills += duePills;
 
     h += `<button class="cell ${out ? "out" : ""} ${ds === selDate ? "sel" : ""}" data-d="${ds}">
@@ -2607,6 +2701,8 @@ function renderCal() {
   renderPropList();
   document.querySelectorAll("#cal-grid .cell").forEach((b) => {
     b.onclick = (e) => {
+      // ×ボタンは別処理（予定から外す）なので無視
+      if (e.target.closest(".cell-pop-x, .pill-x")) return;
       // ホバー一覧の行を押したときは、その物件の清掃記録を直接開く
       const row = e.target.closest("[data-popopen]");
       if (row) {
@@ -2621,7 +2717,7 @@ function renderCal() {
     };
   });
   // 予定帯の×：セルの日付選択より先に処理し、伝播を止める
-  document.querySelectorAll("#cal-grid .pill-x").forEach((x) => {
+  document.querySelectorAll("#cal-grid .pill-x, #cal-grid .cell-pop-x").forEach((x) => {
     x.onclick = (ev) => {
       ev.stopPropagation();
       // 遅延完了カードの×：完了の取り消し／記録ごと削除 を選ばせる
@@ -2629,6 +2725,25 @@ function renderCal() {
         const [nm, planned] = String(x.dataset.latex).split("|");
         if (!nm || !planned) return;
         openLateDeleteDialog(nm, planned);
+        return;
+      }
+      // 要対応の期限帯の×：その要対応を記録ごと削除
+      if (x.dataset.duedel) {
+        const [nm, planned, kind, idx] = String(x.dataset.duedel).split("|");
+        if (!nm || !planned) return;
+        if (!confirm(`${nm} の要対応を削除しますか？\n写真・内容・期限をすべて消します。元に戻せません。`)) return;
+        const rr = getRep(nm, planned);
+        if (kind === "ngs") {
+          (rr.ngs || []).splice(+idx, 1);
+          setRep(nm, planned, { ngs: rr.ngs });
+        } else if (kind === "item") {
+          const it = (rr.items || {})[idx];
+          if (it) { it.ng = false; it.fixed = false; it.deadline = ""; it.text = ""; it.before = []; it.after = []; }
+          setRep(nm, planned, { items: rr.items });
+        }
+        toast("要対応を削除しました", nm);
+        renderCal(); renderNgBadge();
+        if (openRep && openRep.name === nm && openRep.date === planned) renderModal();
         return;
       }
       const [ds, nm] = String(x.dataset.unsched || "").split("|");
@@ -2712,9 +2827,9 @@ function renderSide() {
     Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; });
     const ng = openNg(r);
     return `<div class="card scard latecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
-        style="border-color:#60a5fa;background:#eff6ff">
+        style="border-color:#cbd5e1;background:#f1f5f9">
       <div class="scard-h"><div class="scard-n">${esc(x.name)}</div>
-        <span class="badge badge-blue">遅延完了</span></div>
+        <span class="badge badge-slate">遅延完了</span></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
         <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
@@ -3117,10 +3232,10 @@ function renderModal() {
               <div class="howto-t">その日に<span class="howto-key red">解決できないもの</span>は<span class="howto-key red">「要対応」</span>に登録する</div>
               <div class="howto-t2 red">要対応にするもの</div>
               <div class="howto-ng">放置物　／　迷惑駐車　／　外壁・マス蓋・雨樋・管理看板の破損　／　その他 設備・アスファルト・階段の破損や重度の汚損　／　ゴミの不法投棄・分別違反　／　大量の草抜き　／　植栽の剪定・伐採　／　用水路の掃除</div>
-              <div class="howto-add">写真・内容・期限を入れて登録し、期限までに対応して「解決済み」にすること。</div>
             </div>
           </div>
 
+          <div class="howto-must">${ic("alert", 20)} <b>登録したら終わりではありません。</b>写真・内容・期限を入れて登録し、<b>期限までに対応して「解決済み」にすること。</b></div>
           <div class="howto-no">${ic("x", 20)} <b>糞尿・嘔吐物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
         </div>
         <div class="field" style="margin-bottom:-.4rem">
@@ -3159,6 +3274,22 @@ function renderModal() {
         <div class="twocol">
           <div class="field">
             <label class="biglabel">要対応（清掃以外で気づいたこと）</label>
+            <div class="ng-guide">
+              <div class="ng-guide-h">${ic("alert", 15)} こんなことがあったら登録します</div>
+              <div class="ng-guide-def">
+                <b>その日のうちに片付けられないもの</b>（後日あらためて対応が必要なこと）を登録します。<br>
+                その場で対応が完結するなら、登録は<b>不要</b>です。
+              </div>
+              <div class="ng-guide-list">
+                <span>放置物</span><span>迷惑駐車</span>
+                <span>外壁・マス蓋・雨樋・管理看板の破損</span>
+                <span>設備・アスファルト・階段の破損や重度の汚損</span>
+                <span>ゴミの不法投棄・分別違反</span><span>大量の草抜き</span>
+                <span>植栽の剪定・伐採</span><span>用水路の掃除</span>
+              </div>
+              <div class="ng-guide-note strong">${ic("alert", 14)} <b>登録したら終わりではありません。期限までに対応して「解決済み」にすること。</b></div>
+              <div class="ng-guide-x">${ic("x", 13)} 糞尿・嘔吐物は写真を撮らなくてよい（その場で片付けるだけ）</div>
+            </div>
             <div id="ngentry"></div>
           </div>
           <div class="field">
@@ -3171,7 +3302,7 @@ function renderModal() {
                 if (!x) return `<div class="geocard empty"><b>${lbl}</b><span>未記録</span></div>`;
                 const far = (x.dist != null && x.dist > 300);
                 const d = new Date(x.at);
-                return `<a class="geocard ${far ? "far" : ""}" target="_blank" rel="noopener"
+                return `<a class="geocard recorded ${far ? "far" : ""}" target="_blank" rel="noopener"
                   href="https://www.google.com/maps?q=${x.lat},${x.lng}">
                   <span class="geo-ico">${ic("pin", 22)}</span>
                   <b>${lbl}</b>
@@ -5426,9 +5557,15 @@ function renderNgEntry(name, date) {
                <button class="btn btn-sm" style="background:var(--teal-700);color:#fff;border:none" data-ngeditsave="${i}">${ic("check2", 15)} 保存</button>
              </div>
            </div>`
-        : `<div class="ngitem-t">${esc(g.text || "")}</div>`}
+        : `<div class="ngitem-content">
+             <span class="ngitem-content-l">対応内容</span>
+             <span class="ngitem-content-t">${esc(g.text || "（未入力）")}</span>
+           </div>`}
       <div class="phases" style="margin-top:.7rem">${panel("before", "ビフォー", "")}${panel("after", "アフター", "a")}</div>
-      <div class="ngitem-m">期限 ${esc(g.deadline ? fmtDate(g.deadline) : "未設定")}${g.notified ? "　通知済み" : ""}</div>
+      <div class="ngitem-m ${g.deadline && g.deadline < today() && !g.fixed ? "over" : ""}">
+        ${g.deadline
+          ? `<span class="ngitem-m-l">${g.deadline < today() && !g.fixed ? "期限切れ" : "対応期限"}</span><span class="ngitem-m-d">${esc(fmtDate(g.deadline))}</span>`
+          : `<span class="ngitem-m-l none">対応期限 未設定</span>`}${g.notified ? `<span class="ngitem-m-n">通知済み</span>` : ""}</div>
       ${g.fixed
         ? `<div class="ngitem-done">${ic("check2", 16)} 解決済み${g.fixedAt ? `（${esc(fmtDate(g.fixedAt))}）` : ""}
              <button class="btn btn-outline btn-sm" data-ngunfix="${i}">未解決に戻す</button></div>`
@@ -5458,6 +5595,7 @@ function renderNgEntry(name, date) {
 
   const d = getNgDraft(name, date);
   const step2 = !!d.place, step3 = step2 && !!d.kind, step4 = step3 && !!(d.text && d.text.trim());
+  const step5 = step4 && (d.before || []).length > 0;   // ビフォー写真がないと期限に進めない
   const places = placesFor(name);
 
   host.innerHTML = `${listed}
@@ -5484,31 +5622,38 @@ function renderNgEntry(name, date) {
 
       <div class="ngstep ${!step3 ? "off" : "now"}">
         <div class="ngstep-l">4. 写真（ビフォー／アフター）</div>
+        ${step3 && (d.before || []).length === 0 ? `<div class="ng-need-before">${ic("alert", 15)} <b>まず「ビフォー（今の状態）」の写真を登録してください。</b>ビフォーを入れるまで、アフターの写真と期限は選べません。</div>` : ""}
         <div class="phases">
-          ${["before", "after"].map((ph) => `
-            <div class="phase ngphase" data-ddrop="${ph}">
+          ${["before", "after"].map((ph) => {
+            const beforeEmpty = (d.before || []).length === 0;
+            const afterLocked = ph === "after" && beforeEmpty;   // ビフォー未登録の間はアフターをロック
+            return `
+            <div class="phase ngphase ${ph === "before" && beforeEmpty ? "need" : ""} ${afterLocked ? "locked" : ""}" data-ddrop="${afterLocked ? "" : ph}">
               <div class="phase-h">
-                <span class="phase-t ${ph === "after" ? "a" : ""}">${ph === "before" ? "ビフォー（今の状態）" : "アフター（対応後）"}</span>
+                <span class="phase-t ${ph === "after" ? "a" : ""}">${ph === "before" ? "ビフォー（今の状態）" : "アフター（対応後）"}${ph === "before" ? '<span class="phase-req">必須</span>' : ""}</span>
                 <span class="phase-c">${d[ph].length}/${NG_SHOT_MAX}枚</span>
               </div>
               <div class="shots">
                 ${d[ph].map((src, k) => `<div class="shot">${imgTag(src)}
                   <button data-ddel="${ph}|${k}" aria-label="削除">${ic("x", 13)}</button></div>`).join("")}
-                ${d[ph].length < NG_SHOT_MAX ? `<button class="add-shot" data-dadd="${ph}">${ic("camera", 24)}<span class="add-shot-l">追加</span></button>` : ""}
+                ${afterLocked
+                  ? `<div class="shot-locked">${ic("alert", 20)}<span>先にビフォーを<br>登録してください</span></div>`
+                  : (d[ph].length < NG_SHOT_MAX ? `<button class="add-shot" data-dadd="${ph}">${ic("camera", 24)}<span class="add-shot-l">追加</span></button>` : "")}
               </div>
-            </div>`).join("")}
+            </div>`; }).join("")}
         </div>
       </div>
 
-      <div class="ngstep ${!step4 ? "off" : "now"}">
+      <div class="ngstep ${!step5 ? "off" : "now"}">
         <div class="ngstep-l">5. 対応期限</div>
+        ${step4 && !step5 ? `<div class="ng-need-before">${ic("alert", 15)} 先に上の<b>ビフォー写真</b>を登録すると、ここで期限を選べます</div>` : ""}
         <div class="ngcal" id="ng-draftcal"></div>
         <div class="ngcal-sel">${d.deadline ? `選択中：${fmtDate(d.deadline)}` : "日付を選んでください"}</div>
       </div>
 
       <div class="ngform-f">
         <button class="btn btn-default" id="ng-cancel">キャンセル</button>
-        <button class="btn ngsave" id="ng-save" ${(step4 && d.deadline) ? "" : "disabled"}>この要対応を登録</button>
+        <button class="btn ngsave" id="ng-save" ${(step5 && d.deadline) ? "" : "disabled"}>この要対応を登録</button>
       </div>
     </div>`;
 
@@ -5540,7 +5685,7 @@ function renderNgEntry(name, date) {
     ta.onblur = () => { renderNgEntry(name, date); };
   }
   // 4. 期限
-  if (step4) drawNgDraftCal(name, date);
+  if (step5) drawNgDraftCal(name, date);
   // 保存・取消
   document.getElementById("ng-cancel").onclick = () => {
     const rr = getRep(name, date); delete rr.ngDraft;
@@ -5565,6 +5710,10 @@ function renderNgEntry(name, date) {
       pickFiles(async (files) => {
         const rr = getRep(name, date);
         if (!rr.ngDraft) return;
+        // ビフォー未登録のうちはアフターを受け付けない
+        if (ph === "after" && (rr.ngDraft.before || []).length === 0) {
+          toast("先にビフォーを登録してください", "ビフォー写真を入れるとアフターを登録できます"); return;
+        }
         rr.ngDraft[ph] = rr.ngDraft[ph] || [];
         const room = NG_SHOT_MAX - rr.ngDraft[ph].length;
         if (room <= 0) { toast(`写真は${NG_SHOT_MAX}枚までです`, ""); return; }
@@ -5588,6 +5737,7 @@ function renderNgEntry(name, date) {
   // 下書きの写真：ドラッグ&ドロップ
   host.querySelectorAll("[data-ddrop]").forEach((zone) => {
     const ph = zone.dataset.ddrop;
+    if (!ph) return;   // ロック中（アフター）は data-ddrop が空なので何もしない
     zone.addEventListener("dragover", (e) => { e.preventDefault(); e.stopPropagation(); zone.classList.add("dragover"); });
     zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
     zone.addEventListener("drop", async (e) => {
@@ -5596,6 +5746,9 @@ function renderNgEntry(name, date) {
       if (!files.length) return;
       const rr = getRep(name, date);
       if (!rr.ngDraft) return;
+      if (ph === "after" && (rr.ngDraft.before || []).length === 0) {
+        toast("先にビフォーを登録してください", "ビフォー写真を入れるとアフターを登録できます"); return;
+      }
       rr.ngDraft[ph] = rr.ngDraft[ph] || [];
       const room = NG_SHOT_MAX - rr.ngDraft[ph].length;
       if (room <= 0) { toast(`写真は${NG_SHOT_MAX}枚までです`, ""); return; }
