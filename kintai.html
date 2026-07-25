@@ -781,7 +781,17 @@ img[data-photo]{cursor:pointer;}
 .ngitem-h{display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;}
 .ngitem-p{font-size:17px;font-weight:800;color:#b91c1c;}
 .ngitem-k{font-size:13px;font-weight:800;color:#fff;background:#dc2626;border-radius:9999px;padding:.15rem .6rem;}
-.ngitem-x{margin-left:auto;border:0;background:transparent;color:var(--muted-2);cursor:pointer;padding:.2rem;}
+.ngitem-x{margin-left:.2rem;border:0;background:transparent;color:var(--muted-2);cursor:pointer;padding:.2rem;}
+.ngitem-edit{margin-left:auto;display:inline-flex;align-items:center;gap:.25rem;border:1px solid var(--teal-300,#5eead4);
+  background:var(--teal-50,#f0fdfa);color:var(--teal-700,#0f766e);border-radius:9999px;
+  font-size:12px;font-weight:800;padding:.25rem .7rem;cursor:pointer;}
+.ngitem-edit:hover{background:var(--teal-100,#ccfbf1);}
+.ngitem-editbox{background:#f8fafc;border:1px solid var(--border);border-radius:.6rem;padding:.8rem;margin:.4rem 0;}
+.ngedit-l{display:block;font-size:13px;font-weight:800;color:var(--muted);margin:.5rem 0 .3rem;}
+.ngedit-l:first-child{margin-top:0;}
+.ngedit-t{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:.5rem;
+  padding:.6rem;font-size:15px;font-family:inherit;resize:vertical;}
+.ngedit-f{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.7rem;}
 .ngitem-t{font-size:15px;line-height:1.5;color:var(--fg);}
 .ngitem-m{font-size:13px;color:var(--muted-2);margin-top:.3rem;}
 .ngfix-btn{width:100%;margin-top:.7rem;background:#dc2626;color:#fff;border:0;
@@ -841,6 +851,7 @@ img[data-photo]{cursor:pointer;}
 .ngcal .mc-t{font-size:16px;font-weight:700;}
 .ngcal .mc-wd{font-size:12px;}
 .ngcal .mc-d{padding:.55rem 0;font-size:15px;font-weight:600;min-height:0;display:block;}
+.ngcal .mc-d.disabled,.ngcal .mc-d:disabled{color:#cbd5e1;background:transparent;cursor:not-allowed;text-decoration:line-through;}
 .ngcal-sel{font-size:15px;font-weight:700;color:var(--am-700);}
 .ng-deadline.over label{color:var(--rose-600);}
 .ng-deadline.over input{border-color:var(--rose-500);background:var(--rose-50);}
@@ -2513,7 +2524,7 @@ function renderCal() {
           bg: hard ? "#fff" : st.bg, fg: hard ? "#b91c1c" : st.fg,
           border: hard ? "#dc2626" : null,
           cls: (done && !hard) ? "done" : (hard ? "hard" : ""),
-          data: {},
+          data: { popopen: `${n}|${ds}` },
           xdata: { unsched: `${ds}|${n}` }, xtitle: "予定から外す",
         });
       }).join("");
@@ -3376,9 +3387,12 @@ function renderModal() {
       for (let i = 0; i < 42; i++) {
         const d = new Date(start); d.setDate(start.getDate() + i);
         const ds = ymd(d), out = d.getMonth() !== vm.m, dow = d.getDay();
+        // 対応期限は「清掃予定日（date）」より前には設定させない（さかのぼり防止）
+        const tooEarly = ds < date;
         const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
-                     ds === sel ? "on" : "", dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
-        g += `<button type="button" class="${cls}" data-pick="${ds}">${d.getDate()}</button>`;
+                     ds === sel ? "on" : "", tooEarly ? "disabled" : "",
+                     dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
+        g += `<button type="button" class="${cls}" data-pick="${ds}" ${tooEarly ? "disabled" : ""}>${d.getDate()}</button>`;
       }
       el.innerHTML = `<div class="mc-h">
           <button type="button" class="mc-nav" data-mv="-1">${ic("left", 15)}</button>
@@ -3399,6 +3413,7 @@ function renderModal() {
       el.querySelectorAll("[data-pick]").forEach((b) => {
         b.onclick = (e) => {
           e.stopPropagation();
+          if (b.dataset.pick < date) { toast("清掃予定日より前は選べません", `${fmtDate(date)}以降で選んでください`); return; }
           const it = itemOf(r, k);
           // 同じ日をもう一度押したら解除できる
           it.deadline = (it.deadline === b.dataset.pick) ? "" : b.dataset.pick;
@@ -5393,9 +5408,22 @@ function renderNgEntry(name, date) {
       <div class="ngitem-h">
         <span class="ngitem-p">${esc(placeLabel(g.place))}</span>
         <span class="ngitem-k">${esc(kindLabel(g.kind))}</span>
+        <button class="ngitem-edit" data-ngedit="${i}" aria-label="編集" title="内容・期限を編集">${ic("file", 15)} 編集</button>
         <button class="ngitem-x" data-ngdel="${i}" aria-label="削除">${ic("x", 15)}</button>
       </div>
-      <div class="ngitem-t">${esc(g.text || "")}</div>
+      ${g._editing
+        ? `<div class="ngitem-editbox">
+             <label class="ngedit-l">内容</label>
+             <textarea class="ngedit-t" data-ngedittext="${i}" rows="2" placeholder="気づいたことを入力">${esc(g.text || "")}</textarea>
+             <label class="ngedit-l">対応期限</label>
+             <div class="ngcal" data-ngcalg="${i}"></div>
+             <div class="ngcal-sel">${g.deadline ? `選択中：${fmtDate(g.deadline)}` : "日付を選んでください"}</div>
+             <div class="ngedit-f">
+               <button class="btn btn-default btn-sm" data-ngeditcancel="${i}">キャンセル</button>
+               <button class="btn btn-sm" style="background:var(--teal-700);color:#fff;border:none" data-ngeditsave="${i}">${ic("check2", 15)} 保存</button>
+             </div>
+           </div>`
+        : `<div class="ngitem-t">${esc(g.text || "")}</div>`}
       <div class="phases" style="margin-top:.7rem">${panel("before", "ビフォー", "")}${panel("after", "アフター", "a")}</div>
       <div class="ngitem-m">期限 ${esc(g.deadline ? fmtDate(g.deadline) : "未設定")}${g.notified ? "　通知済み" : ""}</div>
       ${g.fixed
@@ -5657,6 +5685,94 @@ function bindNgListed(host, name, date) {
       (rr.ngs || []).splice(+b.dataset.ngdel, 1);
       setRep(name, date, { ngs: rr.ngs });
       renderNgEntry(name, date); renderModal(); renderNgBadge();
+    };
+  });
+  // 登録済みの編集：編集モードに入る
+  host.querySelectorAll("[data-ngedit]").forEach((b) => {
+    b.onclick = () => {
+      const rr = getRep(name, date);
+      const g = (rr.ngs || [])[+b.dataset.ngedit]; if (!g) return;
+      (rr.ngs || []).forEach((x) => { if (x) x._editing = false; });   // 他は閉じる
+      g._editing = true;
+      setRep(name, date, { ngs: rr.ngs });
+      renderNgEntry(name, date);
+    };
+  });
+  // 編集：内容テキストの変更を反映
+  host.querySelectorAll("[data-ngedittext]").forEach((t) => {
+    t.oninput = () => {
+      const g = (getRep(name, date).ngs || [])[+t.dataset.ngedittext]; if (!g) return;
+      g.text = t.value;
+      setRep(name, date, { ngs: getRep(name, date).ngs });
+    };
+  });
+  // 編集：期限カレンダー（清掃予定日より前は選べない）
+  host.querySelectorAll("[data-ngcalg]").forEach((el) => {
+    const gi = +el.dataset.ngcalg;
+    let vm = (() => {
+      const cur = ((getRep(name, date).ngs || [])[gi] || {}).deadline;
+      const d = cur ? parseYmd(cur) : new Date();
+      return { y: d.getFullYear(), m: d.getMonth() };
+    })();
+    const draw = () => {
+      const g = (getRep(name, date).ngs || [])[gi] || {};
+      const sel = g.deadline || "";
+      const first = new Date(vm.y, vm.m, 1);
+      const start = new Date(first); start.setDate(1 - first.getDay());
+      let grid = "";
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(start); d.setDate(start.getDate() + i);
+        const ds = ymd(d), out = d.getMonth() !== vm.m, dow = d.getDay();
+        const tooEarly = ds < date;
+        const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
+                     ds === sel ? "on" : "", tooEarly ? "disabled" : "",
+                     dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
+        grid += `<button type="button" class="${cls}" data-pk="${ds}" ${tooEarly ? "disabled" : ""}>${d.getDate()}</button>`;
+      }
+      el.innerHTML = `<div class="mc-h">
+          <button type="button" class="mc-nav" data-mv="-1">${ic("left", 15)}</button>
+          <span class="mc-t">${vm.y}年 ${vm.m + 1}月</span>
+          <button type="button" class="mc-nav" data-mv="1">${ic("right", 15)}</button>
+        </div>
+        <div class="mc-wd"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+        <div class="mc-g">${grid}</div>`;
+      el.querySelectorAll("[data-mv]").forEach((bb) => {
+        bb.onclick = (e) => {
+          e.stopPropagation();
+          const nm = vm.m + Number(bb.dataset.mv);
+          vm = { y: vm.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 };
+          draw();
+        };
+      });
+      el.querySelectorAll("[data-pk]").forEach((bb) => {
+        bb.onclick = (e) => {
+          e.stopPropagation();
+          if (bb.dataset.pk < date) { toast("清掃予定日より前は選べません", `${fmtDate(date)}以降で選んでください`); return; }
+          const g2 = (getRep(name, date).ngs || [])[gi]; if (!g2) return;
+          g2.deadline = (g2.deadline === bb.dataset.pk) ? "" : bb.dataset.pk;
+          setRep(name, date, { ngs: getRep(name, date).ngs });
+          renderNgEntry(name, date);
+        };
+      });
+    };
+    draw();
+  });
+  // 編集：保存／キャンセル（編集モードを閉じる）
+  host.querySelectorAll("[data-ngeditsave]").forEach((b) => {
+    b.onclick = () => {
+      const g = (getRep(name, date).ngs || [])[+b.dataset.ngeditsave]; if (!g) return;
+      g._editing = false;
+      setRep(name, date, { ngs: getRep(name, date).ngs });
+      renderNgEntry(name, date); renderModal(); renderNgBadge();
+      toast("編集を保存しました", placeLabel(g.place));
+    };
+  });
+  host.querySelectorAll("[data-ngeditcancel]").forEach((b) => {
+    b.onclick = () => {
+      const g = (getRep(name, date).ngs || [])[+b.dataset.ngeditcancel]; if (!g) return;
+      g._editing = false;
+      setRep(name, date, { ngs: getRep(name, date).ngs });
+      renderNgEntry(name, date);
     };
   });
 }
