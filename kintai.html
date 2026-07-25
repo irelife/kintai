@@ -6202,7 +6202,29 @@ function boot() {
   // 起動時：勤怠同期URLが設定済みなら最新を取り込む
   if (cfg.ktGas) { ktPull(true); }
   // 起動時：GAS Webhook URL があれば清掃データも最新を取り込む（空ガードで潰さない）
-  if (cfg.gas) { cleanPull(true); }
+  if (cfg.gas) { cleanPull(true).then(() => openFromUrl()); }
+  else { openFromUrl(); }
+}
+
+// LINE通知などのURL（?open=物件名|YYYY-MM-DD）から、該当の清掃記録を自動で開く
+function openFromUrl() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get("open");
+    if (!raw) return;
+    const sep = raw.lastIndexOf("|");
+    if (sep < 0) return;
+    const name = raw.slice(0, sep), date = raw.slice(sep + 1);
+    if (!name || !date) return;
+    // 記録が存在するか（なければ物件・日付だけでも開ける）
+    goGroup("seisou"); go("cal");
+    const d = parseYmd(date);
+    if (d && !isNaN(d)) { cursor = { y: d.getFullYear(), m: d.getMonth() }; selDate = date; }
+    openRep = { name, date }; openItem = null;
+    renderCal(); renderModal();
+    // 開いたらURLからパラメータを消す（再読み込みで再度開かないように）
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+  } catch (e) {}
 }
 document.addEventListener("DOMContentLoaded", boot);
 </script>
