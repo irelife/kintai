@@ -1263,6 +1263,12 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* 清掃記録モーダルを画面幅いっぱいに近づけて見やすくする */
+@media(min-width:1024px){
+  .modal.xwide{max-width:min(96vw,84rem);}
+  .modal.schedwide{max-width:min(92vw,64rem);}
+}
+
 /* 注意書きが縦割りになるのを防ぐ（テキストを1つの塊として扱う） */
 .howto-must-t{flex:1 1 auto;min-width:0;}
 @media(max-width:768px){
@@ -3399,7 +3405,7 @@ function renderModal() {
             <div class="ng-guide">
               <div class="ng-guide-h">${ic("alert", 15)} こんなことがあったら登録します</div>
               <div class="ng-guide-def">
-                <b>その日のうちに片付けられないもの</b>（後日あらためて対応が必要なこと）を登録します。<br>
+                <b>その日のうちに片付けられないもの</b>（後日の対応が必要）を登録。<br>
                 その場で対応が完結するなら、登録は<b>不要</b>です。
               </div>
               <div class="ng-guide-list">
