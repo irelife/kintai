@@ -1263,6 +1263,40 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* ===== スマホ：年間休日カードが枠からはみ出すのを防ぐ ===== */
+.kt-prog{overflow-wrap:anywhere;}
+.kt-prog-grid > .kp{min-width:0;}
+@media(max-width:768px){
+  .kt-prog{padding:1rem .75rem;border-radius:14px;}
+  .kt-prog-h{font-size:14px;margin-bottom:.7rem;line-height:1.5;}
+  .kt-prog-grid{gap:.4rem;}
+  .kp{padding:.7rem .25rem;border-radius:11px;}
+  .kp-emoji{font-size:19px;}
+  .kp-n{font-size:29px;letter-spacing:-.5px;}
+  .kp-n small{font-size:12px;}
+  .kp-l{font-size:10.5px;line-height:1.35;}
+  .kt-prog-msg{margin-top:.75rem;font-size:14px;padding:.6rem .45rem;line-height:1.6;}
+  .kt-prog-msg b{font-size:16px;}
+  .kt-prog-note{font-size:11px;line-height:1.65;}
+}
+
+/* 対応期限の行を押して編集できるように */
+.ngitem-m-tap{cursor:pointer;transition:filter .12s,box-shadow .12s;}
+.ngitem-m-tap:hover{filter:brightness(.97);box-shadow:0 0 0 2px #fbbf24 inset;}
+.ngitem-m-edit{margin-left:auto;display:inline-flex;align-items:center;gap:.2rem;
+  font-size:12px;font-weight:800;color:#b45309;background:#fff;border:1px solid #fcd34d;
+  border-radius:9999px;padding:.15rem .5rem;line-height:1.4;}
+.ngitem-m.over .ngitem-m-edit{color:#b91c1c;border-color:#fca5a5;}
+
+/* ===== マス蓋：進入禁止コーンの警告（ビフォー欄） ===== */
+.cone-warn{margin:.5rem 0 .6rem;padding:.7rem .75rem;border-radius:.6rem;
+  background:#fef2f2;border:2px solid #dc2626;box-shadow:0 2px 8px rgb(220 38 38 / .18);}
+.cone-warn-h{display:flex;align-items:center;gap:.4rem;color:#b91c1c;
+  font-size:17px;font-weight:900;letter-spacing:.04em;line-height:1.2;}
+.cone-warn-b{margin-top:.4rem;font-size:15px;font-weight:800;color:#7f1d1d;line-height:1.5;}
+.cone-warn-b b{color:#b91c1c;text-decoration:underline;text-underline-offset:2px;}
+.cone-warn-s{margin-top:.35rem;font-size:12.5px;font-weight:600;color:#991b1b;line-height:1.55;}
+
 /* 要対応の帯は取り消し線を付けない（未解決なので消し込み扱いにしない） */
 .pillu.ng .pillu-nm,.pillu.ng span{text-decoration:none;}
 .pillu.ng{opacity:1;}
@@ -3403,7 +3437,7 @@ function renderModal() {
           <button class="btn btn-danger btn-sm" id="m-del">${ic("trash", 14)} 予定から外す</button>
           <div style="display:flex;gap:.6rem;align-items:center">
             <span class="autosave-note">${ic("check2", 13)} 自動保存されます</span>
-            <button class="btn btn-default" id="m-cancel">閉じる</button>
+            <button class="btn btn-default" id="m-cancel">OK</button>
           </div>
         </div>
       </div>
@@ -5622,10 +5656,10 @@ function renderNgEntry(name, date) {
              <span class="ngitem-content-t">${esc(g.text || "（未入力）")}</span>
            </div>`}
       <div class="phases" style="margin-top:.7rem">${panel("before", "ビフォー", "")}${panel("after", "アフター", "a")}</div>
-      <div class="ngitem-m ${g.deadline && g.deadline < today() && !g.fixed ? "over" : ""}">
+      <div class="ngitem-m ngitem-m-tap ${g.deadline && g.deadline < today() && !g.fixed ? "over" : ""}" data-ngedit="${i}" title="押すと期限を変更できます">
         ${g.deadline
           ? `<span class="ngitem-m-l">${g.deadline < today() && !g.fixed ? "期限切れ" : "対応期限"}</span><span class="ngitem-m-d">${esc(fmtDate(g.deadline))}</span>`
-          : `<span class="ngitem-m-l none">対応期限 未設定</span>`}${g.notified ? `<span class="ngitem-m-n">通知済み</span>` : ""}</div>
+          : `<span class="ngitem-m-l none">対応期限 未設定</span>`}${g.notified ? `<span class="ngitem-m-n">通知済み</span>` : ""}<span class="ngitem-m-edit">${ic("file", 13)} 変更</span></div>
       ${g.fixed
         ? `<div class="ngitem-done">${ic("check2", 16)} 解決済み${g.fixedAt ? `（${esc(fmtDate(g.fixedAt))}）` : ""}
              <button class="btn btn-outline btn-sm" data-ngunfix="${i}">未解決に戻す</button></div>`
@@ -5693,6 +5727,11 @@ function renderNgEntry(name, date) {
                 <span class="phase-t ${ph === "after" ? "a" : ""}">${ph === "before" ? "ビフォー（今の状態）" : "アフター（対応後）"}${ph === "before" ? '<span class="phase-req">必須</span>' : ""}</span>
                 <span class="phase-c">${d[ph].length}/${NG_SHOT_MAX}枚</span>
               </div>
+              ${(ph === "before" && d.place === "masubuta") ? `<div class="cone-warn">
+                <div class="cone-warn-h">${ic("alert", 20)}<span>重要！！</span></div>
+                <div class="cone-warn-b">マス蓋は<b>進入禁止のコーンで囲ってから</b>撮影してください。</div>
+                <div class="cone-warn-s">コーンで囲った状態の写真をビフォーに登録します。踏み抜き事故を防ぐため、囲いのない写真は不可です。</div>
+              </div>` : ""}
               <div class="shots">
                 ${d[ph].map((src, k) => `<div class="shot">${imgTag(src)}
                   <button data-ddel="${ph}|${k}" aria-label="削除">${ic("x", 13)}</button></div>`).join("")}
