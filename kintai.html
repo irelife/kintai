@@ -3040,8 +3040,7 @@ function renderSide() {
   });
   const sb = document.getElementById("send-btn");
   if (sb) sb.onclick = sendMail;
-  const syncb = document.getElementById("sync-btn");
-  if (syncb) syncb.onclick = () => syncToSheet(selDate, false);
+  const syncb = null;   // 手動同期ボタンは廃止（記録を閉じたときに自動送信される）
 }
 
 function sendCardHTML() {
@@ -3058,9 +3057,6 @@ function sendCardHTML() {
     ${ready && s.ng ? `<div class="send-warn">${ic("alert", 13)}<span>要対応が${s.ng}件ありますが、別日対応でもこのまま送信できます。</span></div>` : ""}
     <button class="btn btn-default" id="send-btn" style="width:100%" ${ready ? "" : "disabled"}>
       ${ic("mail", 15)} PDF報告書をメール送信${ready ? `（${s.total}件）` : ""}
-    </button>
-    <button class="btn btn-outline btn-sm" id="sync-btn" style="width:100%;margin-top:.4rem">
-      ${ic("check2", 13)} 今日の状況をLINE管理へ同期
     </button>
     <div class="send-to">送信先：${cfg.mail ? esc(cfg.mail) : "未設定（LINE設定タブで登録）"}</div>
   </div>`;
