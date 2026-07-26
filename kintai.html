@@ -1263,6 +1263,12 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* 前倒し完了（予定日より前に終わらせた）：減点ではなく評価対象として緑で出す */
+.badge-teal{background:#ccfbf1;color:#0f766e;}
+.latedone.earlydone{background:#ecfdf5;border-color:#5eead4;color:#0f766e;}
+.pillu.early{opacity:1;}
+.pillu.early .pillu-nm,.pillu.early span{text-decoration:none;}
+
 /* 写真えらび：確定ボタンを上に固定（写真が多くても押せるように） */
 .pick-f-top{position:sticky;top:-1.1rem;z-index:5;margin-top:0;margin-bottom:.7rem;
   background:#fff;padding:.55rem 0 .6rem;box-shadow:0 6px 10px -8px rgb(0 0 0 / .35);}
@@ -2074,17 +2080,121 @@ async function uploadPhotoBg(tempId, dataUrl, opts) {
   if (fileId && opts.notify) maybeAutoNotifyNg(opts.notify.name, opts.notify.date, opts.notify.key);
 }
 // files を圧縮して arr に追加（即 temp_ 表示 → 裏で確定）。GAS未設定時は旧方式で base64 を直保存。
+/* =========================================================
+ *  写真の検証：使い回し検知（画像の指紋）と撮影日（EXIF）
+ * ======================================================= */
+const PHASH_KEY = "clean_phash_v1";
+// 画像を8x8のモノクロに縮めて64bitの指紋を作る（圧縮し直しても一致する）
+function photoHash(dataUrl) {
+  return new Promise((res) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const N = 8, cv = document.createElement("canvas");
+          cv.width = N; cv.height = N;
+          const cx = cv.getContext("2d");
+          cx.drawImage(img, 0, 0, N, N);
+          const d = cx.getImageData(0, 0, N, N).data, g = [];
+          for (let i = 0; i < N * N; i++) g.push((d[i*4]*299 + d[i*4+1]*587 + d[i*4+2]*114) / 1000);
+          const avg = g.reduce((a, b) => a + b, 0) / g.length;
+          let bits = ""; g.forEach((v) => bits += (v >= avg ? "1" : "0"));
+          let hex = ""; for (let i = 0; i < 64; i += 4) hex += parseInt(bits.substr(i, 4), 2).toString(16);
+          res(hex);
+        } catch (e) { res(""); }
+      };
+      img.onerror = () => res("");
+      img.src = dataUrl;
+    } catch (e) { res(""); }
+  });
+}
+// 指紋どうしの違い（ビット数）。0=完全一致
+function hamHex(a, b) {
+  if (!a || !b || a.length !== b.length) return 99;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) {
+    let x = parseInt(a[i], 16) ^ parseInt(b[i], 16);
+    while (x) { d += x & 1; x >>= 1; }
+  }
+  return d;
+}
+// 元ファイルから撮影日を読む（EXIFの日時は "YYYY:MM:DD HH:MM:SS" のASCII）
+function exifDate(file) {
+  return new Promise((res) => {
+    try {
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const b = new Uint8Array(r.result);
+          let s = "";
+          for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+          const m = s.match(/(19|20)\d{2}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}/);
+          res(m ? m[0].slice(0, 10).replace(/:/g, "-") : "");
+        } catch (e) { res(""); }
+      };
+      r.onerror = () => res("");
+      r.readAsArrayBuffer(file.slice(0, 256 * 1024));
+    } catch (e) { res(""); }
+  });
+}
+function loadPhash() { try { return JSON.parse(localStorage.getItem(PHASH_KEY) || "{}"); } catch (e) { return {}; } }
+function savePhash(m) { try { localStorage.setItem(PHASH_KEY, JSON.stringify(m)); } catch (e) {} }
+// 同じ写真が別の記録で使われていないか探す（近似も拾う）
+function findDupPhoto(hash, curKey) {
+  if (!hash) return null;
+  const m = loadPhash();
+  if (m[hash] && m[hash].k && m[hash].k !== curKey) return m[hash];
+  for (const h in m) {
+    if (!m[h] || m[h].k === curKey) continue;
+    if (hamHex(h, hash) <= 3) return m[h];
+  }
+  return null;
+}
+function registerPhoto(hash, key, item) {
+  if (!hash || !key) return;
+  const m = loadPhash();
+  if (!m[hash]) { m[hash] = { k: key, i: item || "", at: today() }; savePhash(m); }
+}
+// 検知結果を記録に残す（GAS側の減点集計で使う）
+function recordPhotoWarns(name, date, warns) {
+  if (!name || !date || !warns.length) return;
+  const r = getRep(name, date);
+  const list = (r.photoFlags || []).slice();
+  warns.forEach((w) => list.push({ kind: w.kind, detail: w.detail, at: new Date().toISOString() }));
+  setRep(name, date, { photoFlags: list });
+}
+// 画面に警告を出す
+function showPhotoWarn(warns) {
+  const dup = warns.filter((w) => w.kind === "dup");
+  const ex  = warns.filter((w) => w.kind === "exif");
+  let msg = [];
+  if (dup.length) msg.push("同じ写真が別の記録でも使われています（" + dup.map((w) => w.detail).join("、") + "）");
+  if (ex.length)  msg.push("撮影日が清掃日と違います（" + ex.map((w) => w.detail).join("、") + "）");
+  if (msg.length) toast("写真をご確認ください", msg.join("\n"));
+}
+
 async function addPhotosToArray(files, arr, persist, opts) {
   opts = opts || {};
-  let added = 0; const jobs = [];
+  let added = 0; const jobs = []; const warns = [];
+  const recKey = (opts.name && opts.date) ? (opts.name + "|" + opts.date) : "";
   for (const f of files) {
     let dataUrl; try { dataUrl = await shrink(f); } catch (e) { continue; }
+    // ===== 写真の検証（使い回し・撮影日）=====
+    try {
+      const hash = await photoHash(dataUrl);
+      const dup = findDupPhoto(hash, recKey);
+      if (dup) warns.push({ kind: "dup", detail: dup.k });
+      else registerPhoto(hash, recKey, opts.item || "");
+      const ed = await exifDate(f);
+      if (ed && opts.date && ed !== opts.date && ed !== today()) warns.push({ kind: "exif", detail: ed });
+    } catch (e) { /* 検証に失敗しても写真の登録は続ける */ }
     added++;
     if (!cfg.gas) { arr.push(dataUrl); continue; }        // GAS未設定：従来どおり base64 を保存
     const tempId = "temp_" + Date.now() + "_" + added + "_" + Math.floor(Math.random() * 100000);
     _imgCache[tempId] = dataUrl; arr.push(tempId); jobs.push({ tempId, dataUrl });
   }
   persist();
+  if (warns.length) { recordPhotoWarns(opts.name, opts.date, warns); showPhotoWarn(warns); }
   if (opts && opts.name && opts.date) refreshStatus(opts.name, opts.date);
   renderModal();
   jobs.forEach((j) => uploadPhotoBg(j.tempId, j.dataUrl, opts));
@@ -2714,8 +2824,8 @@ function renderCal() {
     if (sep < 0) return;
     const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
     const rr = reps[rk] || {};
-    if (!isLateDone(rr, planned)) return;
-    (lateByDay[rr.doneDate] = lateByDay[rr.doneDate] || []).push({ name: nm, planned, reason: rr.lateReason || "" });
+    if (!isOffDate(rr, planned)) return;
+    (lateByDay[rr.doneDate] = lateByDay[rr.doneDate] || []).push({ name: nm, planned, reason: rr.lateReason || "", early: isEarlyDone(rr, planned) });
   });
 
   // 要対応の「対応期限」を、その期限日ごとに集める（オレンジ帯で出す）
@@ -2802,12 +2912,14 @@ function renderCal() {
     const lateHere = lateByDay[ds] || [];
     const latePills = lateHere.map((x) => calPill({
       name: x.name,
-      badge: "遅延完了", badgeColor: "#64748b",
+      badge: x.early ? "前倒し完了" : "遅延完了", badgeColor: x.early ? "#0d9488" : "#64748b",
       sub: `${fmtShort(x.planned)}の予定${x.reason ? "・" + x.reason : ""}`,
-      bg: "#f1f5f9", fg: "#475569", border: "#cbd5e1",
-      cls: "pill-late done",
+      bg: x.early ? "#ecfdf5" : "#f1f5f9",
+      fg: x.early ? "#0f766e" : "#475569",
+      border: x.early ? "#5eead4" : "#cbd5e1",
+      cls: x.early ? "pill-late early" : "pill-late done",
       data: { popopen: `${x.name}|${x.planned}` },
-      title: `${fmtDate(x.planned)}の予定を、この日に完了${x.reason ? "／理由：" + x.reason : ""}`,
+      title: `${fmtDate(x.planned)}の予定を、この日に${x.early ? "前倒しで" : ""}完了${x.reason ? "／理由：" + x.reason : ""}`,
       xdata: { latex: `${x.name}|${x.planned}` }, xtitle: "この記録を消す",
     })).join("");
     pills += latePills;
@@ -2818,16 +2930,17 @@ function renderCal() {
     const duePills = dueHere.map((x) => {
       const place = x.place ? placeLabel(x.place) : "";
       const sub = [place, x.text].filter(Boolean).join("：");   // 例）駐車場：交換
+      const from = `${fmtShort(x.planned)}の清掃分`;
       return calPill({
         name: x.name,
         badge: overdueDay ? "期限切れ" : "期限", badgeColor: overdueDay ? "#dc2626" : "#ea580c",
-        sub: sub || "",
+        sub: [from, sub].filter(Boolean).join(" / "),
         bg: overdueDay ? "#fef2f2" : "#fff7ed",
         fg: overdueDay ? "#b91c1c" : "#c2410c",
         border: overdueDay ? "#f87171" : "#fb923c",
         cls: "pill-due" + (overdueDay ? " over" : ""),
         data: { popopen: `${x.name}|${x.planned}` },
-        title: `${x.name}の対応期限${sub ? "／" + sub : ""}`,
+        title: `${x.name}の対応期限（${fmtDate(x.planned)}の清掃分）${sub ? "／" + sub : ""}`,
         xdata: { duedel: `${x.name}|${x.planned}|${x.kind}|${x.idx}` }, xtitle: "この要対応を削除",
       });
     }).join("");
@@ -2949,7 +3062,7 @@ function renderSide() {
     if (sep < 0) return;
     const nm = rk.slice(0, sep), planned = rk.slice(sep + 1);
     const rr = reps[rk] || {};
-    if (rr.doneDate === selDate && isLateDone(rr, planned)) lateHere.push({ name: nm, planned });
+    if (rr.doneDate === selDate && isOffDate(rr, planned)) lateHere.push({ name: nm, planned, early: isEarlyDone(rr, planned) });
   });
   // この日が「対応期限」になっている要対応（予定日は別の日）も一緒に出す
   const dueHere = ngDueMap()[selDate] || [];
@@ -2968,9 +3081,9 @@ function renderSide() {
     Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; });
     const ng = openNg(r);
     return `<div class="card scard latecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
-        style="border-color:#cbd5e1;background:#f1f5f9">
+        style="border-color:${x.early ? "#5eead4" : "#cbd5e1"};background:${x.early ? "#ecfdf5" : "#f1f5f9"}">
       <div class="scard-h"><div class="scard-n">${esc(x.name)}</div>
-        <span class="badge badge-slate">遅延完了</span></div>
+        <span class="badge ${x.early ? "badge-teal" : "badge-slate"}">${x.early ? "前倒し完了" : "遅延完了"}</span></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
         <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
@@ -3124,8 +3237,17 @@ function refreshStatus(name, date) {
   return status;
 }
 // 予定日より後に完了したか（清掃のみの概念。要対応は期限管理で別扱い）
-function isLateDone(r, date) {
+// 予定日と違う日に完了したか（前倒し・遅延の両方）
+function isOffDate(r, date) {
   return !!(r && r.status === "done" && r.doneDate && r.doneDate !== date);
+}
+// 前倒し完了（予定日より前に終わらせた）
+function isEarlyDone(r, date) {
+  return !!(r && r.status === "done" && r.doneDate && r.doneDate < date);
+}
+// 遅延完了（予定日より後に終わらせた）。期限切れ判定に使う
+function isLateDone(r, date) {
+  return !!(r && r.status === "done" && r.doneDate && r.doneDate > date);
 }
 
 // 遅延完了カードの×：完了の取り消し／記録ごと削除 を選ばせる
@@ -3340,8 +3462,8 @@ function renderModal() {
             <span class="stmeter-t">端末の空き ${100 - pct}%${warn ? "（残りわずか。古い写真を減らしてください）" : ""}</span>
           </div>`; })()}
         </div>
-        ${isLateDone(r, date) ? `<div class="latedone">
-          ${ic("alert", 18)} <b>予定日：${fmtDate(date)}　→　完了日：${fmtDate(r.doneDate)}</b>
+        ${isOffDate(r, date) ? `<div class="latedone${isEarlyDone(r, date) ? " earlydone" : ""}">
+          ${ic(isEarlyDone(r, date) ? "check2" : "alert", 18)} <b>予定日：${fmtDate(date)}　→　完了日：${fmtDate(r.doneDate)}${isEarlyDone(r, date) ? "（前倒し）" : ""}</b>
           ${r.lateReason ? `<div class="latedone-r">理由：${esc(r.lateReason)}</div>` : ""}
         </div>` : ""}
         ${(() => {
