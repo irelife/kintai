@@ -6101,6 +6101,7 @@ function bindNgListed(host, name, date) {
       setRep(name, date, { ngs: rr.ngs });
       renderNgEntry(name, date); renderModal(); renderNgBadge();
       toast("解決済みにしました", placeLabel(g.place));
+      notifyNgFixed(name, date, +b.dataset.ngfix);   // 解決をLINEへ
     };
   });
   host.querySelectorAll("[data-ngunfix]").forEach((b) => {
@@ -6266,6 +6267,28 @@ async function notifyNgDraft(name, date, idx) {
     g.notified = true; g.notifiedAt = new Date().toISOString();
     setRep(name, date, { ngs: r.ngs });
     toast("要対応をLINEへ送りました", `${placeLabel(g.place)}`);
+  } catch (e) {}
+}
+
+/* 要対応が解決したことをLINEへ知らせる（アフター写真つき） */
+async function notifyNgFixed(name, date, idx) {
+  if (!cfg.gas) return;
+  const p = props.find((x) => x.name === name) || {};
+  const r = getRep(name, date);
+  const g = (r.ngs || [])[idx];
+  if (!g) return;
+  const payload = {
+    type: "ngConfirm",
+    property: name, address: p.addr || "", date,
+    reporter: g.reporter || "",
+    items: [{ item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`, text: g.text || "",
+              deadline: g.deadline || "", fixedAt: g.fixedAt || today(),
+              before: g.before || [], after: g.after || [] }],
+  };
+  try {
+    await fetch(cfg.gas, { method: "POST", mode: "no-cors",
+      body: new URLSearchParams({ payload: JSON.stringify(payload) }) });
+    toast("解決をLINEへ送りました", placeLabel(g.place));
   } catch (e) {}
 }
 
