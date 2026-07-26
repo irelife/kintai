@@ -1263,6 +1263,11 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* 写真えらび：確定ボタンを上に固定（写真が多くても押せるように） */
+.pick-f-top{position:sticky;top:-1.1rem;z-index:5;margin-top:0;margin-bottom:.7rem;
+  background:#fff;padding:.55rem 0 .6rem;box-shadow:0 6px 10px -8px rgb(0 0 0 / .35);}
+.pick-f-top .btn{font-weight:800;}
+
 /* 清掃記録モーダルを画面幅いっぱいに近づけて見やすくする */
 @media(min-width:1024px){
   .modal.xwide{max-width:min(96vw,84rem);}
@@ -2413,6 +2418,14 @@ function openPickForItem(key) {
         <div class="pick-guide">${left > 0
           ? `「${esc(lbl)}」の写真を <b>${left}枚</b> えらんでください`
           : `<b>${NEED_SHOTS}枚えらべました。</b>下のボタンで確定してください`}</div>
+        <div class="pick-f pick-f-top">
+          ${restAfter > 0 ? `<button class="btn pick-ok" id="pick-next" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
+            ${ic("check2", 17)} 確定して次へ（残り${restAfter}箇所）
+          </button>` : ""}
+          <button class="btn ${restAfter > 0 ? "btn-outline" : "pick-ok"}" id="pick-ok" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
+            ${ic("check2", 17)} 確定して閉じる
+          </button>
+        </div>
         ${list.length
           ? `<div class="pickgrid">${list.map((src, i) => {
               const on = sel.indexOf(i) >= 0;
@@ -2427,12 +2440,6 @@ function openPickForItem(key) {
         <div class="pick-f">
           ${lastAction ? `<button class="btn btn-undo" id="pick-undo">${ic("left", 16)} ひとつ前に戻す</button>` : ""}
           <button class="btn btn-default" id="pick-cancel">閉じる</button>
-          ${restAfter > 0 ? `<button class="btn pick-ok" id="pick-next" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
-            ${ic("check2", 17)} 確定して次へ（残り${restAfter}箇所）
-          </button>` : ""}
-          <button class="btn ${restAfter > 0 ? "btn-outline" : "pick-ok"}" id="pick-ok" ${(sel.length + have) >= NEED_SHOTS ? "" : "disabled"}>
-            ${ic("check2", 17)} 確定して閉じる
-          </button>
         </div>
       </div></div>`;
 
