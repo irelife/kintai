@@ -1813,7 +1813,7 @@ function storagePct() {
 }
 function save(k, v) {
   try {
-    if (!_cleanApplyingRemote) stampCleanChanges(k, v);   // 差分をメタに記録（対象キーのみ）
+    if (!_cleanApplyingRemote) { stampCleanChanges(k, v); if (k === K.reps) stampRepsDeletions(v); }
     localStorage.setItem(k, JSON.stringify(v));
     if (!_cleanApplyingRemote && isCleanKey(k)) { saveCleanMeta(); cleanPushDebounced(); }
     return true;
@@ -1834,7 +1834,8 @@ let choli = load(K.choli, {});         // 会社休日 { "YYYY-MM-DD": {name, _t
 // 清掃クラウド同期：URLは既存の cfg.gas（GAS Webhook URL）を流用。専用欄は作らない。
 // メタはキー単位のタイムスタンプ／削除墓標。
 const CLEAN_META_KEY = "clean_meta_v1";
-let cleanMeta = load(CLEAN_META_KEY, null) || { sched: {}, props: {}, itemlists: {} };
+let cleanMeta = load(CLEAN_META_KEY, null) || { sched: {}, props: {}, itemlists: {}, reps: {} };
+if (!cleanMeta.reps) cleanMeta.reps = {};
 cleanMeta.sched = cleanMeta.sched || {}; cleanMeta.props = cleanMeta.props || {}; cleanMeta.itemlists = cleanMeta.itemlists || {};
 let _cleanApplyingRemote = false;   // pull適用中は save() の再スタンプ／再pushを止める
 // 旧形式（値が文字列）を新形式 {name,_t} に自動変換（後方互換）
@@ -2139,6 +2140,19 @@ function stampCleanChanges(k, newVal) {
   });
 }
 
+// 清掃記録の削除を墓標として記録する（消えた分だけ・中身の比較はしない＝写真が重いため）
+function stampRepsDeletions(newVal) {
+  const prev = jparse(localStorage.getItem(K.reps), null) || {};
+  const nv = newVal || {};
+  const meta = cleanMeta.reps = cleanMeta.reps || {};
+  const now = Date.now();
+  Object.keys(prev).forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(nv, key)) meta[key] = { del: now };
+  });
+  // 消したあとに作り直した記録は、墓標を外して復活させる
+  Object.keys(nv).forEach((key) => { if (meta[key] && meta[key].del) delete meta[key]; });
+}
+
 // 送信用に reps を軽量化（base64=data: と 未完=temp_ を除去 → fileIdと文字だけ）
 function repsForSync(src) {
   const clean = (arr) => Array.isArray(arr) ? arr.filter((s) => typeof s === "string" && !s.startsWith("data:") && !s.startsWith("temp_")) : arr;
@@ -2189,17 +2203,27 @@ function mergeSectionByMeta(cloudMap, localMap, cloudMeta, localMeta) {
   });
   return { map: outMap, meta: outMeta };
 }
-// reps は name|date 単位、各レコードの ts が新しい方（同点はローカル優先＝base64温存）
-function mergeRepsCloud(cloud, local) {
+// reps は name|date 単位。墓標（削除）が記録より新しければ復活させない
+function mergeRepsCloud(cloud, local, cloudMeta, localMeta) {
   cloud = cloud || {}; local = local || {};
-  const out = {}; const keys = new Set([...Object.keys(cloud), ...Object.keys(local)]);
+  cloudMeta = cloudMeta || {}; localMeta = localMeta || {};
+  const out = {}, outMeta = {};
+  const keepAfter = Date.now() - 180 * 86400000;   // 半年より古い墓標は捨てる（際限なく溜めない）
+  const keys = new Set([...Object.keys(cloud), ...Object.keys(local),
+                        ...Object.keys(cloudMeta), ...Object.keys(localMeta)]);
   keys.forEach((k) => {
     const a = cloud[k], b = local[k];
+    const delT = Math.max(Number((cloudMeta[k] || {}).del) || 0, Number((localMeta[k] || {}).del) || 0);
+    const ts = Math.max(Number(a && a.ts) || 0, Number(b && b.ts) || 0);
+    if (delT && ts <= delT) {                       // 削除のほうが新しい → 値を入れない
+      if (delT > keepAfter) outMeta[k] = { del: delT };
+      return;
+    }
     if (a && !b) out[k] = a;
     else if (!a && b) out[k] = b;
-    else out[k] = ((Number(b && b.ts) || 0) >= (Number(a && a.ts) || 0)) ? b : a;
+    else if (a && b) out[k] = ((Number(b.ts) || 0) >= (Number(a.ts) || 0)) ? b : a;
   });
-  return out;
+  return { map: out, meta: outMeta };
 }
 
 async function cleanPull(silent) {
@@ -2223,8 +2247,9 @@ async function cleanPull(silent) {
   }
 
   const cloudMeta = pl.meta || {};
-  // reps
-  reps = mergeRepsCloud(pl.reps, reps);
+  // reps（墓標つき：削除が新しければ復活させない）
+  const mr = mergeRepsCloud(pl.reps, reps, cloudMeta.reps, cleanMeta.reps);
+  reps = mr.map; cleanMeta.reps = mr.meta;
   // sched / props / itemlists（キー単位・メタ駆動）
   const ms = mergeSectionByMeta(pl.sched, sched, cloudMeta.sched, cleanMeta.sched);
   sched = ms.map; cleanMeta.sched = ms.meta;
