@@ -71,7 +71,7 @@ textarea.input{height:auto;min-height:5rem;resize:vertical;line-height:1.6;}
 .badge-blue{background:#dbeafe;color:#1d4ed8;}
 .scard-late-r{margin-top:.4rem;font-size:12px;font-weight:600;color:#1e40af;line-height:1.5;}
 .badge-emerald{background:var(--em-50);color:var(--em-700);}
-.badge-amber{background:var(--am-50);color:var(--am-700);}
+.badge-amber{background:#fff;color:#b91c1c;box-shadow:inset 0 0 0 1px #fca5a5;}
 .badge-rose{background:var(--rose-50);color:var(--rose-700);}
 
 .field{display:flex;flex-direction:column;gap:.375rem;}
@@ -1263,9 +1263,7 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
-/* 前倒し完了（予定日より前に終わらせた）：減点ではなく評価対象として緑で出す */
-.badge-teal{background:#ccfbf1;color:#0f766e;}
-.latedone.earlydone{background:#ecfdf5;border-color:#5eead4;color:#0f766e;}
+/* 前倒し完了は遅延完了と同じグレー表示（区別はバッジの文言のみ） */
 .pillu.early{opacity:1;}
 .pillu.early .pillu-nm,.pillu.early span{text-decoration:none;}
 
@@ -1673,7 +1671,7 @@ const CITY_STYLE = {
 // 状態色（優先度：赤＞黄＞グレー＞地域色）
 const STATUS_STYLE = {
   overdue: { dot: "#dc2626", bg: "#fef2f2", fg: "#dc2626" },    // 期限切れ＝赤
-  ng: { dot: "#d97706", bg: "#fef3c7", fg: "#b45309" },         // 要対応（未解決・期限内）＝黄
+  ng: { dot: "#dc2626", bg: "#fff", fg: "#b91c1c" },            // 要対応（未解決・期限内）＝白地に赤
   done: { dot: "#64748b", bg: "#f1f5f9", fg: "#475569" },       // 完了＝グレー
   doing: { dot: "#7c3aed", bg: "#f5f3ff", fg: "#6d28d9" },      // 入力途中＝紫
 };
@@ -2853,7 +2851,7 @@ function renderCal() {
         // バッジ：期限切れ＝赤／要対応＝黄／完了＝グレー／入力途中＝紫
         let badge = "", badgeColor = "";
         if (hard) { badge = "期限切れ"; badgeColor = "#b91c1c"; }
-        else if (openng) { badge = "要対応"; badgeColor = "#d97706"; }
+        else if (openng) { badge = "要対応"; badgeColor = "#dc2626"; }
         else if (done) { badge = "完了"; badgeColor = "#64748b"; }
         else if (rn.status === "doing") { badge = "入力途中"; badgeColor = "#7c3aed"; }
         return calPill({
@@ -2861,7 +2859,7 @@ function renderCal() {
           badge, badgeColor,
           sub: reason || "",
           bg: hard ? "#dc2626" : st.bg, fg: hard ? "#fff" : st.fg,
-          border: hard ? "#b91c1c" : null,
+          border: hard ? "#b91c1c" : (openng ? "#dc2626" : null),
           badgeInvert: hard,
           cls: ((done && !hard) ? "done" : (hard ? "hard" : "")) + (openng ? " ng" : ""),
           data: { popopen: `${n}|${ds}` },
@@ -2912,11 +2910,9 @@ function renderCal() {
     const lateHere = lateByDay[ds] || [];
     const latePills = lateHere.map((x) => calPill({
       name: x.name,
-      badge: x.early ? "前倒し完了" : "遅延完了", badgeColor: x.early ? "#0d9488" : "#64748b",
+      badge: x.early ? "前倒し完了" : "遅延完了", badgeColor: "#64748b",
       sub: `${fmtShort(x.planned)}の予定${x.reason ? "・" + x.reason : ""}`,
-      bg: x.early ? "#ecfdf5" : "#f1f5f9",
-      fg: x.early ? "#0f766e" : "#475569",
-      border: x.early ? "#5eead4" : "#cbd5e1",
+      bg: "#f1f5f9", fg: "#475569", border: "#cbd5e1",
       cls: x.early ? "pill-late early" : "pill-late done",
       data: { popopen: `${x.name}|${x.planned}` },
       title: `${fmtDate(x.planned)}の予定を、この日に${x.early ? "前倒しで" : ""}完了${x.reason ? "／理由：" + x.reason : ""}`,
@@ -3081,9 +3077,9 @@ function renderSide() {
     Object.values(r.items || {}).forEach((it) => { ph += (it.photos || []).length; });
     const ng = openNg(r);
     return `<div class="card scard latecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
-        style="border-color:${x.early ? "#5eead4" : "#cbd5e1"};background:${x.early ? "#ecfdf5" : "#f1f5f9"}">
+        style="border-color:#cbd5e1;background:#f1f5f9">
       <div class="scard-h"><div class="scard-n">${esc(x.name)}</div>
-        <span class="badge ${x.early ? "badge-teal" : "badge-slate"}">${x.early ? "前倒し完了" : "遅延完了"}</span></div>
+        <span class="badge badge-slate">${x.early ? "前倒し完了" : "遅延完了"}</span></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
         <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
@@ -3462,7 +3458,7 @@ function renderModal() {
             <span class="stmeter-t">端末の空き ${100 - pct}%${warn ? "（残りわずか。古い写真を減らしてください）" : ""}</span>
           </div>`; })()}
         </div>
-        ${isOffDate(r, date) ? `<div class="latedone${isEarlyDone(r, date) ? " earlydone" : ""}">
+        ${isOffDate(r, date) ? `<div class="latedone">
           ${ic(isEarlyDone(r, date) ? "check2" : "alert", 18)} <b>予定日：${fmtDate(date)}　→　完了日：${fmtDate(r.doneDate)}${isEarlyDone(r, date) ? "（前倒し）" : ""}</b>
           ${r.lateReason ? `<div class="latedone-r">理由：${esc(r.lateReason)}</div>` : ""}
         </div>` : ""}
