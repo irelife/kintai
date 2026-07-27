@@ -1263,6 +1263,30 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* ===== 予定の自動作成 ===== */
+.au-dow{display:inline-flex;align-items:center;gap:.3rem;font-size:13px;font-weight:700;
+  background:#fff;border:1px solid var(--border);border-radius:9999px;padding:.35rem .75rem;cursor:pointer;}
+.au-dow input{accent-color:var(--em-600,#059669);}
+.au-note{font-size:11px;color:var(--muted-2);margin-top:.35rem;}
+.au-sum{font-size:13px;font-weight:700;background:var(--bg);border-radius:.5rem;padding:.6rem .8rem;margin-top:.8rem;}
+.au-sum b{font-size:15px;color:var(--em-700,#047857);}
+.au-skip{font-weight:600;color:var(--muted-2);font-size:12px;}
+.au-warn{display:flex;align-items:center;gap:.4rem;font-size:13px;font-weight:700;color:#b45309;
+  background:#fffbeb;border:1px solid #fcd34d;border-radius:.5rem;padding:.6rem .8rem;margin-top:.6rem;}
+.au-list{max-height:46vh;overflow-y:auto;margin-top:.7rem;border:1px solid var(--border);border-radius:.6rem;}
+.au-day{display:flex;gap:.7rem;padding:.5rem .7rem;border-bottom:1px solid var(--border);align-items:flex-start;}
+.au-day:last-child{border-bottom:none;}
+.au-day-d{flex:none;width:74px;font-size:12.5px;font-weight:800;color:var(--muted);padding-top:.15rem;}
+.au-day-n{display:flex;flex-wrap:wrap;gap:.3rem;flex:1;min-width:0;}
+.au-item{display:inline-flex;align-items:center;gap:.3rem;font-size:12px;font-weight:700;
+  background:#fff;border:1px solid var(--border);border-radius:9999px;padding:.2rem .6rem;}
+.au-item i{width:7px;height:7px;border-radius:9999px;flex:none;}
+.au-geo{font-size:12.5px;font-weight:600;color:#b45309;background:#fffbeb;
+  border:1px solid #fcd34d;border-radius:.5rem;padding:.6rem .8rem;line-height:1.6;}
+.au-geo.ok{color:var(--em-700,#047857);background:#ecfdf5;border-color:#6ee7b7;}
+.au-geo b{font-size:14px;}
+.au-geo-p{font-size:12px;font-weight:700;color:var(--muted);margin-top:.35rem;}
+
 /* 前倒し完了は遅延完了と同じグレー表示（区別はバッジの文言のみ） */
 .pillu.early{opacity:1;}
 .pillu.early .pillu-nm,.pillu.early span{text-decoration:none;}
@@ -1460,7 +1484,10 @@ img[data-photo]{cursor:pointer;}
         <h1>物件管理</h1>
         <p>清掃対象の物件を管理し、スケジュールを登録します</p>
       </div>
-      <button class="btn btn-default" id="p-add"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg> 物件追加</button>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-sched" id="p-auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9 14l2 2 4-4"/></svg> 予定を自動作成</button>
+        <button class="btn btn-default" id="p-add"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg> 物件追加</button>
+      </div>
     </div>
     <div class="filters">
       <input class="input" id="p-q" placeholder="物件名・住所で絞り込む">
@@ -3954,6 +3981,211 @@ function openSched(name) {
   };
 }
 
+/* =========================================================
+ *  予定の自動作成：地域ごとにまとめ、近い順に並べて平日へ割り振る
+ * ======================================================= */
+// 2点間のおおよその距離（km）。緯度経度の差から平面近似で求める
+function geoDist(a, b) {
+  const dy = (a.lat - b.lat) * 111;
+  const dx = (a.lng - b.lng) * 91;          // 北緯34度あたりの経度1度は約91km
+  return Math.sqrt(dx * dx + dy * dy);
+}
+// 地域ごとにまとめ、各地域内は「最も北の物件から出発して、いちばん近い次へ」の順に並べる
+function autoRoute(list) {
+  const order = ["fukuyama", "kurashiki", "okayama", "other"];
+  const groups = {};
+  list.forEach((p) => { const k = cityOf(p.addr).key; (groups[k] = groups[k] || []).push(p); });
+  const out = [];
+  order.forEach((k) => {
+    const g = groups[k] || [];
+    if (!g.length) return;
+    const geo = g.filter((p) => p.lat && p.lng);
+    const nogeo = g.filter((p) => !(p.lat && p.lng));
+    const rest = geo.slice();
+    const seq = [];
+    let cur = rest.reduce((a, b) => (a && a.lat >= b.lat ? a : b), null);   // 最も北から出発
+    while (cur) {
+      seq.push(cur);
+      rest.splice(rest.indexOf(cur), 1);
+      let best = null, bd = Infinity;
+      rest.forEach((p) => { const d = geoDist(cur, p); if (d < bd) { bd = d; best = p; } });
+      cur = best;
+    }
+    // 座標が無いものは住所の文字列順に並べる（同じ町名がまとまる）
+    nogeo.sort((a, b) => String(a.addr || "").localeCompare(String(b.addr || ""), "ja"));
+    out.push(...seq, ...nogeo);
+  });
+  return out;
+}
+// 対象月のうち、指定曜日で祝日を除いた日を返す
+function workDaysOf(y, m, dows, skipHoliday) {
+  const out = [], last = new Date(y, m + 1, 0).getDate();
+  for (let i = 1; i <= last; i++) {
+    const d = new Date(y, m, i), ds = ymd(d);
+    if (!dows.includes(d.getDay())) continue;
+    if (skipHoliday && holidayName(ds)) continue;
+    out.push(ds);
+  }
+  return out;
+}
+
+// 座標が無い物件を住所から一括取得する（国土地理院の検索を使う）
+async function fillMissingCoords(onProgress) {
+  const targets = props.filter((p) => !(p.lat && p.lng) && p.addr);
+  let ok = 0, ng = 0;
+  for (let i = 0; i < targets.length; i++) {
+    const p = targets[i];
+    try {
+      const c = await geocodeAddr(p.addr);
+      if (c) { p.lat = c.lat; p.lng = c.lng; ok++; } else { ng++; }
+    } catch (e) { ng++; }
+    if (onProgress) onProgress(i + 1, targets.length, ok, ng);
+    await new Promise((r) => setTimeout(r, 120));   // 連続呼び出しを避ける
+  }
+  if (ok) save(K.props, props);
+  return { ok, ng, total: targets.length };
+}
+
+let _autoPlan = null;   // 確定前のプレビュー内容
+
+function openAutoSched() {
+  const host = document.getElementById("modal-host");
+  const t = new Date();
+  const nx = new Date(t.getFullYear(), t.getMonth() + 1, 1);
+  const defYm = `${nx.getFullYear()}-${pad(nx.getMonth() + 1)}`;
+  host.innerHTML = `<div class="mask" id="mask3">
+    <div class="modal wide schedwide" role="dialog" aria-modal="true">
+      <div class="modal-h"><h2>予定を自動作成</h2><button class="x" id="au-x">${ic("x", 18)}</button></div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="sched-hint">${ic("calendar", 15)} 地域ごとにまとめ、<b>近い順に並べて</b>平日へ割り振ります。内容を確認してから確定できます。</div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div class="field" style="flex:1;min-width:150px"><label>対象の月</label>
+            <input class="input" type="month" id="au-ym" value="${defYm}"></div>
+          <div class="field" style="flex:1;min-width:150px"><label>1日あたりの件数</label>
+            <input class="input" type="number" id="au-per" min="1" max="20" value="3"></div>
+        </div>
+        <div class="field"><label>作業する曜日</label>
+          <div id="au-dows" style="display:flex;gap:.4rem;flex-wrap:wrap">
+            ${["日","月","火","水","木","金","土"].map((w, i) =>
+              `<label class="au-dow"><input type="checkbox" value="${i}" ${(i >= 1 && i <= 5) ? "checked" : ""}> ${w}</label>`).join("")}
+          </div>
+          <div class="au-note">※ 会社の公休日は水・土・日ですが、西澤さんの稼働に合わせて選べます</div>
+        </div>
+        <label class="au-dow"><input type="checkbox" id="au-hol" checked> 祝日を除く</label>
+        <div id="au-geo"></div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem">
+          <button class="btn btn-outline" id="au-cancel">キャンセル</button>
+          <button class="btn btn-sched" id="au-make">${ic("calendar", 15)} 割り振りを作る</button>
+        </div>
+        <div id="au-prev"></div>
+      </div></div></div>`;
+  const close = () => { host.innerHTML = ""; _autoPlan = null; };
+  host.querySelector("#au-x").onclick = close;
+  host.querySelector("#au-cancel").onclick = close;
+  host.querySelector("#mask3").onclick = (e) => { if (e.target.id === "mask3") close(); };
+  host.querySelector("#au-make").onclick = () => buildAutoPlan(host);
+  drawGeoStatus(host);
+}
+
+// 座標の取得状況を表示する
+function drawGeoStatus(host) {
+  const box = host.querySelector("#au-geo");
+  if (!box) return;
+  const miss = props.filter((p) => !(p.lat && p.lng)).length;
+  if (!miss) {
+    box.innerHTML = `<div class="au-geo ok">${ic("check2", 14)} 全${props.length}件の座標があります。近い順に並べられます。</div>`;
+    return;
+  }
+  box.innerHTML = `<div class="au-geo">
+      ${ic("alert", 14)} 座標が無い物件が <b>${miss}件</b> あります（全${props.length}件）。
+      このままでも住所順に並べますが、<b>座標があるほうが正確に近い順</b>になります。
+      <button class="btn btn-outline btn-sm" id="au-geo-run" style="margin-top:.5rem">住所から座標を取得する（${miss}件）</button>
+      <div class="au-geo-p" id="au-geo-p"></div>
+    </div>`;
+  host.querySelector("#au-geo-run").onclick = async (e) => {
+    const btn = e.currentTarget, prog = host.querySelector("#au-geo-p");
+    btn.disabled = true; btn.textContent = "取得中…";
+    const r = await fillMissingCoords((i, n, ok, ng) => {
+      prog.textContent = `${i} / ${n} 件（取得 ${ok}・失敗 ${ng}）`;
+    });
+    toast("座標を取得しました", `成功 ${r.ok}件／失敗 ${r.ng}件`);
+    drawGeoStatus(host);
+    if (_autoPlan) buildAutoPlan(host);   // すでに割り振り済みなら作り直す
+  };
+}
+
+function buildAutoPlan(host) {
+  const ym = host.querySelector("#au-ym").value;
+  const per = Math.max(1, parseInt(host.querySelector("#au-per").value, 10) || 3);
+  const dows = Array.from(host.querySelectorAll("#au-dows input:checked")).map((x) => +x.value);
+  const skipHol = host.querySelector("#au-hol").checked;
+  const box = host.querySelector("#au-prev");
+  if (!ym || !dows.length) { box.innerHTML = `<div class="au-warn">月と曜日を選んでください。</div>`; return; }
+
+  const [y, m] = ym.split("-").map(Number);
+  const days = workDaysOf(y, m - 1, dows, skipHol);
+  // その月にすでに予定が入っている物件は対象から外す（二重登録を防ぐ）
+  const already = new Set();
+  Object.keys(sched || {}).forEach((d) => {
+    if (d.slice(0, 7) !== ym) return;
+    (sched[d] || []).forEach((n) => already.add(n));
+  });
+  const targets = props.filter((p) => !already.has(p.name));
+  if (!targets.length) { box.innerHTML = `<div class="au-warn">対象の物件がありません。${ym} はすでに全物件の予定が入っています。</div>`; return; }
+
+  const route = autoRoute(targets);
+  const need = Math.ceil(route.length / per);
+  const plan = [];
+  let idx = 0;
+  days.forEach((ds) => {
+    if (idx >= route.length) return;
+    plan.push({ date: ds, names: route.slice(idx, idx + per).map((p) => p.name) });
+    idx += per;
+  });
+  const leftover = route.length - idx;
+  _autoPlan = { ym, plan, leftover, total: route.length, already: already.size };
+
+  let html = `<div class="au-sum">
+      対象 <b>${route.length}</b>件 ／ 使える日 <b>${days.length}</b>日 ／ 1日 <b>${per}</b>件
+      ${already.size ? `<span class="au-skip">（予定済み ${already.size}件は除外）</span>` : ""}
+    </div>`;
+  if (leftover > 0) {
+    html += `<div class="au-warn">${ic("alert", 14)} 日数が足りず <b>${leftover}件</b> が割り当てられません。1日あたりの件数を増やすか、曜日を追加してください（必要 ${need}日）。</div>`;
+  }
+  html += `<div class="au-list">` + plan.map((d) => {
+    const w = ["日","月","火","水","木","金","土"][parseYmd(d.date).getDay()];
+    return `<div class="au-day">
+      <div class="au-day-d">${fmtShort(d.date)}(${w})</div>
+      <div class="au-day-n">${d.names.map((n) => {
+        const p = props.find((x) => x.name === n) || {};
+        const c = cityOf(p.addr), st = CITY_STYLE[c.key];
+        return `<span class="au-item"><i style="background:${st.dot}"></i>${esc(n)}</span>`;
+      }).join("")}</div>
+    </div>`;
+  }).join("") + `</div>
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.8rem">
+      <button class="btn btn-sched" id="au-fix">${ic("check2", 15)} この内容で確定する（${plan.length}日分）</button>
+    </div>`;
+  box.innerHTML = html;
+  host.querySelector("#au-fix").onclick = () => commitAutoPlan(host);
+}
+
+function commitAutoPlan(host) {
+  if (!_autoPlan || !_autoPlan.plan.length) return;
+  const n = _autoPlan.plan.reduce((a, d) => a + d.names.length, 0);
+  if (!confirm(`${_autoPlan.ym} に ${n}件の予定を登録します。\nよろしいですか？`)) return;
+  _autoPlan.plan.forEach((d) => {
+    sched[d.date] = sched[d.date] || [];
+    d.names.forEach((nm) => { if (!sched[d.date].includes(nm)) sched[d.date].push(nm); });
+  });
+  save(K.sched, sched);
+  const [y, m] = _autoPlan.ym.split("-").map(Number);
+  cursor = { y, m: m - 1 };
+  host.innerHTML = ""; _autoPlan = null;
+  go("cal");
+  toast("予定を自動作成しました", `${n}件を登録`);
+}
+
 function openAdd() {
   const host = document.getElementById("modal-host");
   host.innerHTML = `<div class="mask" id="mask3">
@@ -6400,6 +6632,7 @@ function boot() {
     selDate = today(); renderCal();
   };
   document.getElementById("p-add").onclick = openAdd;
+  document.getElementById("p-auto").onclick = openAutoSched;
   const plq = document.getElementById("pl-q");
   if (plq) plq.oninput = () => { plQuery = plq.value; renderPropList(); };
   const pladd = document.getElementById("pl-add");
