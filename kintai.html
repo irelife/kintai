@@ -1263,6 +1263,12 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* ===== 月次PDFの進捗カード ===== */
+.send-bar{height:7px;border-radius:9999px;background:var(--border);overflow:hidden;margin:.6rem 0 .5rem;}
+.send-bar i{display:block;height:100%;border-radius:9999px;background:var(--teal-700,#0f766e);transition:width .3s;}
+.send-note{display:flex;align-items:center;gap:.35rem;font-size:12px;font-weight:600;color:var(--muted);line-height:1.6;}
+.send-note.done{color:var(--teal-700,#0f766e);font-weight:700;}
+
 /* ===== 予定の自動作成 ===== */
 .au-dow{display:inline-flex;align-items:center;gap:.3rem;font-size:13px;font-weight:700;
   background:#fff;border:1px solid var(--border);border-radius:9999px;padding:.35rem .75rem;cursor:pointer;}
@@ -1271,6 +1277,8 @@ img[data-photo]{cursor:pointer;}
 .au-sum{font-size:13px;font-weight:700;background:var(--bg);border-radius:.5rem;padding:.6rem .8rem;margin-top:.8rem;}
 .au-sum b{font-size:15px;color:var(--em-700,#047857);}
 .au-skip{font-weight:600;color:var(--muted-2);font-size:12px;}
+.au-info{display:flex;align-items:center;gap:.4rem;font-size:13px;font-weight:700;color:#1d4ed8;
+  background:#eff6ff;border:1px solid #93c5fd;border-radius:.5rem;padding:.6rem .8rem;margin-top:.6rem;}
 .au-warn{display:flex;align-items:center;gap:.4rem;font-size:13px;font-weight:700;color:#b45309;
   background:#fffbeb;border:1px solid #fcd34d;border-radius:.5rem;padding:.6rem .8rem;margin-top:.6rem;}
 .au-list{max-height:46vh;overflow-y:auto;margin-top:.7rem;border:1px solid var(--border);border-radius:.6rem;}
@@ -1607,8 +1615,17 @@ img[data-photo]{cursor:pointer;}
       <div style="display:flex;flex-direction:column;gap:1rem">
         <div class="field"><label>始業時刻（遅刻の判定に使います）</label>
           <input type="time" class="input" id="cfg-start" style="max-width:9rem"></div>
-        <div class="field"><label>PDF送信先メールアドレス</label>
+        <div class="field"><label>PDF送信先メールアドレス①（社内用）</label>
           <input class="input" id="cfg-mail" placeholder="例: report@example.com"></div>
+        <div class="field"><label>PDF送信先メールアドレス②（社長宛）</label>
+          <input class="input" id="cfg-mail2" placeholder="例: shacho@example.com"></div>
+        <div class="field"><label>西澤くんのLINE ID</label>
+          <input class="input" id="cfg-seisouline" placeholder="U から始まる文字列">
+          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
+            西澤くんに seisou を友だち追加してもらい、何かメッセージを送ってもらうと取得できます。
+            登録すると、朝の作業連絡が本人にも届きます。
+          </span>
+        </div>
         <div class="field"><label>GAS Webhook URL</label>
           <input class="input" id="cfg-gas" placeholder="https://script.google.com/macros/s/.../exec">
           <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
@@ -3181,29 +3198,126 @@ function renderSide() {
       openItem = null; renderModal();
     };
   });
-  const sb = document.getElementById("send-btn");
-  if (sb) sb.onclick = sendMail;
+  const sb = null;   // 日次の送信ボタンは廃止（月内の予定が完了したら自動送信）
   const syncb = null;   // 手動同期ボタンは廃止（記録を閉じたときに自動送信される）
 }
 
+/* 月内の清掃予定の進捗（自動送信の判定に使う） */
+function monthProgress(ym) {
+  let total = 0, done = 0;
+  Object.keys(sched || {}).forEach((d) => {
+    if (d.slice(0, 7) !== ym) return;
+    (sched[d] || []).forEach((nm) => {
+      total++;
+      if (getRep(nm, d).status === "done") done++;
+    });
+  });
+  const sent = (cfg.sentMonths || []).includes(ym);
+  return { total, done, sent };
+}
+
+/* 月内の予定がすべて完了したら、PDF報告書を自動でメール送信する
+   （月をまたぐ要対応が残っていても送る） */
+async function maybeSendMonthReport(ym) {
+  if (!ym) return;
+  const m = monthProgress(ym);
+  if (!m.total || m.done !== m.total || m.sent) return;
+  if (!cfg.gas) return;
+  const to = [cfg.mail, cfg.mail2].filter(Boolean);
+  if (!to.length) { toast("PDFの送信先が未設定です", "LINE設定でメールアドレスを登録してください"); return; }
+  toast("PDF報告書を作成しています", `${Number(ym.slice(5))}月分（${m.total}件）`);
+  try {
+    const html = await buildMonthReportHTML(ym);
+    const body = new URLSearchParams({ payload: JSON.stringify({
+      type: "cleanReport", month: ym, date: ym, to: to[0], to2: to[1] || "", html,
+    }) });
+    await fetch(cfg.gas, { method: "POST", mode: "no-cors", body });
+    cfg.sentMonths = (cfg.sentMonths || []).concat([ym]);
+    save(K.cfg, cfg);
+    toast("PDF報告書を送信しました", to.join(" ／ "));
+    renderSide();
+  } catch (e) {
+    toast("送信できませんでした", "通信状況とGAS URLを確認してください");
+  }
+}
+
+/* 月内の全記録をまとめた報告HTMLを組む */
+async function buildMonthReportHTML(ym) {
+  const dates = Object.keys(sched || {}).filter((d) => d.slice(0, 7) === ym).sort();
+  let style = "";
+  const bodies = [];
+  for (const d of dates) {
+    await preloadReportImages(d);
+    const h = buildReportHTML(d);
+    if (!style) { const mm = h.match(/<style[\s\S]*?<\/style>/); style = mm ? mm[0] : ""; }
+    const b = h.match(/<body[^>]*>([\s\S]*?)<\/body>/);
+    bodies.push(`<div class="mrep-day">${b ? b[1] : h}</div>`);
+  }
+  // 未解決の要対応を一覧にする（月をまたぐぶんも記載する）
+  const openList = [];
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|"); if (sep < 0) return;
+    const nm = rk.slice(0, sep), dt = rk.slice(sep + 1);
+    const rr = reps[rk] || {};
+    (rr.ngs || []).forEach((g) => { if (g && !g.fixed) openList.push({ nm, dt, la: placeLabel(g.place), tx: g.text || "", dl: g.deadline || "" }); });
+    Object.entries(rr.items || {}).forEach(([k, c]) => { if (c && c.ng && !c.fixed) openList.push({ nm, dt, la: ((itemsFor(nm).find((x) => x.key === k) || {}).label || k), tx: c.text || c.note || "", dl: c.deadline || "" }); });
+  });
+  openList.sort((a, b) => (a.dl || "9999").localeCompare(b.dl || "9999"));
+  const m = monthProgress(ym);
+  const cover = `<div class="mrep-cover">
+      <h1>清掃報告書　${Number(ym.slice(0, 4))}年${Number(ym.slice(5))}月</h1>
+      <div class="mrep-sum">清掃 ${m.total}件（すべて完了）　／　未解決の要対応 ${openList.length}件</div>
+      ${openList.length ? `<h2>未解決の要対応</h2><table class="mrep-t">
+        <tr><th>物件</th><th>箇所</th><th>内容</th><th>期限</th></tr>
+        ${openList.map((x) => `<tr><td>${esc(x.nm)}</td><td>${esc(x.la)}</td><td>${esc(x.tx)}</td><td>${esc(x.dl || "未設定")}</td></tr>`).join("")}
+      </table>` : ""}
+    </div>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8">
+    <title>清掃報告書 ${ym}</title>${style}
+    <style>
+      .mrep-cover{padding:24px;font-family:sans-serif}
+      .mrep-cover h1{font-size:22px;margin:0 0 8px}
+      .mrep-sum{font-size:14px;color:#444;margin-bottom:16px}
+      .mrep-cover h2{font-size:15px;margin:16px 0 6px}
+      .mrep-t{width:100%;border-collapse:collapse;font-size:12px}
+      .mrep-t th{background:#333;color:#fff;padding:5px 6px;text-align:left}
+      .mrep-t td{border:1px solid #ccc;padding:5px 6px}
+      .mrep-day{page-break-before:always}
+    </style></head><body>${cover}${bodies.join("")}</body></html>`;
+}
+
+/* 西澤くんのLINE IDをGASへ伝える */
+async function pushSeisouLineId() {
+  if (!cfg.gas || !cfg.seisouLine) return;
+  try {
+    await fetch(cfg.gas, { method: "POST", mode: "no-cors",
+      body: new URLSearchParams({ payload: JSON.stringify({ type: "setSeisouId", userId: cfg.seisouLine }) }) });
+    toast("西澤くんのLINE IDを登録しました", "朝の連絡が本人にも届きます");
+  } catch (e) {}
+}
+
 function sendCardHTML() {
-  const s = dayStats(selDate);
-  if (!s.total) return "";
-  const ready = s.done === s.total;
-  return `<div class="card send ${ready ? "ready" : ""}">
+  const ym = selDate.slice(0, 7);
+  const m = monthProgress(ym);
+  if (!m.total) return "";
+  const done = m.done === m.total;
+  return `<div class="card send ${done ? "ready" : ""}">
     <div class="send-h">
-      ${ready ? `<span style="color:var(--teal-700);line-height:0">${ic("check2", 16)}</span>
-                 <span style="font-weight:500;color:var(--teal-900)">全${s.total}件の清掃が完了しました</span>`
-              : `<span style="color:var(--muted-2);line-height:0">${ic("clock", 16)}</span>
-                 <span style="color:var(--muted)">完了 ${s.done}／${s.total}件（あと${s.yet}件で送信できます）</span>`}
+      ${done ? `<span style="color:var(--teal-700);line-height:0">${ic("check2", 16)}</span>
+                <span style="font-weight:600;color:var(--teal-900)">${Number(ym.slice(5))}月分の清掃がすべて完了しました</span>`
+             : `<span style="color:var(--muted-2);line-height:0">${ic("clock", 16)}</span>
+                <span style="color:var(--muted)">${Number(ym.slice(5))}月の進捗　完了 ${m.done}／${m.total}件（残り${m.total - m.done}件）</span>`}
     </div>
-    ${ready && s.ng ? `<div class="send-warn">${ic("alert", 13)}<span>要対応が${s.ng}件ありますが、別日対応でもこのまま送信できます。</span></div>` : ""}
-    <button class="btn btn-default" id="send-btn" style="width:100%" ${ready ? "" : "disabled"}>
-      ${ic("mail", 15)} PDF報告書をメール送信${ready ? `（${s.total}件）` : ""}
-    </button>
-    <div class="send-to">送信先：${cfg.mail ? esc(cfg.mail) : "未設定（LINE設定タブで登録）"}</div>
+    <div class="send-bar"><i style="width:${Math.round(m.done / m.total * 100)}%"></i></div>
+    ${done
+      ? (m.sent
+          ? `<div class="send-note done">${ic("mail", 13)} PDF報告書は送信済みです</div>`
+          : `<div class="send-note">${ic("mail", 13)} まもなくPDF報告書を自動送信します</div>`)
+      : `<div class="send-note">${ic("mail", 13)} 月内の予定がすべて完了すると、PDF報告書を自動でメール送信します（要対応を含む）</div>`}
+    <div class="send-to">送信先：${[cfg.mail, cfg.mail2].filter(Boolean).join(" ／ ") || "未設定（LINE設定タブで登録）"}</div>
   </div>`;
 }
+
 
 /* ===== 描画：物件管理 ===== */
 function renderProps() {
@@ -3256,7 +3370,11 @@ function refreshStatus(name, date) {
     patch.doneDate = "";   // 写真を消して未完了に戻ったら完了日も取り消す
   }
   setRep(name, date, patch);
-  if (status === "done") stampPos(name, date, "done");
+  if (status === "done") {
+    stampPos(name, date, "done");
+    // 月内の予定がすべて完了したら、PDF報告書を自動送信する
+    setTimeout(() => { try { maybeSendMonthReport(date.slice(0, 7)); } catch (e) {} }, 800);
+  }
   return status;
 }
 // 予定日より後に完了したか（清掃のみの概念。要対応は期限管理で別扱い）
@@ -4134,23 +4252,31 @@ function buildAutoPlan(host) {
   if (!targets.length) { box.innerHTML = `<div class="au-warn">対象の物件がありません。${ym} はすでに全物件の予定が入っています。</div>`; return; }
 
   const route = autoRoute(targets);
-  const need = Math.ceil(route.length / per);
+  // 指定件数で入り切らない場合は、全日へ均等に増やして必ず全件を割り振る
+  const base = Math.floor(route.length / days.length);
+  const rem  = route.length % days.length;
+  const useAuto = (route.length > days.length * per);
   const plan = [];
   let idx = 0;
-  days.forEach((ds) => {
+  days.forEach((ds, i) => {
     if (idx >= route.length) return;
-    plan.push({ date: ds, names: route.slice(idx, idx + per).map((p) => p.name) });
-    idx += per;
+    const n = useAuto ? (base + (i < rem ? 1 : 0)) : per;
+    plan.push({ date: ds, names: route.slice(idx, idx + n).map((p) => p.name) });
+    idx += n;
   });
   const leftover = route.length - idx;
+  const perMin = useAuto ? base : per, perMax = useAuto ? (rem ? base + 1 : base) : per;
   _autoPlan = { ym, plan, leftover, total: route.length, already: already.size };
 
   let html = `<div class="au-sum">
-      対象 <b>${route.length}</b>件 ／ 使える日 <b>${days.length}</b>日 ／ 1日 <b>${per}</b>件
+      対象 <b>${route.length}</b>件 ／ 使える日 <b>${days.length}</b>日 ／ 1日 <b>${useAuto ? `${perMin}〜${perMax}` : per}</b>件
       ${already.size ? `<span class="au-skip">（予定済み ${already.size}件は除外）</span>` : ""}
     </div>`;
+  if (useAuto) {
+    html += `<div class="au-info">${ic("alert", 14)} 指定の <b>${per}件</b>では入り切らないため、<b>1日 ${perMin}〜${perMax}件</b>に増やして全件を割り振りました。</div>`;
+  }
   if (leftover > 0) {
-    html += `<div class="au-warn">${ic("alert", 14)} 日数が足りず <b>${leftover}件</b> が割り当てられません。1日あたりの件数を増やすか、曜日を追加してください（必要 ${need}日）。</div>`;
+    html += `<div class="au-warn">${ic("alert", 14)} <b>${leftover}件</b>が割り当てられませんでした。曜日を追加してください。</div>`;
   }
   html += `<div class="au-list">` + plan.map((d) => {
     const w = ["日","月","火","水","木","金","土"][parseYmd(d.date).getDay()];
@@ -6712,15 +6838,21 @@ function boot() {
     };
   })();
 
-  document.getElementById("cfg-mail").value = cfg.mail;
+  document.getElementById("cfg-mail").value = cfg.mail || "";
+  document.getElementById("cfg-mail2").value = cfg.mail2 || "";
+  document.getElementById("cfg-seisouline").value = cfg.seisouLine || "";
   document.getElementById("cfg-gas").value = cfg.gas;
   document.getElementById("cfg-start").value = cfg.start || "09:00";
   document.getElementById("cfg-save").onclick = () => {
     cfg.mail = document.getElementById("cfg-mail").value.trim();
+    cfg.mail2 = document.getElementById("cfg-mail2").value.trim();
+    cfg.seisouLine = document.getElementById("cfg-seisouline").value.trim();
     cfg.gas = document.getElementById("cfg-gas").value.trim();
     cfg.start = document.getElementById("cfg-start").value || "09:00";
     save(K.cfg, cfg);
-    toast("設定を保存しました", `定時 ${cfg.start}${cfg.mail ? `／${cfg.mail}` : ""}`);
+    const to = [cfg.mail, cfg.mail2].filter(Boolean).length;
+    toast("設定を保存しました", `定時 ${cfg.start}${to ? `／送信先 ${to}件` : ""}`);
+    if (cfg.gas && cfg.seisouLine) pushSeisouLineId();   // GASへ西澤くんのIDを伝える
     renderSide();
     // GAS Webhook URL があれば、清掃同期もこのURLで開始（取り込み→この端末の内容を送信＝初回はクラウド作成）
     if (cfg.gas) { cleanPull(true).then(() => cleanPush()); }
