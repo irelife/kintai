@@ -1507,8 +1507,8 @@ img[data-photo]{cursor:pointer;}
         <div class="cal-g" id="cal-grid"></div>
         </div>
         <div class="cal-legend">
-          <span class="cll"><i class="cll-dot" style="background:#fff;border-color:#dc2626"></i>要対応（対応期限の日に出ます）</span>
-          <span class="cll"><i class="cll-dot" style="background:#dc2626;border-color:#b91c1c"></i>期限切れ</span>
+          <span class="cll"><i class="cll-dot" style="background:#fff;border-color:#dc2626"></i>要対応期限（対応の締切日に出ます）</span>
+          <span class="cll"><i class="cll-dot" style="background:#dc2626;border-color:#b91c1c"></i>清掃期限切れ／要対応期限切れ</span>
           <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
           <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>清掃 完了</span>
         </div>
@@ -1767,7 +1767,10 @@ function overdueReason(name, ds) {
   // 未来日（および当日）は、まだ期限を過ぎていないので絶対に赤にしない
   if (ds >= t0) return null;
   // 要対応の期限切れは「期限の日」の帯で示すので、予定日側では見ない
-  if (ds < t0 && r.status !== "done") return "期限切れ";   // 未着手も入力途中も、予定日を過ぎたら期限切れ
+  if (ds < t0 && r.status !== "done") {                    // 未着手も入力途中も、予定日を過ぎたら期限切れ
+    const g = Math.round((parseYmd(t0) - parseYmd(ds)) / 86400000);
+    return `予定日から${g}日経過`;
+  }
   // 遅れて完了したものは、予定日側に「期限切れ」の記録を残す（実際の完了日には青帯が出る）
   if (isLateDone(r, ds)) return "期限切れ";
   return null;
@@ -2945,7 +2948,7 @@ function renderCal() {
         const openng = false;   // 要対応は「期限の日」の帯で示すため、予定日では色を変えない
         // バッジ：清掃が遅れている＝赤／完了＝グレー／入力途中＝紫
         let badge = "", badgeColor = "";
-        if (hard) { badge = "期限切れ"; badgeColor = "#b91c1c"; }
+        if (hard) { badge = "清掃期限切れ"; badgeColor = "#b91c1c"; }
         else if (done) { badge = "完了"; badgeColor = "#64748b"; }
         else if (rn.status === "doing") { badge = "入力途中"; badgeColor = "#7c3aed"; }
         return calPill({
@@ -3023,7 +3026,7 @@ function renderCal() {
       const from = `${fmtShort(x.planned)}の清掃分`;
       return calPill({
         name: x.name,
-        badge: overdueDay ? "期限切れ" : "要対応", badgeColor: overdueDay ? "#b91c1c" : "#dc2626",
+        badge: overdueDay ? "要対応期限切れ" : "要対応期限", badgeColor: overdueDay ? "#b91c1c" : "#dc2626",
         sub: [from, sub].filter(Boolean).join(" / "),
         bg: overdueDay ? "#dc2626" : "#fff",
         fg: overdueDay ? "#fff" : "#b91c1c",
