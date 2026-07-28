@@ -1825,7 +1825,7 @@ function cardTone(name, ds) {
 // カレンダー帯の色を決める（優先：赤＞黄＞グレー＞通常の緑）
 function badgeStyle(name, ds) {
   if (isOverdue(name, ds)) return STATUS_STYLE.overdue;
-  if (hasOpenNg(name, ds)) return STATUS_STYLE.ng;   // 要対応＝黄（完了していても要対応が残っていれば黄が優先）
+  // 要対応は「対応期限の日」の帯で示すので、予定日の色には影響させない
   const st = getRep(name, ds).status;
   if (st === "done") return STATUS_STYLE.done;
   if (st === "doing") return STATUS_STYLE.doing;   // 入力途中＝紫
