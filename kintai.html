@@ -1263,6 +1263,20 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+/* ===== Googleマップへの案内 ===== */
+.mbox-n{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+.navbtn{flex:none;display:inline-flex;align-items:center;gap:.25rem;font-size:11.5px;font-weight:800;
+  color:var(--em-700,#047857);background:#fff;border:1px solid #6ee7b7;border-radius:9999px;
+  padding:.22rem .6rem;cursor:pointer;font-family:inherit;line-height:1.4;white-space:nowrap;}
+.navbtn:hover{background:#ecfdf5;}
+.routebtn{width:100%;display:flex;flex-direction:column;align-items:center;gap:.15rem;
+  border:1.5px solid var(--em-600,#059669);background:var(--em-600,#059669);color:#fff;
+  border-radius:.7rem;padding:.75rem 1rem;margin-bottom:.7rem;cursor:pointer;font-family:inherit;
+  box-shadow:0 2px 8px rgb(5 150 105 / .25);}
+.routebtn:hover{filter:brightness(1.06);}
+.routebtn b{font-size:14px;font-weight:800;display:flex;align-items:center;gap:.35rem;}
+.routebtn span{font-size:11.5px;font-weight:600;opacity:.9;}
+
 /* ===== 月次PDFの進捗カード ===== */
 .send-bar{height:7px;border-radius:9999px;background:var(--border);overflow:hidden;margin:.6rem 0 .5rem;}
 .send-bar i{display:block;height:100%;border-radius:9999px;background:var(--teal-700,#0f766e);transition:width .3s;}
@@ -1289,6 +1303,9 @@ img[data-photo]{cursor:pointer;}
 .au-item{display:inline-flex;align-items:center;gap:.3rem;font-size:12px;font-weight:700;
   background:#fff;border:1px solid var(--border);border-radius:9999px;padding:.2rem .6rem;}
 .au-item i{width:7px;height:7px;border-radius:9999px;flex:none;}
+.au-mhead{position:sticky;top:0;z-index:2;background:var(--bg);font-size:13px;font-weight:800;
+  padding:.5rem .7rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;}
+.au-mhead span{font-size:12px;font-weight:700;color:var(--muted);}
 .au-geo{font-size:12.5px;font-weight:600;color:#b45309;background:#fffbeb;
   border:1px solid #fcd34d;border-radius:.5rem;padding:.6rem .8rem;line-height:1.6;}
 .au-geo.ok{color:var(--em-700,#047857);background:#ecfdf5;border-color:#6ee7b7;}
@@ -3158,7 +3175,13 @@ function renderSide() {
     });
     return;
   }
-  wrap.innerHTML = list.map((n) => {
+  const routeCard = list.length > 1
+    ? `<button class="routebtn" id="route-btn">
+        ${ic("pin", 16)} <b>この日の${list.length}件を巡回ルートで開く</b>
+        <span>現在地から、カレンダーの並び順で案内します</span>
+      </button>`
+    : "";
+  wrap.innerHTML = routeCard + list.map((n) => {
     const p = props.find((x) => x.name === n) || { addr: "" };
     const r = getRep(n, selDate);
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
@@ -3171,7 +3194,8 @@ function renderSide() {
       : r.status === "doing" ? `<span class="badge badge-violet">入力途中</span>`
       : `<span class="badge badge-slate">清掃前</span>`;
     return `<div class="card scard" data-n="${esc(n)}" style="border-color:${sst.bd};background:${sst.bg}">
-      <div class="scard-h"><div class="scard-n">${esc(n)}</div>${badge}</div>
+      <div class="scard-h"><div class="scard-n">${esc(n)}</div>${badge}
+        <button class="navbtn" data-nav="${esc(n)}" title="この物件までの道順を開く">${ic("pin", 13)} ナビ</button></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
         <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
@@ -3198,9 +3222,44 @@ function renderSide() {
       openItem = null; renderModal();
     };
   });
+  wrap.querySelectorAll("[data-nav]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); openNav(navUrlOne(b.dataset.nav)); };
+  });
+  const rb = wrap.querySelector("#route-btn");
+  if (rb) rb.onclick = () => openNav(navUrlRoute(list));
   const sb = null;   // 日次の送信ボタンは廃止（月内の予定が完了したら自動送信）
   const syncb = null;   // 手動同期ボタンは廃止（記録を閉じたときに自動送信される）
 }
+
+/* =========================================================
+ *  Googleマップへの案内（1件ずつ／その日をまとめて巡回）
+ * ======================================================= */
+// 物件の位置を表す文字列。座標があれば座標、無ければ住所を使う
+function navPoint(p) {
+  if (!p) return "";
+  if (p.lat && p.lng) return `${p.lat},${p.lng}`;
+  return p.addr || p.name || "";
+}
+// 1件だけ案内する
+function navUrlOne(name) {
+  const p = props.find((x) => x.name === name);
+  const dst = navPoint(p);
+  if (!dst) return "";
+  return "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURIComponent(dst);
+}
+// その日の予定をまとめて巡回する（現在地 → 1件目 → … → 最終）
+function navUrlRoute(names) {
+  const pts = (names || []).map((n) => navPoint(props.find((x) => x.name === n))).filter(Boolean);
+  if (!pts.length) return "";
+  const dst = pts[pts.length - 1];
+  const way = pts.slice(0, -1).slice(0, 9);   // 経由地はGoogleマップの上限に合わせて9件まで
+  // origin は付けない（省略するとGoogleマップが現在地を出発点にする）
+  let u = "https://www.google.com/maps/dir/?api=1&travelmode=driving"
+        + "&destination=" + encodeURIComponent(dst);
+  if (way.length) u += "&waypoints=" + way.map(encodeURIComponent).join("%7C");
+  return u;
+}
+function openNav(url) { if (url) window.open(url, "_blank", "noopener"); }
 
 /* 月内の清掃予定の進捗（自動送信の判定に使う） */
 function monthProgress(ym) {
@@ -3591,7 +3650,8 @@ function renderModal() {
       <div class="modal-h"><h2>清掃記録</h2><button class="x" id="m-x">${ic("x", 18)}</button></div>
       <div style="display:flex;flex-direction:column;gap:1.25rem">
         <div class="mbox">
-          <div class="mbox-n">${esc(name)}</div>
+          <div class="mbox-n">${esc(name)}
+            <button class="navbtn" id="m-nav" title="この物件までの道順を開く">${ic("pin", 13)} ナビ</button></div>
           <div class="mbox-a">${esc(p.addr)}</div>
           <div class="mbox-s">
             <span style="color:var(--teal-700)">完了: ${doneItems.length}/${myItems.length}箇所</span>
@@ -3789,6 +3849,7 @@ function renderModal() {
   };
   q("#m-x").onclick = closeM;
   q("#m-cancel").onclick = closeM;
+  const mn = q("#m-nav"); if (mn) mn.onclick = () => openNav(navUrlOne(name));
   // 項目カードから直接その箇所の写真を入れる（項目→写真の順で登録できる）
   host.querySelectorAll("[data-pickitem]").forEach((b) => {
     b.onclick = (e) => {
@@ -4180,7 +4241,14 @@ function openAutoSched() {
           <div class="field" style="flex:1;min-width:150px"><label>対象の月</label>
             <input class="input" type="month" id="au-ym" value="${defYm}"></div>
           <div class="field" style="flex:1;min-width:150px"><label>1日あたりの件数</label>
-            <input class="input" type="number" id="au-per" min="1" max="20" value="3"></div>
+            <input class="input" type="number" id="au-per" min="1" max="20" value="7"></div>
+          <div class="field" style="flex:1;min-width:150px"><label>作成する期間</label>
+            <select class="input" id="au-span">
+              <option value="1">1か月分</option>
+              <option value="3">3か月分</option>
+              <option value="6">6か月分</option>
+              <option value="12" selected>12か月分（年間）</option>
+            </select></div>
         </div>
         <div class="field"><label>作業する曜日</label>
           <div id="au-dows" style="display:flex;gap:.4rem;flex-wrap:wrap">
@@ -4233,83 +4301,108 @@ function drawGeoStatus(host) {
 }
 
 function buildAutoPlan(host) {
-  const ym = host.querySelector("#au-ym").value;
-  const per = Math.max(1, parseInt(host.querySelector("#au-per").value, 10) || 3);
+  const ym0 = host.querySelector("#au-ym").value;
+  const per = Math.max(1, parseInt(host.querySelector("#au-per").value, 10) || 7);
+  const span = Math.max(1, parseInt(host.querySelector("#au-span").value, 10) || 1);
   const dows = Array.from(host.querySelectorAll("#au-dows input:checked")).map((x) => +x.value);
   const skipHol = host.querySelector("#au-hol").checked;
   const box = host.querySelector("#au-prev");
-  if (!ym || !dows.length) { box.innerHTML = `<div class="au-warn">月と曜日を選んでください。</div>`; return; }
+  if (!ym0 || !dows.length) { box.innerHTML = `<div class="au-warn">月と曜日を選んでください。</div>`; return; }
 
-  const [y, m] = ym.split("-").map(Number);
-  const days = workDaysOf(y, m - 1, dows, skipHol);
-  // その月にすでに予定が入っている物件は対象から外す（二重登録を防ぐ）
-  const already = new Set();
-  Object.keys(sched || {}).forEach((d) => {
-    if (d.slice(0, 7) !== ym) return;
-    (sched[d] || []).forEach((n) => already.add(n));
-  });
-  const targets = props.filter((p) => !already.has(p.name));
-  if (!targets.length) { box.innerHTML = `<div class="au-warn">対象の物件がありません。${ym} はすでに全物件の予定が入っています。</div>`; return; }
+  // 巡回順は一度だけ決める（毎月おなじ順序＝同じ物件はほぼ同じ時期に回る）
+  const route0 = autoRoute(props);
+  const months = [];
+  const [y0, m0] = ym0.split("-").map(Number);
 
-  const route = autoRoute(targets);
-  // 指定件数で入り切らない場合は、全日へ均等に増やして必ず全件を割り振る
-  const base = Math.floor(route.length / days.length);
-  const rem  = route.length % days.length;
-  const useAuto = (route.length > days.length * per);
-  const plan = [];
-  let idx = 0;
-  days.forEach((ds, i) => {
-    if (idx >= route.length) return;
-    const n = useAuto ? (base + (i < rem ? 1 : 0)) : per;
-    plan.push({ date: ds, names: route.slice(idx, idx + n).map((p) => p.name) });
-    idx += n;
-  });
-  const leftover = route.length - idx;
-  const perMin = useAuto ? base : per, perMax = useAuto ? (rem ? base + 1 : base) : per;
-  _autoPlan = { ym, plan, leftover, total: route.length, already: already.size };
+  for (let k = 0; k < span; k++) {
+    const d0 = new Date(y0, m0 - 1 + k, 1);
+    const ym = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}`;
+    const days = workDaysOf(d0.getFullYear(), d0.getMonth(), dows, skipHol);
+    // その月にすでに予定が入っている物件は対象から外す
+    const already = new Set();
+    Object.keys(sched || {}).forEach((d) => {
+      if (d.slice(0, 7) !== ym) return;
+      (sched[d] || []).forEach((n) => already.add(n));
+    });
+    const route = route0.filter((p) => !already.has(p.name));
+    if (!route.length || !days.length) { months.push({ ym, plan: [], total: 0, already: already.size, days: days.length }); continue; }
+    const base = Math.floor(route.length / days.length);
+    const rem = route.length % days.length;
+    const useAuto = (route.length > days.length * per);
+    const plan = [];
+    let idx = 0;
+    days.forEach((ds, i) => {
+      if (idx >= route.length) return;
+      const n = useAuto ? (base + (i < rem ? 1 : 0)) : per;
+      plan.push({ date: ds, names: route.slice(idx, idx + n).map((p) => p.name) });
+      idx += n;
+    });
+    months.push({ ym, plan, total: route.length, already: already.size, days: days.length,
+                  leftover: route.length - idx, useAuto,
+                  perMin: useAuto ? base : per, perMax: useAuto ? (rem ? base + 1 : base) : per });
+  }
 
+  const grand = months.reduce((a, mo) => a + mo.plan.reduce((b, d) => b + d.names.length, 0), 0);
+  _autoPlan = { months, grand };
+
+  const first = months.find((mo) => mo.plan.length) || months[0];
   let html = `<div class="au-sum">
-      対象 <b>${route.length}</b>件 ／ 使える日 <b>${days.length}</b>日 ／ 1日 <b>${useAuto ? `${perMin}〜${perMax}` : per}</b>件
-      ${already.size ? `<span class="au-skip">（予定済み ${already.size}件は除外）</span>` : ""}
+      ${span > 1 ? `<b>${span}</b>か月分 ／ ` : ""}合計 <b>${grand}</b>件を割り振ります
+      ${first && first.useAuto ? `（1日 ${first.perMin}〜${first.perMax}件）` : `（1日 ${per}件）`}
     </div>`;
-  if (useAuto) {
-    html += `<div class="au-info">${ic("alert", 14)} 指定の <b>${per}件</b>では入り切らないため、<b>1日 ${perMin}〜${perMax}件</b>に増やして全件を割り振りました。</div>`;
+  if (first && first.useAuto) {
+    html += `<div class="au-info">${ic("alert", 14)} 指定の <b>${per}件</b>では入り切らないため、1日あたりを自動で増やしました。</div>`;
   }
-  if (leftover > 0) {
-    html += `<div class="au-warn">${ic("alert", 14)} <b>${leftover}件</b>が割り当てられませんでした。曜日を追加してください。</div>`;
+  const warn = months.filter((mo) => mo.leftover > 0);
+  if (warn.length) {
+    html += `<div class="au-warn">${ic("alert", 14)} ${warn.map((mo) => mo.ym).join("・")} で割り当てきれない物件があります。曜日を追加してください。</div>`;
   }
-  html += `<div class="au-list">` + plan.map((d) => {
-    const w = ["日","月","火","水","木","金","土"][parseYmd(d.date).getDay()];
-    return `<div class="au-day">
-      <div class="au-day-d">${fmtShort(d.date)}(${w})</div>
-      <div class="au-day-n">${d.names.map((n) => {
-        const p = props.find((x) => x.name === n) || {};
-        const c = cityOf(p.addr), st = CITY_STYLE[c.key];
-        return `<span class="au-item"><i style="background:${st.dot}"></i>${esc(n)}</span>`;
-      }).join("")}</div>
-    </div>`;
+
+  html += `<div class="au-list">` + months.map((mo) => {
+    const n = mo.plan.reduce((a, d) => a + d.names.length, 0);
+    const head = `<div class="au-mhead">${Number(mo.ym.slice(0, 4))}年${Number(mo.ym.slice(5))}月　
+      <span>${n}件 ／ ${mo.plan.length}日</span>
+      ${mo.already ? `<span class="au-skip">予定済み ${mo.already}件は除外</span>` : ""}</div>`;
+    const body = mo.plan.map((d) => {
+      const w = ["日","月","火","水","木","金","土"][parseYmd(d.date).getDay()];
+      return `<div class="au-day">
+        <div class="au-day-d">${fmtShort(d.date)}(${w})</div>
+        <div class="au-day-n">${d.names.map((nm) => {
+          const p = props.find((x) => x.name === nm) || {};
+          const st = CITY_STYLE[cityOf(p.addr).key];
+          return `<span class="au-item"><i style="background:${st.dot}"></i>${esc(nm)}</span>`;
+        }).join("")}</div>
+      </div>`;
+    }).join("");
+    return head + (body || `<div class="au-day"><div class="au-day-d">—</div><div class="au-day-n">割り当てなし</div></div>`);
   }).join("") + `</div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.8rem">
-      <button class="btn btn-sched" id="au-fix">${ic("check2", 15)} この内容で確定する（${plan.length}日分）</button>
+      <button class="btn btn-sched" id="au-fix">${ic("check2", 15)} この内容で確定する（${grand}件）</button>
     </div>`;
   box.innerHTML = html;
   host.querySelector("#au-fix").onclick = () => commitAutoPlan(host);
 }
 
 function commitAutoPlan(host) {
-  if (!_autoPlan || !_autoPlan.plan.length) return;
-  const n = _autoPlan.plan.reduce((a, d) => a + d.names.length, 0);
-  if (!confirm(`${_autoPlan.ym} に ${n}件の予定を登録します。\nよろしいですか？`)) return;
-  _autoPlan.plan.forEach((d) => {
-    sched[d.date] = sched[d.date] || [];
-    d.names.forEach((nm) => { if (!sched[d.date].includes(nm)) sched[d.date].push(nm); });
+  if (!_autoPlan || !_autoPlan.grand) return;
+  const months = _autoPlan.months.filter((mo) => mo.plan.length);
+  const label = months.length > 1
+    ? `${months[0].ym} 〜 ${months[months.length - 1].ym} の ${months.length}か月分`
+    : months[0].ym;
+  if (!confirm(`${label}に、合計 ${_autoPlan.grand}件の予定を登録します。\nよろしいですか？`)) return;
+  months.forEach((mo) => {
+    mo.plan.forEach((d) => {
+      sched[d.date] = sched[d.date] || [];
+      d.names.forEach((nm) => { if (!sched[d.date].includes(nm)) sched[d.date].push(nm); });
+    });
   });
   save(K.sched, sched);
-  const [y, m] = _autoPlan.ym.split("-").map(Number);
+  const [y, m] = months[0].ym.split("-").map(Number);
   cursor = { y, m: m - 1 };
+  const n = _autoPlan.grand;
   host.innerHTML = ""; _autoPlan = null;
   go("cal");
-  toast("予定を自動作成しました", `${n}件を登録`);
+  toast("予定を自動作成しました", `${label}／${n}件`);
 }
 
 function openAdd() {
