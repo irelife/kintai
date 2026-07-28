@@ -1283,6 +1283,16 @@ img[data-photo]{cursor:pointer;}
 .bcard-next.none{color:#b45309;}
 .fsep{width:1px;align-self:stretch;background:var(--border);margin:0 .15rem;}
 
+/* 多い日の内訳バッジ */
+.daycount-b{display:flex;flex-wrap:wrap;gap:.2rem;margin-top:.15rem;}
+.dc{font-style:normal;font-size:9.5px;font-weight:800;border-radius:9999px;
+  padding:.05rem .4rem;line-height:1.5;white-space:nowrap;}
+.dc-done{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;}
+.dc-doing{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;}
+.dc-over{background:#dc2626;color:#fff;border:1px solid #b91c1c;}
+.dc-yet{background:#fff;color:var(--muted);border:1px solid var(--border);}
+.daycount.hasover{border-color:#dc2626;}
+
 /* ===== Googleマップへの案内 ===== */
 .mbox-n{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
 .navbtn{flex:none;display:inline-flex;align-items:center;gap:.25rem;font-size:11.5px;font-weight:800;
@@ -2964,24 +2974,24 @@ function renderCal() {
         });
       }).join("");
     } else {
-      // 多い日：件数バッジ＋完了の進捗（クリックで右パネルに一覧）
-      let done = 0;
-      list.forEach((n) => { if (getRep(n, ds).status === "done") done++; });
-      // その日の各物件の帯色（優先：赤＞グレー＞地域色）。重複色は除いて最大4つ
-      const styleKeys = [];
-      const seen = {};
+      // 多い日：件数と内訳を数字で出す（クリックで右パネルに一覧）
+      let done = 0, over = 0, doing = 0;
       list.forEach((n) => {
-        const st = badgeStyle(n, ds);
-        const key = st.fg;
-        if (!seen[key]) { seen[key] = 1; styleKeys.push(st); }
+        const st = getRep(n, ds).status;
+        if (st === "done") done++;
+        else if (isOverdue(n, ds)) over++;
+        else if (st === "doing") doing++;
       });
-      const bands = styleKeys.slice(0, 4).map((st) =>
-        `<i class="cityband" style="background:${st.bg};border-color:${st.fg}44"></i>`
-      ).join("");
-      pills = `<span class="daycount ${done === list.length ? "alldone" : ""}">
+      const all = (done === list.length);
+      pills = `<span class="daycount ${all ? "alldone" : ""} ${over ? "hasover" : ""}">
         <span class="daycount-n">${list.length}件</span>
-        ${done ? `<span class="daycount-d">${done}/${list.length}完了</span>` : ""}
-        <span class="daycount-bands">${bands}</span>
+        <span class="daycount-b">
+          ${all ? `<i class="dc dc-done">すべて完了</i>`
+                : `${done ? `<i class="dc dc-done">完了${done}</i>` : ""}
+                   ${doing ? `<i class="dc dc-doing">途中${doing}</i>` : ""}
+                   ${over ? `<i class="dc dc-over">清掃期限切れ${over}</i>` : ""}
+                   ${(list.length - done - doing - over) ? `<i class="dc dc-yet">未着手${list.length - done - doing - over}</i>` : ""}`}
+        </span>
       </span>`;
     }
     // 要望① ホバー時に出る一覧。物件名が隠れる日（3件以上＝件数バッジ表示）だけに出す。
