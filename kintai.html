@@ -72,6 +72,7 @@ textarea.input{height:auto;min-height:5rem;resize:vertical;line-height:1.6;}
 .scard-late-r{margin-top:.4rem;font-size:12px;font-weight:600;color:#1e40af;line-height:1.5;}
 .badge-emerald{background:var(--em-50);color:var(--em-700);}
 .badge-amber{background:#fff;color:#b91c1c;box-shadow:inset 0 0 0 1px #fca5a5;}
+.badge-red{background:#dc2626;color:#fff;}
 .badge-rose{background:var(--rose-50);color:var(--rose-700);}
 
 .field{display:flex;flex-direction:column;gap:.375rem;}
@@ -848,7 +849,7 @@ img[data-photo]{cursor:pointer;}
   background:#b91c1c;border-radius:9999px;padding:.12rem .7rem;}
 .ngitem-content-t{font-size:24px;font-weight:900;color:#7f1d1d;line-height:1.35;word-break:break-word;}
 .ngitem-m{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;margin-top:.6rem;
-  background:#fff7ed;border:2px solid #fb923c;border-radius:.6rem;padding:.6rem .9rem;}
+  background:#fff;border:2px solid #dc2626;border-radius:.6rem;padding:.6rem .9rem;}
 .ngitem-m-l{font-size:14px;font-weight:800;color:#c2410c;background:#ffedd5;
   border-radius:9999px;padding:.2rem .7rem;}
 .ngitem-m-d{font-size:22px;font-weight:900;color:#9a3412;line-height:1.1;}
@@ -1507,11 +1508,10 @@ img[data-photo]{cursor:pointer;}
         <div class="cal-g" id="cal-grid"></div>
         </div>
         <div class="cal-legend">
-          <span class="cll"><i class="cll-dot" style="background:#fef3c7;border-color:#d97706"></i>要対応（未解決）</span>
-          <span class="cll"><i class="cll-dot" style="background:#fff7ed;border-color:#fb923c"></i>要対応の期限</span>
-          <span class="cll"><i class="cll-dot" style="background:#fef2f2;border-color:#dc2626"></i>期限切れ</span>
+          <span class="cll"><i class="cll-dot" style="background:#fff;border-color:#dc2626"></i>要対応（対応期限の日に出ます）</span>
+          <span class="cll"><i class="cll-dot" style="background:#dc2626;border-color:#b91c1c"></i>期限切れ</span>
           <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
-          <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>完了（要対応なし）</span>
+          <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>清掃 完了</span>
         </div>
       </div>
 
@@ -1767,11 +1767,7 @@ function overdueReason(name, ds) {
   const t0 = today();
   // 未来日（および当日）は、まだ期限を過ぎていないので絶対に赤にしない
   if (ds >= t0) return null;
-  const items = r.items || {};
-  for (const k in items) {
-    const c = items[k];
-    if (c && c.ng && !c.fixed && c.deadline && c.deadline < t0) return "期限切れ";
-  }
+  // 要対応の期限切れは「期限の日」の帯で示すので、予定日側では見ない
   if (ds < t0 && r.status !== "done") return "期限切れ";   // 未着手も入力途中も、予定日を過ぎたら期限切れ
   // 遅れて完了したものは、予定日側に「期限切れ」の記録を残す（実際の完了日には青帯が出る）
   if (isLateDone(r, ds)) return "期限切れ";
@@ -2947,11 +2943,10 @@ function renderCal() {
         const hard = reason === "期限切れ";   // 要対応の期限切れ＝最重要
         if (hard && isLateDone(rn, ds)) reason = `${fmtShort(rn.doneDate)}に完了`;
         if (!reason && hasOpenNg(n, ds)) reason = null;   // 要対応はバッジで示す
-        const openng = !overdueReason(n, ds) && hasOpenNg(n, ds);
-        // バッジ：期限切れ＝赤／要対応＝黄／完了＝グレー／入力途中＝紫
+        const openng = false;   // 要対応は「期限の日」の帯で示すため、予定日では色を変えない
+        // バッジ：清掃が遅れている＝赤／完了＝グレー／入力途中＝紫
         let badge = "", badgeColor = "";
         if (hard) { badge = "期限切れ"; badgeColor = "#b91c1c"; }
-        else if (openng) { badge = "要対応"; badgeColor = "#dc2626"; }
         else if (done) { badge = "完了"; badgeColor = "#64748b"; }
         else if (rn.status === "doing") { badge = "入力途中"; badgeColor = "#7c3aed"; }
         return calPill({
@@ -3029,11 +3024,11 @@ function renderCal() {
       const from = `${fmtShort(x.planned)}の清掃分`;
       return calPill({
         name: x.name,
-        badge: overdueDay ? "期限切れ" : "期限", badgeColor: overdueDay ? "#dc2626" : "#ea580c",
+        badge: overdueDay ? "期限切れ" : "要対応", badgeColor: overdueDay ? "#b91c1c" : "#dc2626",
         sub: [from, sub].filter(Boolean).join(" / "),
-        bg: overdueDay ? "#fef2f2" : "#fff7ed",
-        fg: overdueDay ? "#b91c1c" : "#c2410c",
-        border: overdueDay ? "#f87171" : "#fb923c",
+        bg: overdueDay ? "#dc2626" : "#fff",
+        fg: overdueDay ? "#fff" : "#b91c1c",
+        border: overdueDay ? "#b91c1c" : "#dc2626",
         cls: "pill-due" + (overdueDay ? " over" : ""),
         data: { popopen: `${x.name}|${x.planned}` },
         title: `${x.name}の対応期限（${fmtDate(x.planned)}の清掃分）${sub ? "／" + sub : ""}`,
@@ -3196,9 +3191,9 @@ function renderSide() {
     const place = x.place ? placeLabel(x.place) : "";
     const over = selDate < today();
     return `<div class="card scard duecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
-        style="border-color:${over ? "#f87171" : "#fb923c"};background:${over ? "#fef2f2" : "#fff7ed"}">
+        style="border-color:#dc2626;background:${over ? "#fef2f2" : "#fff"}">
       <div class="scard-h"><div class="scard-n">${esc(x.name)}</div>
-        <span class="badge badge-amber">${over ? "期限切れ" : "対応期限"}</span></div>
+        <span class="badge badge-red">${over ? "期限切れ" : "要対応"}</span></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
         ${place ? `<span class="mini">${esc(place)}</span>` : ""}
