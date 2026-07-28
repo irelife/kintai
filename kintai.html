@@ -328,6 +328,9 @@ main{padding:1.5rem 0 4rem;}
   border-radius:9999px;padding:0 .25rem;font-size:12px;align-self:flex-start;}
 .cell-d.out{color:var(--muted-3);}
 .cell-d.sun{color:var(--rose-500);} .cell-d.sat{color:var(--blue-500);}
+.cell-dh{display:flex;align-items:center;gap:.3rem;align-self:flex-start;min-width:0;max-width:100%;}
+.cell-hol{font-size:9.5px;font-weight:800;color:var(--rose-500);line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cell-d.today{background:var(--teal-700);color:#fff;font-weight:600;}
 .pill{display:flex;align-items:center;border-radius:var(--r-sm);padding:.15rem .4rem;
   font-size:11px;background:var(--border-soft);color:var(--muted);min-width:0;font-weight:500;
@@ -1263,6 +1266,23 @@ img[data-photo]{cursor:pointer;}
 .ktday-btns .b-clear{color:var(--muted);}
 .toast-t{font-size:15px;} .toast-b{font-size:13px;}
 
+.phead{margin:0 0 1rem;}
+.phead-s{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.6rem;margin-bottom:.7rem;}
+.phead-i{background:#fff;border:1px solid var(--border);border-radius:.7rem;padding:.7rem .85rem;}
+.phead-i b{display:block;font-size:22px;font-weight:800;line-height:1.15;color:var(--em-700,#047857);}
+.phead-i span{font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.5;}
+.phead-i.warn b{color:#b45309;}
+.phead-g{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:12.5px;font-weight:600;
+  color:var(--muted);background:var(--bg);border-radius:.6rem;padding:.6rem .8rem;line-height:1.7;}
+.phead-g b{color:var(--text);font-weight:800;}
+.phead-n{display:inline-flex;align-items:center;justify-content:center;width:1.25rem;height:1.25rem;
+  border-radius:9999px;background:var(--em-600,#059669);color:#fff;font-size:11px;font-weight:800;flex:none;}
+.phead-ar{color:var(--muted-3);font-weight:800;margin:0 .1rem;}
+.bcard-next{display:flex;align-items:center;gap:.25rem;font-size:11.5px;font-weight:700;
+  color:var(--em-700,#047857);margin-top:.2rem;}
+.bcard-next.none{color:#b45309;}
+.fsep{width:1px;align-self:stretch;background:var(--border);margin:0 .15rem;}
+
 /* ===== Googleマップへの案内 ===== */
 .mbox-n{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
 .navbtn{flex:none;display:inline-flex;align-items:center;gap:.25rem;font-size:11.5px;font-weight:800;
@@ -1506,8 +1526,8 @@ img[data-photo]{cursor:pointer;}
   <div class="page" id="page-prop">
     <div class="ptab-h">
       <div>
-        <h1>物件管理</h1>
-        <p>清掃対象の物件を管理し、スケジュールを登録します</p>
+        <h1>物件リスト</h1>
+        <p>清掃する建物の一覧です。物件の追加・住所の修正と、年間の清掃予定づくりをここで行います</p>
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         <button class="btn btn-sched" id="p-auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9 14l2 2 4-4"/></svg> 予定を自動作成</button>
@@ -1516,6 +1536,9 @@ img[data-photo]{cursor:pointer;}
     </div>
     <div class="filters">
       <input class="input" id="p-q" placeholder="物件名・住所で絞り込む">
+      <button class="fbtn on" data-sched="all">すべて表示</button>
+      <button class="fbtn" data-sched="none">予定なしのみ</button>
+      <span class="fsep"></span>
       <button class="fbtn on" data-city="all">すべて</button>
       <button class="fbtn" data-city="fukuyama">福山市</button>
       <button class="fbtn" data-city="kurashiki">倉敷市</button>
@@ -1523,6 +1546,7 @@ img[data-photo]{cursor:pointer;}
       <button class="fbtn" data-city="other">その他</button>
       <span class="fcount" id="p-count">0件</span>
     </div>
+    <div id="p-head"></div>
     <div class="grid3" id="p-grid"></div>
   </div>
 
@@ -1765,6 +1789,18 @@ function hasOpenNg(name, ds) {
 }
 // 物件に「未完了の予定」が残っているか（＝物件管理から隠す条件）
 // 完了(status==="done")になった予定は対象外＝カレンダーがグレーアウトした時点でカードが復活する
+// その物件の「次の予定日」を返す（未完了のうち最も近い日。無ければ空）
+function nextSchedOf(name) {
+  const t = today();
+  let best = "";
+  for (const ds in sched) {
+    if (!(sched[ds] || []).includes(name)) continue;
+    if (getRep(name, ds).status === "done") continue;
+    if (ds < t) continue;                       // 過ぎた未完了は「遅れ」として別で見る
+    if (!best || ds < best) best = ds;
+  }
+  return best;
+}
 function hasPendingSched(name) {
   for (const ds in sched) {
     const list = sched[ds] || [];
@@ -1956,7 +1992,7 @@ let openItem = null;    // 展開中の点検項目 key
 let doneOpen = false;   // 完了フォルダの開閉
 let _modalScroll = 0;   // モーダルのスクロール位置（再描画で保持）
 let filterView = null;  // {filter} 月全体の絞り込み一覧を右パネルに出す
-let filterQ = "", filterCity = "all";
+let filterQ = "", filterCity = "all", filterSched = "all";
 let ktMonth = (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() }; })();
 
 const repId = (n, d) => `${n}|${d}`;
@@ -2896,7 +2932,10 @@ function renderCal() {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const ds = ymd(d), out = d.getMonth() !== cursor.m;
     const list = sched[ds] || [], dow = d.getDay();
-    const dcls = ["cell-d", out ? "out" : (ds === today() ? "today" : dow === 0 ? "sun" : dow === 6 ? "sat" : "")].join(" ");
+    const hol = holidayName(ds);
+    const dcls = ["cell-d", out ? "out"
+      : (ds === today() ? "today" : (dow === 0 || hol) ? "sun" : dow === 6 ? "sat" : "")].join(" ");
+    const holH = (hol && !out) ? `<span class="cell-hol">${esc(hol)}</span>` : "";
     let pills = "";
     if (list.length <= PILL_MAX) {
       // 少ない日：物件名の帯をそのまま表示（すべて統一レイアウト）
@@ -3004,7 +3043,7 @@ function renderCal() {
     pills += duePills;
 
     h += `<button class="cell ${out ? "out" : ""} ${ds === selDate ? "sel" : ""}" data-d="${ds}">
-      <span class="${dcls}">${d.getDate()}</span>${pills}${pop}</button>`;
+      <span class="cell-dh"><span class="${dcls}">${d.getDate()}</span>${holH}</span>${pills}${pop}</button>`;
   }
   document.getElementById("cal-grid").innerHTML = h;
   renderPropList();
@@ -3379,15 +3418,46 @@ function sendCardHTML() {
 
 
 /* ===== 描画：物件管理 ===== */
+// 一覧の上に「いまどうなっているか」と「使い方」を出す
+function drawPropHead() {
+  const box = document.getElementById("p-head");
+  if (!box) return;
+  const total = props.length;
+  const none = props.filter((p) => !hasPendingSched(p.name)).length;
+  const m = monthProgress(today().slice(0, 7));
+  const nexts = props.map((p) => nextSchedOf(p.name)).filter(Boolean).sort();
+  const nx = nexts[0] || "";
+  box.innerHTML = `
+    <div class="phead">
+      <div class="phead-s">
+        <div class="phead-i"><b>${total}</b><span>登録している物件</span></div>
+        <div class="phead-i ${none ? "warn" : ""}"><b>${none}</b><span>予定が入っていない</span></div>
+        <div class="phead-i"><b>${m.done}／${m.total}</b><span>今月の清掃（完了／予定）</span></div>
+        <div class="phead-i"><b>${nx ? fmtShort(nx) : "—"}</b><span>次の清掃日</span></div>
+      </div>
+      <div class="phead-g">
+        <span class="phead-n">1</span>ここに物件を登録する
+        <span class="phead-ar">→</span>
+        <span class="phead-n">2</span><b>「予定を自動作成」</b>で1年分の予定を作る
+        <span class="phead-ar">→</span>
+        <span class="phead-n">3</span>あとはカレンダーで作業する
+      </div>
+    </div>`;
+}
+
 function renderProps() {
   const list = props.filter((p) =>
     (filterCity === "all" || cityOf(p.addr).key === filterCity) &&
     (!filterQ || p.name.includes(filterQ) || String(p.addr || "").includes(filterQ)) &&
-    !hasPendingSched(p.name));
+    (filterSched !== "none" || !hasPendingSched(p.name)));
   document.getElementById("p-count").textContent = `${list.length}件`;
+  drawPropHead();
   const wrap = document.getElementById("p-grid");
   if (!list.length) {
-    wrap.innerHTML = `<div class="card empty" style="grid-column:1/-1">表示できる物件がありません。予定に入っている物件は、清掃が完了するとここに戻ります。</div>`;
+    wrap.innerHTML = `<div class="card empty" style="grid-column:1/-1">${
+      filterSched === "none"
+        ? "予定が入っていない物件はありません。すべて予定に入っています。"
+        : "該当する物件がありません。"}</div>`;
     return;
   }
   wrap.innerHTML = list.map((p) => {
@@ -3399,6 +3469,12 @@ function renderProps() {
         <div style="min-width:0;flex:1">
           <div class="bcard-n">${esc(p.name)}</div>
           <div class="bcard-a">${ic("pin", 11)}<span>${esc(p.addr)}</span></div>
+          ${(() => {
+            const nx = nextSchedOf(p.name);
+            return nx
+              ? `<div class="bcard-next">${ic("calendar", 11)} 次回 ${fmtShort(nx)}(${["日","月","火","水","木","金","土"][parseYmd(nx).getDay()]})</div>`
+              : `<div class="bcard-next none">${ic("alert", 11)} 予定なし</div>`;
+          })()}
         </div>
       </div>
       <div class="bcard-m">
@@ -6859,6 +6935,13 @@ function boot() {
   const ngSyncBtn = document.getElementById("ng-sync");
   if (ngSyncBtn) ngSyncBtn.onclick = () => syncOpenNg(false);
   document.getElementById("p-q").oninput = (e) => { filterQ = e.target.value.trim(); renderProps(); };
+  document.querySelectorAll("[data-sched]").forEach((b) => {
+    b.onclick = () => {
+      filterSched = b.dataset.sched;
+      document.querySelectorAll("[data-sched]").forEach((x) => x.classList.toggle("on", x === b));
+      renderProps();
+    };
+  });
   document.querySelectorAll("[data-city]").forEach((b) => {
     b.onclick = () => {
       filterCity = b.dataset.city;
