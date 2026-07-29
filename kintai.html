@@ -1293,6 +1293,41 @@ img[data-photo]{cursor:pointer;}
 .dc-yet{background:#fff;color:var(--muted);border:1px solid var(--border);}
 .daycount.hasover{border-color:#dc2626;}
 
+/* ===== 今日やること画面 ===== */
+#page-today{padding:1rem;max-width:760px;margin:0 auto;}
+.tdhead{margin-bottom:.9rem;}
+.tdhead-d{font-size:22px;font-weight:800;line-height:1.2;}
+.tdhead-s{font-size:13.5px;font-weight:600;color:var(--muted);margin-top:.2rem;}
+.tdhead-s b{font-size:16px;color:var(--em-700,#047857);}
+.tdhead-s b.warn{color:#b91c1c;}
+.tdsec{margin-bottom:1.1rem;}
+.tdsec h3{display:flex;align-items:center;gap:.35rem;font-size:14px;font-weight:800;
+  margin:0 0 .5rem;color:var(--text);}
+.tdsec h3.warn{color:#b91c1c;} .tdsec h3.ok{color:var(--em-700,#047857);}
+.tdcard{background:#fff;border:1px solid var(--border);border-left:4px solid var(--em-600,#059669);
+  border-radius:.6rem;padding:.7rem .85rem;margin-bottom:.5rem;cursor:pointer;}
+.tdcard:hover{background:#fafafa;}
+.tdcard.late{border-left-color:#dc2626;background:#fff5f5;}
+.tdcard-h{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.tdcard-n{font-size:15.5px;font-weight:800;}
+.tdcard-tag{font-size:11px;font-weight:800;border-radius:9999px;padding:.1rem .5rem;}
+.tdcard-tag.late{background:#dc2626;color:#fff;}
+.tdcard-tag.doing{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;}
+.tdcard-tag.due{background:#fff;color:#b91c1c;border:1px solid #fca5a5;}
+.tdcard-a{font-size:12px;color:var(--muted);margin-top:.15rem;}
+.tdcard-miss{display:flex;align-items:center;gap:.3rem;font-size:12px;font-weight:700;
+  color:#b45309;margin-top:.35rem;}
+.tdcard-ok{display:flex;align-items:center;gap:.3rem;font-size:12px;font-weight:700;
+  color:var(--em-700,#047857);margin-top:.35rem;}
+.tdng{background:#fff;border:1px solid #fca5a5;border-radius:.6rem;padding:.6rem .8rem;
+  margin-bottom:.45rem;cursor:pointer;}
+.tdng.over{background:#fff5f5;border-color:#dc2626;}
+.tdng-h{display:flex;align-items:center;gap:.5rem;font-size:14px;flex-wrap:wrap;}
+.tdng-b{font-size:12.5px;color:#7f1d1d;font-weight:600;margin-top:.2rem;line-height:1.55;}
+.tddone{display:flex;flex-wrap:wrap;gap:.35rem;}
+.tddone span{font-size:12px;font-weight:700;background:#f1f5f9;color:#475569;
+  border:1px solid #cbd5e1;border-radius:9999px;padding:.2rem .6rem;}
+.tdmore{font-size:12px;color:var(--muted);padding:.2rem .2rem .4rem;}
 /* ===== Googleマップへの案内 ===== */
 .mbox-n{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
 .navbtn{flex:none;display:inline-flex;align-items:center;gap:.25rem;font-size:11.5px;font-weight:800;
@@ -1469,7 +1504,8 @@ img[data-photo]{cursor:pointer;}
   </div>
   <div class="wrap hd-sub-in">
     <nav class="hd-sub" id="hd-sub">
-      <button data-tab="cal" class="on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect width="18" height="18" x="3" y="4" rx="2"/></svg><span>カレンダー</span></button>
+      <button data-tab="today" class="on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg><span>今日</span></button>
+      <button data-tab="cal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect width="18" height="18" x="3" y="4" rx="2"/></svg><span>カレンダー</span></button>
       <button data-tab="ng"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg><span>要対応</span><i class="tabbadge" id="ng-badge"></i></button>
       <button data-tab="prop"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/></svg><span>物件リスト</span></button>
       <button data-tab="set"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg><span>LINE設定</span></button>
@@ -1480,7 +1516,9 @@ img[data-photo]{cursor:pointer;}
 <main class="wrap">
 
   <!-- カレンダー -->
-  <div class="page on" id="page-cal">
+  <div class="page on" id="page-today"><div id="today-body"></div></div>
+
+  <div class="page" id="page-cal">
     <div class="stats">
       <div class="card stat statclick" data-filter="total">
         <div class="stat-h"><span class="stat-i teal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect width="18" height="18" x="3" y="4" rx="2"/></svg></span><span class="stat-l">予定数</span></div>
@@ -2797,6 +2835,110 @@ function monthMatches(y, m, filter) {
 }
 const FILTER_LABEL = { total: "予定", done: "完了", ng: "要対応", yet: "未完了" };
 
+/* =========================================================
+ *  「今日やること」画面（現場向け）
+ * ======================================================= */
+// 写真があと何枚必要かを返す（例：共用廊下(1/2)・駐車場(0/2)）
+function shortShots(name, ds) {
+  const r = getRep(name, ds);
+  return itemsFor(name).filter((x) => !x.optional).map((x) => {
+    const n = ((r.items[x.key] || {}).photos || []).length;
+    return n < NEED_SHOTS ? `${x.label}(${n}/${NEED_SHOTS})` : null;
+  }).filter(Boolean);
+}
+function renderToday() {
+  const box = document.getElementById("today-body");
+  if (!box) return;
+  const t = today();
+  const w = ["日","月","火","水","木","金","土"][parseYmd(t).getDay()];
+
+  const todayList = (sched[t] || []).filter((n) => getRep(n, t).status !== "done");
+  const doneToday = (sched[t] || []).filter((n) => getRep(n, t).status === "done");
+  // 持ち越し（予定日を過ぎて終わっていないもの）
+  const carry = [];
+  Object.keys(sched || {}).forEach((d) => {
+    if (d >= t) return;
+    (sched[d] || []).forEach((n) => { if (getRep(n, d).status !== "done") carry.push({ n, d }); });
+  });
+  carry.sort((a, b) => a.d < b.d ? -1 : 1);
+  // 要対応（未解決）
+  const ngs = [];
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|"); if (sep < 0) return;
+    const nm = rk.slice(0, sep), dt = rk.slice(sep + 1), rr = reps[rk] || {};
+    (rr.ngs || []).forEach((g, i) => {
+      if (!g || g.fixed) return;
+      ngs.push({ nm, dt, i, la: placeLabel(g.place), tx: g.text || "", dl: g.deadline || "" });
+    });
+  });
+  const ngOver = ngs.filter((x) => x.dl && x.dl < t).sort((a, b) => a.dl < b.dl ? -1 : 1);
+  const ngSoon = ngs.filter((x) => x.dl && x.dl >= t && x.dl <= ymd(new Date(parseYmd(t).getTime() + 7 * 86400000)));
+
+  const jobCard = (n, d, late) => {
+    const p = props.find((x) => x.name === n) || { addr: "" };
+    const miss = shortShots(n, d);
+    const r = getRep(n, d);
+    const g = late ? Math.round((parseYmd(t) - parseYmd(d)) / 86400000) : 0;
+    return `<div class="tdcard ${late ? "late" : ""}" data-open="${esc(n)}|${esc(d)}">
+      <div class="tdcard-h">
+        <span class="tdcard-n">${esc(n)}</span>
+        ${late ? `<span class="tdcard-tag late">${g}日遅れ</span>`
+               : r.status === "doing" ? `<span class="tdcard-tag doing">やりかけ</span>` : ""}
+        <button class="navbtn" data-nav="${esc(n)}" title="道順を開く">${ic("pin", 13)} ナビ</button>
+      </div>
+      <div class="tdcard-a">${esc(p.addr)}</div>
+      ${miss.length
+        ? `<div class="tdcard-miss">${ic("camera", 12)} 写真があと：${miss.slice(0, 4).map(esc).join("・")}</div>`
+        : `<div class="tdcard-ok">${ic("check2", 12)} 写真はそろっています</div>`}
+    </div>`;
+  };
+
+  box.innerHTML = `
+    <div class="tdhead">
+      <div class="tdhead-d">${Number(t.slice(5, 7))}月${Number(t.slice(8))}日(${w})</div>
+      <div class="tdhead-s">${todayList.length ? `今日の清掃 <b>${todayList.length}</b>件` : "今日の清掃はありません"}${
+        carry.length ? `　／　持ち越し <b class="warn">${carry.length}</b>件` : ""}</div>
+    </div>
+
+    ${todayList.length > 1 ? `<button class="routebtn" id="td-route">
+      ${ic("pin", 16)} <b>今日の${todayList.length}件を巡回ルートで開く</b>
+      <span>現在地から、順番に案内します</span></button>` : ""}
+
+    ${todayList.length ? `<div class="tdsec"><h3>${ic("calendar", 15)} 今日おこなう清掃</h3>
+      ${todayList.map((n) => jobCard(n, t, false)).join("")}</div>` : ""}
+
+    ${carry.length ? `<div class="tdsec"><h3 class="warn">${ic("alert", 15)} 終わっていない清掃（先にこちらを）</h3>
+      ${carry.slice(0, 10).map((x) => jobCard(x.n, x.d, true)).join("")}
+      ${carry.length > 10 ? `<div class="tdmore">ほか${carry.length - 10}件</div>` : ""}</div>` : ""}
+
+    ${(ngOver.length || ngSoon.length) ? `<div class="tdsec"><h3>${ic("alert", 15)} 直すもの（要対応）</h3>
+      ${ngOver.map((x) => `<div class="tdng over" data-open="${esc(x.nm)}|${esc(x.dt)}">
+        <div class="tdng-h"><b>${esc(x.nm)}</b><span class="tdcard-tag late">${Math.round((parseYmd(t)-parseYmd(x.dl))/86400000)}日過ぎ</span></div>
+        <div class="tdng-b">${esc(x.la)}：${esc(x.tx || "（内容未記入）")}</div></div>`).join("")}
+      ${ngSoon.map((x) => `<div class="tdng" data-open="${esc(x.nm)}|${esc(x.dt)}">
+        <div class="tdng-h"><b>${esc(x.nm)}</b><span class="tdcard-tag due">${fmtShort(x.dl)}まで</span></div>
+        <div class="tdng-b">${esc(x.la)}：${esc(x.tx || "（内容未記入）")}</div></div>`).join("")}
+    </div>` : ""}
+
+    ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
+      <div class="tddone">${doneToday.map((n) => `<span>${esc(n)}</span>`).join("")}</div></div>` : ""}
+
+    `;
+
+  box.querySelectorAll("[data-open]").forEach((c) => {
+    c.onclick = (e) => {
+      if (e.target.closest("[data-nav]")) return;
+      const [n, d] = c.dataset.open.split("|");
+      openRep = { name: n, date: d }; openItem = null; renderModal();
+    };
+  });
+  box.querySelectorAll("[data-nav]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); openNav(navUrlOne(b.dataset.nav)); };
+  });
+  const rb = box.querySelector("#td-route");
+  if (rb) rb.onclick = () => openNav(navUrlRoute(todayList));
+}
+
 /* ===== 描画：カレンダー ===== */
 // セルに物件名を直接出す上限。これを超えた日は件数バッジになり、ホバー一覧の対象になる。
 const PILL_MAX = 2;
@@ -3393,11 +3535,14 @@ async function buildMonthReportHTML(ym) {
 
 /* 西澤くんのLINE IDをGASへ伝える */
 async function pushSeisouLineId() {
-  if (!cfg.gas || !cfg.seisouLine) return;
+  if (!cfg.gas) return;
   try {
     await fetch(cfg.gas, { method: "POST", mode: "no-cors",
-      body: new URLSearchParams({ payload: JSON.stringify({ type: "setSeisouId", userId: cfg.seisouLine }) }) });
-    toast("西澤くんのLINE IDを登録しました", "朝の連絡が本人にも届きます");
+      body: new URLSearchParams({ payload: JSON.stringify({
+        type: "setSeisouId", userId: cfg.seisouLine || "",
+        mail: cfg.mail || "", mail2: cfg.mail2 || "",
+      }) }) });
+    toast("設定をGASへ送りました", "通知と報告書の宛先を更新しました");
   } catch (e) {}
 }
 
@@ -3928,6 +4073,7 @@ function renderModal() {
     // 完了かどうかは写真の枚数だけで決める（途中で閉じても勝手に完了にしない）
     if (d && nm) refreshStatus(nm, d);
     openRep = null; openItem = null; renderModal(); renderCal();
+    if (tab === "today") renderToday();      // 今日画面を開いていれば最新にする
     if (d && cfg.gas) syncToSheet(d, true);  // 記録を閉じたら静かに同期
   };
   q("#m-x").onclick = closeM;
@@ -6322,7 +6468,7 @@ ${rows}</table></body></html>`;
 /* ロゴタップ：今のタブを保持したままリロード */
 function reloadKeepTab(){ try{ sessionStorage.setItem("last_tab_v1", tab); }catch(e){} location.reload(); }
 /* ===== タブ（2段：清掃グループ＋サブタブ / 勤怠） ===== */
-let _subTab = "cal";   // 清掃グループ内で最後に開いたサブタブ
+let _subTab = "today";   // 清掃グループ内で最後に開いたサブタブ
 /* ===== 要対応の段階入力（場所→種類→内容→期限） ===== */
 // 下書きは reps 内（r.ngDraft）に置く。写真の裏差し替えを効かせるため。
 function getNgDraft(name, date) { return getRep(name, date).ngDraft || null; }
@@ -6887,6 +7033,7 @@ function renderNgTab() {
 function go(t) {
   tab = t;
   try { sessionStorage.setItem("last_tab_v1", t); } catch(e){}
+  if (t === "today") { /* 現場向けの初期画面 */ }
   const isKt = (t === "kt");
   const group = isKt ? "kt" : "seisou";
   if (!isKt) _subTab = t;   // 清掃内のサブタブを記憶
@@ -6904,6 +7051,7 @@ function go(t) {
   const t1el = document.getElementById("hd-t1"), t2el = document.getElementById("hd-t2");
   if (t1el) t1el.textContent = isKt ? "勤怠" : "清掃管理";
   if (t2el) t2el.textContent = isKt ? "Attendance" : "Cleaning Manager";
+  if (t === "today") renderToday();   // 現場向けの初期画面
   if (t === "cal") renderCal();
   if (t === "prop") renderProps();
   if (t === "ng") renderNgTab();
@@ -7035,7 +7183,7 @@ function boot() {
     save(K.cfg, cfg);
     const to = [cfg.mail, cfg.mail2].filter(Boolean).length;
     toast("設定を保存しました", `定時 ${cfg.start}${to ? `／送信先 ${to}件` : ""}`);
-    if (cfg.gas && cfg.seisouLine) pushSeisouLineId();   // GASへ西澤くんのIDを伝える
+    if (cfg.gas) pushSeisouLineId();   // GASへ宛先（LINE ID・メール）を伝える
     renderSide();
     // GAS Webhook URL があれば、清掃同期もこのURLで開始（取り込み→この端末の内容を送信＝初回はクラウド作成）
     if (cfg.gas) { cleanPull(true).then(() => cleanPush()); }
@@ -7046,7 +7194,7 @@ function boot() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); }
   });
-  { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "cal"); }
+  { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "today"); }
   cleanupRemovedItems();   // 要対応へ移した旧項目の過去データを掃除（初回のみ）
   fixAllStatus();          // 写真枚数とステータスの食い違いを直す（2枚ルールに揃える）
   // 起動時：勤怠同期URLが設定済みなら最新を取り込む
