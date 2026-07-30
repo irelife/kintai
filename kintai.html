@@ -73,6 +73,8 @@ textarea.input{height:auto;min-height:5rem;resize:vertical;line-height:1.6;}
 .badge-emerald{background:var(--em-50);color:var(--em-700);}
 .badge-amber{background:#fff;color:#b91c1c;box-shadow:inset 0 0 0 1px #fca5a5;}
 .badge-red{background:#dc2626;color:#fff;}
+.badge-amber2{background:#d97706;color:#fff;}
+.badge-green{background:#059669;color:#fff;}
 .badge-rose{background:var(--rose-50);color:var(--rose-700);}
 
 .field{display:flex;flex-direction:column;gap:.375rem;}
@@ -1564,7 +1566,8 @@ img[data-photo]{cursor:pointer;}
         <div class="cal-g" id="cal-grid"></div>
         </div>
         <div class="cal-legend">
-          <span class="cll"><i class="cll-dot" style="background:#fff;border-color:#dc2626"></i>要対応期限（対応の締切日に出ます）</span>
+          <span class="cll"><i class="cll-dot" style="background:#fffbeb;border-color:#f59e0b"></i>要対応期限（まだ期限前）</span>
+          <span class="cll"><i class="cll-dot" style="background:#ecfdf5;border-color:#10b981"></i>本日が期限</span>
           <span class="cll"><i class="cll-dot" style="background:#dc2626;border-color:#b91c1c"></i>清掃期限切れ／要対応期限切れ</span>
           <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
           <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>清掃 完了</span>
@@ -3184,20 +3187,26 @@ function renderCal() {
     })).join("");
     pills += latePills;
 
-    // 要対応の対応期限：オレンジ帯で「期限：物件名」を出す（期限当日にどこが対象か分かるように）
+    // 要対応の対応期限：期限前＝黄／当日＝緑／期限後＝赤
     const dueHere = ngDueByDay[ds] || [];
-    const overdueDay = ds < today();   // 期限日を過ぎていれば赤で強調
+    const t0 = today();
+    const dueTone = (ds < t0) ? "over" : (ds === t0 ? "today" : "soon");
+    const TONE_DUE = {
+      soon:  { bg: "#fffbeb", fg: "#b45309", bd: "#f59e0b", bc: "#d97706", label: "要対応期限" },
+      today: { bg: "#ecfdf5", fg: "#047857", bd: "#10b981", bc: "#059669", label: "本日が期限" },
+      over:  { bg: "#dc2626", fg: "#fff",    bd: "#b91c1c", bc: "#b91c1c", label: "要対応期限切れ" },
+    };
+    const dt = TONE_DUE[dueTone];
+    const overdueDay = (dueTone === "over");
     const duePills = dueHere.map((x) => {
       const place = x.place ? placeLabel(x.place) : "";
       const sub = [place, x.text].filter(Boolean).join("：");   // 例）駐車場：交換
       const from = `${fmtShort(x.planned)}の清掃分`;
       return calPill({
         name: x.name,
-        badge: overdueDay ? "要対応期限切れ" : "要対応期限", badgeColor: overdueDay ? "#b91c1c" : "#dc2626",
+        badge: dt.label, badgeColor: dt.bc,
         sub: [from, sub].filter(Boolean).join(" / "),
-        bg: overdueDay ? "#dc2626" : "#fff",
-        fg: overdueDay ? "#fff" : "#b91c1c",
-        border: overdueDay ? "#b91c1c" : "#dc2626",
+        bg: dt.bg, fg: dt.fg, border: dt.bd,
         cls: "pill-due" + (overdueDay ? " over" : ""),
         data: { popopen: `${x.name}|${x.planned}` },
         title: `${x.name}の対応期限（${fmtDate(x.planned)}の清掃分）${sub ? "／" + sub : ""}`,
@@ -3358,11 +3367,17 @@ function renderSide() {
   const dueH = dueHere.map((x) => {
     const p = props.find((y) => y.name === x.name) || { addr: "" };
     const place = x.place ? placeLabel(x.place) : "";
-    const over = selDate < today();
+    const t0 = today();
+    const tone = (selDate < t0) ? "over" : (selDate === t0 ? "today" : "soon");
+    const TN = {
+      soon:  { bd: "#f59e0b", bg: "#fffbeb", cls: "badge-amber2", label: "要対応期限" },
+      today: { bd: "#10b981", bg: "#ecfdf5", cls: "badge-green",  label: "本日が期限" },
+      over:  { bd: "#dc2626", bg: "#fef2f2", cls: "badge-red",    label: "期限切れ" },
+    }[tone];
     return `<div class="card scard duecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
-        style="border-color:#dc2626;background:${over ? "#fef2f2" : "#fff"}">
+        style="border-color:${TN.bd};background:${TN.bg}">
       <div class="scard-h"><div class="scard-n">${esc(x.name)}</div>
-        <span class="badge badge-red">${over ? "期限切れ" : "要対応"}</span></div>
+        <span class="badge ${TN.cls}">${TN.label}</span></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
         ${place ? `<span class="mini">${esc(place)}</span>` : ""}
