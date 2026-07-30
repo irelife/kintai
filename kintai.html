@@ -1716,6 +1716,12 @@ img[data-photo]{cursor:pointer;}
           <input class="input" id="cfg-mail" placeholder="例: report@example.com"></div>
         <div class="field"><label>PDF送信先メールアドレス②（社長宛）</label>
           <input class="input" id="cfg-mail2" placeholder="例: shacho@example.com"></div>
+        <div class="field"><label>勤務状況報告書の送信先</label>
+          <input class="input" id="cfg-mailboss" placeholder="空欄なら②へ送ります">
+          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
+            毎月1日に送る勤務状況報告書（減点のまとめ）の宛先です。清掃報告書とは別に指定できます。
+          </span>
+        </div>
         <div class="field"><label>西澤くんのLINE ID</label>
           <input class="input" id="cfg-seisouline" placeholder="U から始まる文字列">
           <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
@@ -3622,7 +3628,7 @@ async function pushSeisouLineId() {
   if (!cfg.gas) return;
   const body = () => new URLSearchParams({ payload: JSON.stringify({
     type: "setSeisouId", userId: cfg.seisouLine || "",
-    mail: cfg.mail || "", mail2: cfg.mail2 || "",
+    mail: cfg.mail || "", mail2: cfg.mail2 || "", mail3: cfg.mailBoss || "",
   }) });
   // まず応答を読める方式で試す（デプロイが古いかどうかまで分かる）
   try {
@@ -7301,12 +7307,14 @@ function boot() {
 
   document.getElementById("cfg-mail").value = cfg.mail || "";
   document.getElementById("cfg-mail2").value = cfg.mail2 || "";
+  document.getElementById("cfg-mailboss").value = cfg.mailBoss || "";
   document.getElementById("cfg-seisouline").value = cfg.seisouLine || "";
   document.getElementById("cfg-gas").value = cfg.gas;
   document.getElementById("cfg-start").value = cfg.start || "09:00";
   document.getElementById("cfg-save").onclick = () => {
     cfg.mail = document.getElementById("cfg-mail").value.trim();
     cfg.mail2 = document.getElementById("cfg-mail2").value.trim();
+    cfg.mailBoss = document.getElementById("cfg-mailboss").value.trim();
     cfg.seisouLine = document.getElementById("cfg-seisouline").value.trim();
     cfg.gas = document.getElementById("cfg-gas").value.trim();
     cfg.start = document.getElementById("cfg-start").value || "09:00";
