@@ -1293,6 +1293,15 @@ img[data-photo]{cursor:pointer;}
 .dc-yet{background:#fff;color:var(--muted);border:1px solid var(--border);}
 .daycount.hasover{border-color:#dc2626;}
 
+/* GASのデプロイが古いときの案内 */
+.stalebar{display:flex;align-items:flex-start;gap:.6rem;background:#7f1d1d;color:#fff;
+  font-size:12.5px;font-weight:600;line-height:1.65;padding:.7rem 1rem;}
+.stalebar b{font-weight:800;}
+.stalebar > svg{flex:none;margin-top:.15rem;}
+.stalebar button{margin-left:auto;flex:none;border:0;background:transparent;color:#fff;
+  cursor:pointer;padding:.2rem;opacity:.8;}
+.stalebar button:hover{opacity:1;}
+
 /* ===== 今日やること画面 ===== */
 #page-today{padding:1rem;max-width:760px;margin:0 auto;}
 .tdhead{margin-bottom:.9rem;}
@@ -3465,10 +3474,12 @@ function monthProgress(ym) {
 
 /* 月内の予定がすべて完了したら、PDF報告書を自動でメール送信する
    （月をまたぐ要対応が残っていても送る） */
-async function maybeSendMonthReport(ym) {
+async function maybeSendMonthReport(ym, force) {
   if (!ym) return;
   const m = monthProgress(ym);
-  if (!m.total || m.done !== m.total || m.sent) return;
+  if (!m.total || m.sent) return;
+  // 通常は「全部完了したとき」。月が終わっていれば未完了でも送る（force）
+  if (!force && m.done !== m.total) return;
   if (!cfg.gas) return;
   const to = [cfg.mail, cfg.mail2].filter(Boolean);
   if (!to.length) { toast("PDFの送信先が未設定です", "LINE設定でメールアドレスを登録してください"); return; }
@@ -3477,6 +3488,7 @@ async function maybeSendMonthReport(ym) {
     const html = await buildMonthReportHTML(ym);
     const body = new URLSearchParams({ payload: JSON.stringify({
       type: "cleanReport", month: ym, date: ym, to: to[0], to2: to[1] || "", html,
+      complete: (m.done === m.total), left: (m.total - m.done),
     }) });
     await fetch(cfg.gas, { method: "POST", mode: "no-cors", body });
     cfg.sentMonths = (cfg.sentMonths || []).concat([ym]);
@@ -3488,62 +3500,171 @@ async function maybeSendMonthReport(ym) {
   }
 }
 
-/* 月内の全記録をまとめた報告HTMLを組む */
-async function buildMonthReportHTML(ym) {
-  const dates = Object.keys(sched || {}).filter((d) => d.slice(0, 7) === ym).sort();
-  let style = "";
-  const bodies = [];
-  for (const d of dates) {
-    await preloadReportImages(d);
-    const h = buildReportHTML(d);
-    if (!style) { const mm = h.match(/<style[\s\S]*?<\/style>/); style = mm ? mm[0] : ""; }
-    const b = h.match(/<body[^>]*>([\s\S]*?)<\/body>/);
-    bodies.push(`<div class="mrep-day">${b ? b[1] : h}</div>`);
-  }
-  // 未解決の要対応を一覧にする（月をまたぐぶんも記載する）
-  const openList = [];
-  Object.keys(reps || {}).forEach((rk) => {
-    const sep = rk.lastIndexOf("|"); if (sep < 0) return;
-    const nm = rk.slice(0, sep), dt = rk.slice(sep + 1);
-    const rr = reps[rk] || {};
-    (rr.ngs || []).forEach((g) => { if (g && !g.fixed) openList.push({ nm, dt, la: placeLabel(g.place), tx: g.text || "", dl: g.deadline || "" }); });
-    Object.entries(rr.items || {}).forEach(([k, c]) => { if (c && c.ng && !c.fixed) openList.push({ nm, dt, la: ((itemsFor(nm).find((x) => x.key === k) || {}).label || k), tx: c.text || c.note || "", dl: c.deadline || "" }); });
-  });
-  openList.sort((a, b) => (a.dl || "9999").localeCompare(b.dl || "9999"));
+/* 先月の報告書が未送信のまま月が終わっていたら、未完了のまま送る
+   （完了しない月が報告なしで終わるのを防ぐ） */
+async function checkPrevMonthReport() {
+  if (!cfg.gas) return;
+  const t = parseYmd(today());
+  const pv = new Date(t.getFullYear(), t.getMonth() - 1, 1);
+  const ym = `${pv.getFullYear()}-${pad(pv.getMonth() + 1)}`;
   const m = monthProgress(ym);
-  const cover = `<div class="mrep-cover">
-      <h1>清掃報告書　${Number(ym.slice(0, 4))}年${Number(ym.slice(5))}月</h1>
-      <div class="mrep-sum">清掃 ${m.total}件（すべて完了）　／　未解決の要対応 ${openList.length}件</div>
-      ${openList.length ? `<h2>未解決の要対応</h2><table class="mrep-t">
-        <tr><th>物件</th><th>箇所</th><th>内容</th><th>期限</th></tr>
-        ${openList.map((x) => `<tr><td>${esc(x.nm)}</td><td>${esc(x.la)}</td><td>${esc(x.tx)}</td><td>${esc(x.dl || "未設定")}</td></tr>`).join("")}
-      </table>` : ""}
-    </div>`;
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8">
-    <title>清掃報告書 ${ym}</title>${style}
-    <style>
-      .mrep-cover{padding:24px;font-family:sans-serif}
-      .mrep-cover h1{font-size:22px;margin:0 0 8px}
-      .mrep-sum{font-size:14px;color:#444;margin-bottom:16px}
-      .mrep-cover h2{font-size:15px;margin:16px 0 6px}
-      .mrep-t{width:100%;border-collapse:collapse;font-size:12px}
-      .mrep-t th{background:#333;color:#fff;padding:5px 6px;text-align:left}
-      .mrep-t td{border:1px solid #ccc;padding:5px 6px}
-      .mrep-day{page-break-before:always}
-    </style></head><body>${cover}${bodies.join("")}</body></html>`;
+  if (!m.total || m.sent) return;
+  await maybeSendMonthReport(ym, true);   // 月は終わっているので強制送信
 }
 
-/* 西澤くんのLINE IDをGASへ伝える */
+/* 月内の報告HTMLを組む（表紙＋要対応だけ。通常の清掃写真は載せない） */
+async function buildMonthReportHTML(ym) {
+  const dates = Object.keys(sched || {}).filter((d) => d.slice(0, 7) === ym).sort();
+  const m = monthProgress(ym);
+
+  // 月内の記録から要対応を集める（解決済みも実績として載せる）
+  const ngList = [];
+  dates.forEach((d) => {
+    (sched[d] || []).forEach((nm) => {
+      const rr = reps[repId(nm, d)] || {};
+      (rr.ngs || []).forEach((g, i) => {
+        if (!g) return;
+        ngList.push({ nm, d, i, place: placeLabel(g.place), kind: kindLabel(g.kind),
+                      text: g.text || "", deadline: g.deadline || "",
+                      fixed: !!g.fixed, fixedAt: g.fixedAt || "",
+                      before: g.before || [], after: g.after || [] });
+      });
+    });
+  });
+  // 写真を先に読み込む（要対応があった日だけ）
+  const need = Array.from(new Set(ngList.map((x) => x.d)));
+  for (const d of need) await preloadReportImages(d);
+
+  const openList = ngList.filter((x) => !x.fixed);
+  const fixedList = ngList.filter((x) => x.fixed);
+  const t = today();
+  // 終わっていない清掃（月が終わってから送る場合はここに出る）
+  const notDone = [];
+  dates.forEach((d) => {
+    (sched[d] || []).forEach((nm) => {
+      if (getRep(nm, d).status !== "done") notDone.push({ nm, d, miss: shortShots(nm, d) });
+    });
+  });
+
+  const row = (x) => `<div class="ngi ${x.fixed ? "" : "open"}">
+      <div class="ngh">
+        <b>${esc(x.nm)}</b>
+        <span class="tag ${x.fixed ? "ok" : (x.deadline && x.deadline < t ? "over" : "open")}">${
+          x.fixed ? "解決済み" : (x.deadline && x.deadline < t ? "期限超過" : "未解決")}</span>
+        <span class="dt">${fmtDate(x.d)}の清掃</span>
+      </div>
+      <div class="ngb">${esc(x.place)}${x.kind ? "／" + esc(x.kind) : ""}：${esc(x.text || "（記載なし）")}</div>
+      <div class="ngm">対応期限 ${x.deadline ? esc(fmtDate(x.deadline)) : "未設定"}${
+        x.fixed && x.fixedAt ? `　／　解決 ${esc(fmtDate(x.fixedAt))}` : ""}</div>
+      ${(x.before.length || x.after.length) ? `<div class="ph">
+        ${x.before.map((s) => `<figure><img src="${reportSrc(s)}"><figcaption>ビフォー</figcaption></figure>`).join("")}
+        ${x.after.map((s) => `<figure><img src="${reportSrc(s)}"><figcaption>アフター</figcaption></figure>`).join("")}
+      </div>` : ""}
+    </div>`;
+
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8">
+    <title>清掃報告書 ${ym}</title><style>
+      body{font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#0f172a;margin:24px;font-size:13px;line-height:1.7}
+      h1{font-size:21px;margin:0 0 4px}
+      .sub{color:#64748b;font-size:12px;margin-bottom:16px}
+      .box{display:flex;gap:10px;margin-bottom:18px}
+      .b{flex:1;border:1px solid #ddd;border-radius:6px;padding:10px 12px}
+      .b b{display:block;font-size:22px;line-height:1.2;color:#115e59}
+      .b span{font-size:11px;color:#666}
+      h2{font-size:15px;margin:20px 0 8px;padding:6px 10px;background:#f0fdfa;color:#115e59;
+        border-left:4px solid #115e59;border-radius:5px;page-break-after:avoid}
+      .ngi{border:1px solid #e2e8f0;border-radius:7px;padding:10px 12px;margin-bottom:9px;
+        page-break-inside:avoid;break-inside:avoid}
+      .ngi.open{border-color:#fca5a5;background:#fff8f8}
+      .ngh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .ngh b{font-size:14px}
+      .tag{font-size:10.5px;font-weight:700;border-radius:99px;padding:1px 8px}
+      .tag.ok{background:#ecfdf5;color:#047857;border:1px solid #6ee7b7}
+      .tag.open{background:#fff;color:#b91c1c;border:1px solid #fca5a5}
+      .tag.over{background:#dc2626;color:#fff}
+      .dt{font-size:11px;color:#64748b}
+      .ngb{margin-top:3px}
+      .ngm{font-size:11px;color:#64748b;margin-top:2px}
+      .ph{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px}
+      figure{margin:0;width:150px} figcaption{font-size:9px;color:#64748b;margin-top:2px}
+      img{width:150px;height:112px;object-fit:cover;border-radius:4px;border:1px solid #e2e8f0;display:block}
+      .none{color:#64748b;font-size:12px;padding:4px 2px}
+      .warnbox{background:#fff5f5;border:2px solid #dc2626;color:#991b1b;font-weight:700;
+        padding:9px 12px;border-radius:6px;margin-bottom:14px}
+      .note{color:#64748b;font-size:11px;margin-top:18px;border-top:1px solid #ddd;padding-top:8px}
+    </style></head><body>
+    <h1>清掃報告書　${Number(ym.slice(0, 4))}年${Number(ym.slice(5))}月</h1>
+    <div class="sub">${ym}-01 〜 ${ym}-${pad(new Date(+ym.slice(0,4), +ym.slice(5), 0).getDate())}</div>
+    <div class="box">
+      <div class="b"><b>${m.total}</b><span>予定していた清掃</span></div>
+      <div class="b"><b>${m.done}</b><span>完了（${m.total ? Math.round(m.done / m.total * 100) : 0}%）</span></div>
+      <div class="b"><b>${ngList.length}</b><span>要対応の件数</span></div>
+      <div class="b"><b>${openList.length}</b><span>うち未解決</span></div>
+    </div>
+    ${notDone.length ? `<div class="warnbox">この月は <b>${notDone.length}件</b> の清掃が完了していません。</div>
+    <h2>完了していない清掃（${notDone.length}件）</h2>
+    ${notDone.map((x) => `<div class="ngi open">
+      <div class="ngh"><b>${esc(x.nm)}</b><span class="tag open">未完了</span>
+        <span class="dt">${fmtDate(x.d)}の予定</span></div>
+      ${x.miss.length ? `<div class="ngm">写真があと：${x.miss.slice(0, 5).map(esc).join("・")}</div>` : ""}
+    </div>`).join("")}` : ""}
+    <h2>未解決の要対応（${openList.length}件）</h2>
+    ${openList.length ? openList.map(row).join("") : `<div class="none">未解決のものはありません。</div>`}
+    <h2>解決した要対応（${fixedList.length}件）</h2>
+    ${fixedList.length ? fixedList.map(row).join("") : `<div class="none">今月の解決はありません。</div>`}
+    <div class="note">※ 通常の清掃写真は本書に含めていません。アプリの各記録からご確認ください。</div>
+    </body></html>`;
+}
+
+/* 宛先（西澤くんのLINE ID・メール2件）をGASへ伝える
+   応答を読み、GAS側のデプロイが古い場合はその場で知らせる */
 async function pushSeisouLineId() {
   if (!cfg.gas) return;
   try {
-    await fetch(cfg.gas, { method: "POST", mode: "no-cors",
+    const res = await fetch(cfg.gas, { method: "POST", redirect: "follow",
       body: new URLSearchParams({ payload: JSON.stringify({
         type: "setSeisouId", userId: cfg.seisouLine || "",
         mail: cfg.mail || "", mail2: cfg.mail2 || "",
       }) }) });
-    toast("設定をGASへ送りました", "通知と報告書の宛先を更新しました");
-  } catch (e) {}
+    const t = String(await res.text() || "").trim();
+    if (t === "ok") {
+      setGasStale(false);
+      toast("設定をGASへ送りました", "通知と報告書の宛先を更新しました");
+    } else {
+      setGasStale(true);
+      toast("GASが古いままです", "デプロイの更新が必要です（下の案内をご覧ください）");
+    }
+  } catch (e) {
+    setGasStale(true);
+    toast("GASへ届きませんでした", "通信状況とデプロイを確認してください");
+  }
+}
+
+/* GASのデプロイが古いことを画面に出す（更新手順つき） */
+function setGasStale(on) {
+  try { localStorage.setItem("gas_stale_v1", on ? "1" : ""); } catch (e) {}
+  drawGasStale();
+}
+function isGasStale() {
+  try { return localStorage.getItem("gas_stale_v1") === "1"; } catch (e) { return false; }
+}
+function drawGasStale() {
+  let bar = document.getElementById("gas-stale");
+  if (!isGasStale()) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "gas-stale";
+    bar.className = "stalebar";
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+  bar.innerHTML = `${ic("alert", 16)}
+    <div><b>GAS（通知の仕組み）が古いままです。</b>
+    保存した宛先が反映されていません。<br>
+    Apps Scriptで <b>デプロイ → デプロイを管理 → 鉛筆マーク → バージョンを「新バージョン」→ デプロイ</b>
+    を実行してから、この画面で保存し直してください。</div>
+    <button id="gas-stale-x" title="閉じる">${ic("x", 15)}</button>`;
+  const x = bar.querySelector("#gas-stale-x");
+  if (x) x.onclick = () => { bar.remove(); };
 }
 
 function sendCardHTML() {
@@ -7195,6 +7316,8 @@ function boot() {
     if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); }
   });
   { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "today"); }
+  drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
+  setTimeout(() => { try { checkPrevMonthReport(); } catch (e) {} }, 4000);
   cleanupRemovedItems();   // 要対応へ移した旧項目の過去データを掃除（初回のみ）
   fixAllStatus();          // 写真枚数とステータスの食い違いを直す（2枚ルールに揃える）
   // 起動時：勤怠同期URLが設定済みなら最新を取り込む
