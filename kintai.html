@@ -3620,23 +3620,32 @@ async function buildMonthReportHTML(ym) {
    応答を読み、GAS側のデプロイが古い場合はその場で知らせる */
 async function pushSeisouLineId() {
   if (!cfg.gas) return;
+  const body = () => new URLSearchParams({ payload: JSON.stringify({
+    type: "setSeisouId", userId: cfg.seisouLine || "",
+    mail: cfg.mail || "", mail2: cfg.mail2 || "",
+  }) });
+  // まず応答を読める方式で試す（デプロイが古いかどうかまで分かる）
   try {
-    const res = await fetch(cfg.gas, { method: "POST", redirect: "follow",
-      body: new URLSearchParams({ payload: JSON.stringify({
-        type: "setSeisouId", userId: cfg.seisouLine || "",
-        mail: cfg.mail || "", mail2: cfg.mail2 || "",
-      }) }) });
+    const res = await fetch(cfg.gas, { method: "POST", redirect: "follow", body: body() });
     const t = String(await res.text() || "").trim();
     if (t === "ok") {
       setGasStale(false);
       toast("設定をGASへ送りました", "通知と報告書の宛先を更新しました");
-    } else {
-      setGasStale(true);
-      toast("GASが古いままです", "デプロイの更新が必要です（下の案内をご覧ください）");
+      return;
     }
+    setGasStale(true);
+    toast("GASが古いままです", "デプロイの更新が必要です（上の案内をご覧ください）");
+    return;
+  } catch (e) { /* 応答が読めない環境では下の方式で送る */ }
+
+  // 応答が読めない場合：送信だけ行う（届いたかはGASの v3CheckMails で確認）
+  try {
+    await fetch(cfg.gas, { method: "POST", mode: "no-cors", body: body() });
+    setGasStale(false);
+    toast("設定を送信しました", "GASの v3CheckMails で登録を確認してください");
   } catch (e) {
     setGasStale(true);
-    toast("GASへ届きませんでした", "通信状況とデプロイを確認してください");
+    toast("送信できませんでした", "通信状況とGAS URLを確認してください");
   }
 }
 
