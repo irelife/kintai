@@ -1295,6 +1295,10 @@ img[data-photo]{cursor:pointer;}
 .dc-yet{background:#fff;color:var(--muted);border:1px solid var(--border);}
 .daycount.hasover{border-color:#dc2626;}
 
+/* スマホでのタップを素直にする（拡大待ちの遅延をなくす） */
+.cell,.pillu,.pill,.scard,.tdcard,.tdng,.bcard,.btn,.fbtn,.navbtn,.routebtn,
+input,textarea,select,button{touch-action:manipulation;}
+
 /* GASのデプロイが古いときの案内 */
 .stalebar{display:flex;align-items:flex-start;gap:.6rem;background:#7f1d1d;color:#fff;
   font-size:12.5px;font-weight:600;line-height:1.65;padding:.7rem 1rem;}
@@ -7216,6 +7220,41 @@ function goGroup(g) {
 }
 
 /* ===== 起動 ===== */
+/* =========================================================
+ *  スマホの誤タップ対策
+ *  ・指が動いた（スワイプした）ときは、そのあとのタップを無効にする
+ *  ・スクロール直後のタップも無効にする
+ * ======================================================= */
+(function () {
+  if (!("ontouchstart" in window)) return;      // 触って操作する端末だけ
+  let sx = 0, sy = 0, moved = false, lastScroll = 0;
+  const MOVE = 12;            // これ以上動いたらスワイプとみなす（px）
+  const AFTER_SCROLL = 350;   // スクロールが止まってから、この時間はタップを無視（ミリ秒）
+
+  document.addEventListener("touchstart", (e) => {
+    const t = e.touches && e.touches[0]; if (!t) return;
+    sx = t.clientX; sy = t.clientY; moved = false;
+  }, { passive: true, capture: true });
+
+  document.addEventListener("touchmove", (e) => {
+    const t = e.touches && e.touches[0]; if (!t) return;
+    if (Math.abs(t.clientX - sx) > MOVE || Math.abs(t.clientY - sy) > MOVE) moved = true;
+  }, { passive: true, capture: true });
+
+  document.addEventListener("scroll", () => { lastScroll = Date.now(); },
+    { passive: true, capture: true });
+
+  document.addEventListener("click", (e) => {
+    const recent = (Date.now() - lastScroll) < AFTER_SCROLL;
+    if (!moved && !recent) return;              // 素直なタップは通す
+    e.stopPropagation();
+    e.preventDefault();
+    if (document.activeElement && document.activeElement.blur) {
+      try { document.activeElement.blur(); } catch (_) {}
+    }
+  }, true);
+})();
+
 function boot() {
   document.querySelectorAll(".hd-nav button").forEach((b) => { b.onclick = () => goGroup(b.dataset.group); });
   document.querySelectorAll(".hd-sub button").forEach((b) => { b.onclick = () => go(b.dataset.tab); });
