@@ -1295,6 +1295,15 @@ img[data-photo]{cursor:pointer;}
 .dc-yet{background:#fff;color:var(--muted);border:1px solid var(--border);}
 .daycount.hasover{border-color:#dc2626;}
 
+/* 現地確認の案内 */
+.os-check{display:flex;align-items:center;gap:.4rem;font-size:12.5px;font-weight:600;
+  color:var(--muted);background:var(--bg);border-radius:.5rem;padding:.5rem .7rem;margin-top:.5rem;}
+.os-ng{display:flex;align-items:flex-start;gap:.5rem;font-size:13px;font-weight:600;
+  color:#7f1d1d;background:#fff5f5;border:2px solid #dc2626;border-radius:.6rem;
+  padding:.7rem .85rem;margin-top:.5rem;line-height:1.65;}
+.os-ng b{font-weight:800;color:#b91c1c;}
+.os-ng > svg{flex:none;margin-top:.15rem;color:#dc2626;}
+
 /* スマホでのタップを素直にする（拡大待ちの遅延をなくす） */
 .cell,.pillu,.pill,.scard,.tdcard,.tdng,.bcard,.btn,.fbtn,.navbtn,.routebtn,
 input,textarea,select,button{touch-action:manipulation;}
@@ -3168,9 +3177,7 @@ function renderCal() {
         // 到着・完了の時刻（記録があれば出す）
         const g = r.geo || {};
         const hm = (x) => x ? new Date(x.at).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }) : "";
-        const times = (g.open || g.done)
-          ? `<span class="cell-pop-g">${g.open ? `到着 ${hm(g.open)}` : ""}${g.open && g.done ? "／" : ""}${g.done ? `完了 ${hm(g.done)}` : ""}</span>`
-          : "";
+        const times = "";   // 到着・完了の時刻は表示しない（記録には残しています）
         return `<span class="cell-pop-r" data-popopen="${esc(n)}|${ds}" style="border:1px solid ${t.bd};background:${t.bg}">
           <span class="cell-pop-n">${esc(n)}${times}</span><span class="cell-pop-s">${stt}</span>
           <button class="cell-pop-x" data-unsched="${esc(ds)}|${esc(n)}" title="予定から外す" aria-label="予定から外す">×</button></span>`;
@@ -3432,7 +3439,7 @@ function renderSide() {
         const box = (x, lbl) => `<div class="sgeo ${x ? "" : "empty"}">
           <span class="sgeo-l">${lbl}</span><span class="sgeo-t">${hm(x)}</span>
           ${x && x.addr ? `<span class="sgeo-a">${esc(x.addr)}</span>` : ""}</div>`;
-        return `<div class="sgeo-row">${box(g.open, "到着")}${box(g.done, "完了")}</div>`;
+        return "";   // 到着・完了の時刻は表示しない（記録には残しています）
       })()}
       </div>`;
   }).join("") + lateH + dueH + sendCardHTML();
@@ -4036,6 +4043,7 @@ function renderModal() {
           <div class="mbox-n">${esc(name)}
             <button class="navbtn" id="m-nav" title="この物件までの道順を開く">${ic("pin", 13)} ナビ</button></div>
           <div class="mbox-a">${esc(p.addr)}</div>
+          <div id="onsite-warn"></div>
           <div class="mbox-s">
             <span style="color:var(--teal-700)">完了: ${doneItems.length}/${myItems.length}箇所</span>
             ${ng ? `<span style="color:var(--am-700)">要対応: ${ng}件</span>` : ""}
@@ -4154,7 +4162,7 @@ function renderModal() {
             </div>
             <div id="ngentry"></div>
           </div>
-          <div class="field">
+          <div class="field" style="display:none">
             <label>作業場所の記録</label>
             ${(() => {
               const g = r.geo || {};
@@ -4266,7 +4274,7 @@ function renderModal() {
     };
   }
   renderNgEntry(name, date);
-  stampPos(name, date, "open");   // 到着時の位置を1回だけ残す
+  checkOnSite(name, date);   // 現地にいるか確かめてから、到着の位置を残す
   const ngSend = q("#m-ngsend");
   if (ngSend) ngSend.onclick = async () => {
     ngSend.disabled = true;
@@ -5032,6 +5040,57 @@ async function propCoord(name, force) {
   return c;
 }
 // 記録に位置を残す（phase: "open" 到着時 / "done" 完了時）
+/* =========================================================
+ *  現地にいるかの確認（離れた場所では記録を始めさせない）
+ * ======================================================= */
+const ONSITE_M = 300;   // この距離までは現地とみなす（m）
+
+async function checkOnSite(name, date) {
+  const r = getRep(name, date);
+  if (r.geo && r.geo.open) return true;         // すでに到着を記録済み
+  const box = document.getElementById("onsite-warn");
+  const show = (html) => { if (box) box.innerHTML = html; };
+
+  show(`<div class="os-check">${ic("pin", 15)} 現在地を確認しています…</div>`);
+  const pos = await getPos();
+  if (!pos) {
+    show(`<div class="os-ng">${ic("alert", 16)}
+      <div><b>現在地が取れませんでした。</b>位置情報を許可してから開き直してください。<br>
+      電波が届かない場所では、外に出てからもう一度お試しください。</div></div>`);
+    return false;
+  }
+  const pc = await propCoord(name);
+  if (!pc) {                                     // 物件の座標が無いときは通す
+    show("");
+    stampPos(name, date, "open");
+    return true;
+  }
+  const d = distM(pos, pc);
+  if (d != null && d > ONSITE_M) {
+    const km = (d >= 1000) ? (d / 1000).toFixed(1) + "km" : Math.round(d) + "m";
+    show(`<div class="os-ng">${ic("alert", 16)}
+      <div><b>この物件から ${km} 離れています。</b>
+      現地に着いてから記録を始めてください。<br>
+      物件の前まで移動して、この画面を開き直してください。</div></div>`);
+    lockRecord(true);
+    return false;
+  }
+  show("");
+  lockRecord(false);
+  stampPos(name, date, "open");
+  return true;
+}
+
+// 現地でないときは、写真の追加と要対応の登録を止める
+function lockRecord(on) {
+  const m = document.getElementById("modal-host");
+  if (!m) return;
+  m.querySelectorAll(".dropbox,.dropbox-add,[data-pickitem],#ng-add,.ngadd").forEach((el) => {
+    el.style.pointerEvents = on ? "none" : "";
+    el.style.opacity = on ? ".45" : "";
+  });
+}
+
 async function stampPos(name, date, phase) {
   const pos = await getPos();
   if (!pos) return null;
