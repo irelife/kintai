@@ -3572,11 +3572,15 @@ async function buildMonthReportHTML(ym) {
   const t = today();
   // 終わっていない清掃（月が終わってから送る場合はここに出る）
   const notDone = [];
+  const doneList = [];
   dates.forEach((d) => {
     (sched[d] || []).forEach((nm) => {
-      if (getRep(nm, d).status !== "done") notDone.push({ nm, d, miss: shortShots(nm, d) });
+      const r = getRep(nm, d);
+      if (r.status !== "done") notDone.push({ nm, d, miss: shortShots(nm, d) });
+      else doneList.push({ nm, d, dd: r.doneDate || d });
     });
   });
+  doneList.sort((a, b) => (a.dd < b.dd ? -1 : a.dd > b.dd ? 1 : (a.nm < b.nm ? -1 : 1)));
 
   const row = (x) => `<div class="ngi ${x.fixed ? "" : "open"}">
       <div class="ngh">
@@ -3624,6 +3628,12 @@ async function buildMonthReportHTML(ym) {
       .warnbox{background:#fff5f5;border:2px solid #dc2626;color:#991b1b;font-weight:700;
         padding:9px 12px;border-radius:6px;margin-bottom:14px}
       .note{color:#64748b;font-size:11px;margin-top:18px;border-top:1px solid #ddd;padding-top:8px}
+      table.dl{width:100%;border-collapse:collapse;font-size:12px}
+      table.dl th{background:#f8fafc;color:#334155;text-align:left;font-weight:700;
+        padding:5px 8px;border-bottom:1px solid #cbd5e1}
+      table.dl td{padding:4px 8px;border-bottom:1px solid #eef2f6}
+      table.dl td.d{white-space:nowrap;color:#334155;width:120px}
+      table.dl td.n{white-space:nowrap;font-size:10.5px;color:#64748b}
     </style></head><body>
     <h1>清掃報告書　${Number(ym.slice(0, 4))}年${Number(ym.slice(5))}月</h1>
     <div class="sub">${ym}-01 〜 ${ym}-${pad(new Date(+ym.slice(0,4), +ym.slice(5), 0).getDate())}</div>
@@ -3640,6 +3650,15 @@ async function buildMonthReportHTML(ym) {
         <span class="dt">${fmtDate(x.d)}の予定</span></div>
       ${x.miss.length ? `<div class="ngm">写真があと：${x.miss.slice(0, 5).map(esc).join("・")}</div>` : ""}
     </div>`).join("")}` : ""}
+    <h2>完了した清掃（${doneList.length}件）</h2>
+    ${doneList.length ? `<table class="dl">
+      <tr><th>実施日</th><th>物件</th><th></th></tr>
+      ${doneList.map((x) => `<tr>
+        <td class="d">${esc(fmtDate(x.dd))}</td>
+        <td>${esc(x.nm)}</td>
+        <td class="n">${x.dd === x.d ? "" : (x.dd < x.d ? `${esc(fmtDate(x.d))}の予定・前倒し` : `${esc(fmtDate(x.d))}の予定・遅れて完了`)}</td>
+      </tr>`).join("")}
+    </table>` : `<div class="none">完了した清掃はありません。</div>`}
     <h2>未解決の要対応（${openList.length}件）</h2>
     ${openList.length ? openList.map(row).join("") : `<div class="none">未解決のものはありません。</div>`}
     <h2>解決した要対応（${fixedList.length}件）</h2>
