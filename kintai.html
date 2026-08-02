@@ -1395,6 +1395,27 @@ input,textarea,select,button{touch-action:manipulation;}
 .au-mhead{position:sticky;top:0;z-index:2;background:var(--bg);font-size:13px;font-weight:800;
   padding:.5rem .7rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;}
 .au-mhead span{font-size:12px;font-weight:700;color:var(--muted);}
+.geoedit{border:1px solid var(--teal-200,#99f6e4);background:#f0fdfa;border-radius:10px;padding:.85rem;}
+.geoedit-h{font-size:14px;font-weight:800;color:var(--teal-700,#0f766e);display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;}
+.geoedit-fix{font-size:10.5px;font-weight:800;background:#0f766e;color:#fff;border-radius:99px;padding:1px 8px;}
+.geoedit-auto{font-size:10.5px;font-weight:800;background:#fff;color:#b45309;border:1px solid #fcd34d;border-radius:99px;padding:1px 8px;}
+.geoedit-none{font-size:10.5px;font-weight:800;background:#fff;color:#b91c1c;border:1px solid #fca5a5;border-radius:99px;padding:1px 8px;}
+.geoedit-note{font-size:12px;color:var(--muted,#64748b);line-height:1.6;margin:.4rem 0 .6rem;}
+.geoedit-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
+.geoedit-btns{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem;}
+.geoedit-ok{font-size:12.5px;font-weight:700;color:#047857;margin-top:.5rem;}
+.geoedit-ng{font-size:12.5px;font-weight:700;color:#b91c1c;margin-top:.5rem;}
+.geoedit-wait{font-size:12.5px;font-weight:700;color:#64748b;margin-top:.5rem;}
+.chip-geo{font-size:10.5px;font-weight:800;border-radius:99px;padding:1px 7px;display:inline-flex;align-items:center;gap:.2rem;}
+.chip-geo.fix{background:#ecfdf5;color:#047857;border:1px solid #6ee7b7;}
+.chip-geo.auto{background:#fffbeb;color:#b45309;border:1px solid #fcd34d;}
+.chip-geo.none{background:#fff5f5;color:#b91c1c;border:1px solid #fca5a5;}
+.cc-list{display:flex;flex-direction:column;gap:.5rem;max-height:60vh;overflow:auto;}
+.cc-row{text-align:left;border:1px solid #fca5a5;background:#fff8f8;border-radius:9px;padding:.6rem .8rem;cursor:pointer;}
+.cc-row:hover{background:#fff1f1;}
+.cc-n{font-size:14px;font-weight:800;color:#0f172a;}
+.cc-a{font-size:12px;color:#64748b;margin-top:1px;}
+.cc-w{font-size:12px;font-weight:700;color:#b91c1c;margin-top:3px;display:flex;align-items:center;gap:.25rem;}
 .au-geo{font-size:12.5px;font-weight:600;color:#b45309;background:#fffbeb;
   border:1px solid #fcd34d;border-radius:.5rem;padding:.6rem .8rem;line-height:1.6;}
 .au-geo.ok{color:var(--em-700,#047857);background:#ecfdf5;border-color:#6ee7b7;}
@@ -1602,7 +1623,7 @@ input,textarea,select,button{touch-action:manipulation;}
         <p>清掃する建物の一覧です。物件の追加・住所の修正と、年間の清掃予定づくりをここで行います</p>
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        
+        <button class="btn btn-outline" id="p-coord"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> 座標の確認</button>
         <button class="btn btn-default" id="p-add"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg> 物件追加</button>
       </div>
     </div>
@@ -3812,13 +3833,22 @@ function renderProps() {
       </div>
       <div class="bcard-m">
         <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
+        ${p.geoFixed ? `<span class="chip-geo fix">${ic("pin", 10)} 座標ずみ</span>`
+          : (p.lat && p.lng ? `<span class="chip-geo auto">${ic("pin", 10)} 自動</span>`
+                            : `<span class="chip-geo none">${ic("alert", 10)} 座標なし</span>`)}
         ${p.mno ? `<span style="font-size:11px;color:var(--muted-2)">管理番号 ${esc(p.mno)}</span>` : ""}
       </div>
-      <button class="btn btn-outline btn-sm" data-sched="${esc(p.name)}">${ic("calendar", 14)} 清掃を予定する</button>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn btn-outline btn-sm" data-sched="${esc(p.name)}" style="flex:1">${ic("calendar", 14)} 清掃を予定する</button>
+        <button class="btn btn-outline btn-sm" data-pedit="${esc(p.name)}">${ic("pin", 14)} 編集</button>
+      </div>
     </div>`;
   }).join("");
   wrap.querySelectorAll("[data-sched]").forEach((b) => {
     b.onclick = () => openSched(b.dataset.sched);
+  });
+  wrap.querySelectorAll("[data-pedit]").forEach((b) => {
+    b.onclick = () => openPropEdit(b.dataset.pedit);
   });
 }
 
@@ -4621,7 +4651,7 @@ function workDaysOf(y, m, dows, skipHoliday) {
 
 // 座標が無い物件を住所から一括取得する（国土地理院の検索を使う）
 async function fillMissingCoords(onProgress) {
-  const targets = props.filter((p) => !(p.lat && p.lng) && p.addr);
+  const targets = props.filter((p) => !(p.lat && p.lng) && p.addr && !p.geoFixed);
   let ok = 0, ng = 0;
   for (let i = 0; i < targets.length; i++) {
     const p = targets[i];
@@ -4873,6 +4903,179 @@ async function maybeAutoSchedNextMonth() {
   }
 }
 
+/* ===== 物件の編集（住所・座標） =====
+   座標を手で入れると geoFixed が立ち、以後は住所からの自動取得で上書きされない */
+function openPropEdit(name) {
+  const p = props.find((x) => x.name === name);
+  if (!p) return;
+  const host = document.getElementById("modal-host");
+  host.innerHTML = `<div class="mask" id="mask3">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-h"><h2>物件の編集</h2><button class="x" id="e-x">${ic("x", 18)}</button></div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="field"><label>物件名</label>
+          <input class="input" id="e-name" value="${esc(p.name)}"></div>
+        <div class="field"><label>住所</label>
+          <input class="input" id="e-addr" value="${esc(p.addr || "")}"></div>
+
+        <div class="geoedit">
+          <div class="geoedit-h">${ic("pin", 15)} 現地の座標
+            ${p.geoFixed ? `<span class="geoedit-fix">手入力ずみ</span>`
+              : (p.lat && p.lng ? `<span class="geoedit-auto">住所から自動取得</span>`
+                                : `<span class="geoedit-none">未設定</span>`)}</div>
+          <div class="geoedit-note">
+            この座標から300m以内でないと、現地での記録が始められません。<br>
+            Googleマップで物件を長押しすると出る数字を、下の欄に貼り付けてください。
+          </div>
+          <div class="field"><label>貼り付け（例：34.4853, 133.3625）</label>
+            <input class="input" id="e-paste" placeholder="ここに貼り付けると下の2つに入ります"></div>
+          <div class="geoedit-row">
+            <div class="field"><label>緯度</label>
+              <input class="input" id="e-lat" inputmode="decimal" value="${p.lat || ""}"></div>
+            <div class="field"><label>経度</label>
+              <input class="input" id="e-lng" inputmode="decimal" value="${p.lng || ""}"></div>
+          </div>
+          <div class="geoedit-btns">
+            <button class="btn btn-outline btn-sm" id="e-map">${ic("pin", 14)} 地図で確かめる</button>
+            <button class="btn btn-outline btn-sm" id="e-auto">${ic("calendar", 14)} 住所から取り直す</button>
+          </div>
+          <div id="e-msg"></div>
+        </div>
+
+        <div class="field"><label>備考</label>
+          <textarea class="input" id="e-note">${esc(p.note || "")}</textarea></div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem">
+          <button class="btn btn-outline" id="e-cancel">キャンセル</button>
+          <button class="btn btn-default" id="e-ok">保存する</button>
+        </div>
+      </div></div></div>`;
+
+  const close = () => { host.innerHTML = ""; };
+  const q = (id) => host.querySelector(id);
+  const msg = (h) => { q("#e-msg").innerHTML = h; };
+  q("#e-x").onclick = close;
+  q("#e-cancel").onclick = close;
+  q("#mask3").onclick = (e) => { if (e.target.id === "mask3") close(); };
+
+  // 「34.4853, 133.3625」「34.4853,133.3625」などを2つに分ける
+  const splitPaste = (s) => {
+    const m = String(s || "").match(/(-?\d+\.\d+)[^\d-]+(-?\d+\.\d+)/);
+    return m ? { lat: m[1], lng: m[2] } : null;
+  };
+  q("#e-paste").oninput = (e) => {
+    const c = splitPaste(e.target.value);
+    if (!c) return;
+    q("#e-lat").value = c.lat; q("#e-lng").value = c.lng;
+    msg(`<div class="geoedit-ok">${ic("check2", 13)} 緯度・経度に取り込みました</div>`);
+  };
+
+  q("#e-map").onclick = () => {
+    const la = parseFloat(q("#e-lat").value), ln = parseFloat(q("#e-lng").value);
+    if (!la || !ln) { msg(`<div class="geoedit-ng">緯度・経度を入れてください。</div>`); return; }
+    window.open(`https://www.google.com/maps/search/?api=1&query=${la},${ln}`, "_blank", "noopener");
+  };
+
+  q("#e-auto").onclick = async () => {
+    const addr = q("#e-addr").value.trim();
+    if (!addr) { msg(`<div class="geoedit-ng">住所を入れてください。</div>`); return; }
+    msg(`<div class="geoedit-wait">住所から探しています…</div>`);
+    const c = await geocodeAddr(addr);
+    if (!c) { msg(`<div class="geoedit-ng">見つかりませんでした。地図から貼り付けてください。</div>`); return; }
+    q("#e-lat").value = c.lat; q("#e-lng").value = c.lng;
+    msg(`<div class="geoedit-ok">${ic("check2", 13)} 取得しました。地図で確かめてください。</div>`);
+  };
+
+  q("#e-ok").onclick = () => {
+    const nm = q("#e-name").value.trim();
+    if (!nm) { toast("物件名を入れてください"); return; }
+    if (nm !== p.name && props.some((x) => x.name === nm)) { toast("同じ名前の物件があります", nm); return; }
+    const la = parseFloat(q("#e-lat").value), ln = parseFloat(q("#e-lng").value);
+    if ((q("#e-lat").value || q("#e-lng").value) && !(la && ln)) {
+      msg(`<div class="geoedit-ng">緯度・経度は両方を入れてください。</div>`); return;
+    }
+    if (la && ln && (la < 20 || la > 46 || ln < 122 || ln > 154)) {
+      msg(`<div class="geoedit-ng">日本の範囲から外れています。数字をご確認ください。</div>`); return;
+    }
+    // 物件名を変えたときは、予定と記録のキーも合わせて付け替える
+    if (nm !== p.name) {
+      const old = p.name;
+      Object.keys(sched || {}).forEach((d) => {
+        sched[d] = (sched[d] || []).map((x) => (x === old ? nm : x));
+      });
+      save(K.sched, sched);
+      Object.keys(reps || {}).forEach((k) => {
+        const sep = k.lastIndexOf("|");
+        if (sep > 0 && k.slice(0, sep) === old) {
+          reps[nm + "|" + k.slice(sep + 1)] = reps[k];
+          delete reps[k];
+        }
+      });
+      save(K.reps, reps);
+      if (itemlists[old]) { itemlists[nm] = itemlists[old]; delete itemlists[old]; save(K.itemlists, itemlists); }
+    }
+    const changed = (la !== p.lat || ln !== p.lng);
+    p.name = nm;
+    p.addr = q("#e-addr").value.trim();
+    p.note = q("#e-note").value.trim();
+    if (la && ln) { p.lat = la; p.lng = ln; if (changed) p.geoFixed = true; }
+    save(K.props, props);
+    close(); renderProps();
+    toast("保存しました", nm + (p.geoFixed ? "／座標は手入力ずみ" : ""));
+  };
+}
+
+/* 座標があやしい物件を洗い出す
+   ・座標なし
+   ・同じ市の他の物件から極端に離れている（住所の取り違えが疑われる）
+   手入力ずみ（geoFixed）は対象から外す */
+function suspectCoords() {
+  const out = [];
+  const byCity = {};
+  props.forEach((p) => {
+    const k = cityOf(p.addr).key;
+    (byCity[k] = byCity[k] || []).push(p);
+  });
+  props.forEach((p) => {
+    if (p.geoFixed) return;
+    if (!(p.lat && p.lng)) { out.push({ p, why: "座標がありません" }); return; }
+    const g = (byCity[cityOf(p.addr).key] || []).filter((x) => x !== p && x.lat && x.lng);
+    if (!g.length) return;
+    let near = Infinity;
+    g.forEach((x) => { const d = geoDist(p, x); if (d < near) near = d; });
+    if (near > 15) out.push({ p, why: `同じ市の他の物件から ${Math.round(near)}km 離れています` });
+  });
+  return out;
+}
+
+function openCoordCheck() {
+  const list = suspectCoords();
+  const host = document.getElementById("modal-host");
+  host.innerHTML = `<div class="mask" id="mask3">
+    <div class="modal wide" role="dialog" aria-modal="true">
+      <div class="modal-h"><h2>座標の確認</h2><button class="x" id="c-x">${ic("x", 18)}</button></div>
+      <div class="geoedit-note" style="margin-bottom:.8rem">
+        住所から自動で取った座標のうち、あやしいものを並べています。
+        物件をタップして、地図から正しい座標を貼り付けてください。
+      </div>
+      ${list.length
+        ? `<div class="cc-list">${list.map((x) => `<button class="cc-row" data-cc="${esc(x.p.name)}">
+            <div class="cc-n">${esc(x.p.name)}</div>
+            <div class="cc-a">${esc(x.p.addr || "住所なし")}</div>
+            <div class="cc-w">${ic("alert", 12)} ${esc(x.why)}</div>
+          </button>`).join("")}</div>`
+        : `<div class="card empty">あやしい物件はありません。</div>`}
+      <div class="geoedit-note" style="margin-top:.8rem">
+        手入力ずみ ${props.filter((p) => p.geoFixed).length}件 ／ 全 ${props.length}件
+      </div>
+    </div></div>`;
+  const close = () => { host.innerHTML = ""; };
+  host.querySelector("#c-x").onclick = close;
+  host.querySelector("#mask3").onclick = (e) => { if (e.target.id === "mask3") close(); };
+  host.querySelectorAll("[data-cc]").forEach((b) => {
+    b.onclick = () => openPropEdit(b.dataset.cc);
+  });
+}
+
 function openAdd() {
   const host = document.getElementById("modal-host");
   host.innerHTML = `<div class="mask" id="mask3">
@@ -5107,9 +5310,11 @@ async function geocodeAddr(addr) {
   return null;
 }
 // 物件の座標を取得（未取得なら住所から引いて保存）
+// geoFixed が立っている物件は、肉太郎さんが手で入れた座標なので上書きしない
 async function propCoord(name, force) {
   const p = props.find((x) => x.name === name);
   if (!p) return null;
+  if (p.geoFixed && p.lat && p.lng) return { lat: p.lat, lng: p.lng };
   if (!force && p.lat && p.lng) return { lat: p.lat, lng: p.lng };
   const c = await geocodeAddr(p.addr);
   if (c) { p.lat = c.lat; p.lng = c.lng; save(K.props, props); }
@@ -7406,6 +7611,7 @@ function boot() {
     cursor = { y: t.getFullYear(), m: t.getMonth() };
     selDate = today(); renderCal();
   };
+  document.getElementById("p-coord").onclick = openCoordCheck;
   document.getElementById("p-add").onclick = openAdd;
   const plq = document.getElementById("pl-q");
   if (plq) plq.oninput = () => { plQuery = plq.value; renderPropList(); };
