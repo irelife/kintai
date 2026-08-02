@@ -3339,7 +3339,12 @@ function renderSide() {
     if (!items.length) {
       wrap.innerHTML = `<div class="card empty">該当する物件はありません。</div>`;
     } else {
-      wrap.innerHTML = items.map(({ name, date }) => {
+      const fBulk = `<div class="bulkbar" id="fbulk-bar">
+          <label class="bulk-all"><input type="checkbox" id="fbulk-all"> すべて選ぶ</label>
+          <span class="bulk-n" id="fbulk-n">0件を選択</span>
+          <button class="bulk-del" id="fbulk-del" disabled>${ic("x", 14)} 予定から外す</button>
+        </div>`;
+      wrap.innerHTML = fBulk + items.map(({ name, date }) => {
         const p = props.find((x) => x.name === name) || { addr: "" };
         const r = getRep(name, date);
         const c = cityOf(p.addr), st = CITY_STYLE[c.key];
@@ -3349,7 +3354,9 @@ function renderSide() {
           : r.status === "doing" ? `<span class="badge badge-violet">入力途中</span>`
           : `<span class="badge badge-slate">清掃前</span>`;
         return `<div class="card scard" data-n="${esc(name)}" data-d="${esc(date)}" style="border-color:${sst.bd};background:${sst.bg}">
-          <div class="scard-h"><div class="scard-n">${esc(name)}</div>${badge}</div>
+          <div class="scard-h">
+            <label class="scard-ck" title="選ぶ"><input type="checkbox" class="fbulk-ck" value="${esc(name)}|${esc(date)}"></label>
+            <div class="scard-n">${esc(name)}</div>${badge}</div>
           <div class="scard-a">${esc(p.addr)}</div>
           <div class="scard-m">
             <span class="chip" style="background:${st.bg};color:${st.fg}"><i style="background:${st.dot}"></i>${c.label}</span>
@@ -3358,8 +3365,49 @@ function renderSide() {
           </div></div>`;
       }).join("");
       wrap.querySelectorAll(".scard").forEach((c) => {
-        c.onclick = () => { openRep = { name: c.dataset.n, date: c.dataset.d }; openItem = null; renderModal(); };
+        c.onclick = (e) => {
+          if (e.target.closest(".scard-ck")) return;
+          openRep = { name: c.dataset.n, date: c.dataset.d }; openItem = null; renderModal();
+        };
       });
+      // まとめて予定から外す（月の一覧から）
+      (() => {
+        const cks = () => Array.from(wrap.querySelectorAll(".fbulk-ck"));
+        const picked = () => cks().filter((x) => x.checked).map((x) => x.value);
+        const nEl = wrap.querySelector("#fbulk-n");
+        const delEl = wrap.querySelector("#fbulk-del");
+        const allEl = wrap.querySelector("#fbulk-all");
+        if (!delEl) return;
+        const refresh = () => {
+          const n = picked().length;
+          nEl.textContent = `${n}件を選択`;
+          delEl.disabled = !n;
+          if (allEl) allEl.checked = (n > 0 && n === cks().length);
+        };
+        cks().forEach((x) => { x.onclick = (e) => { e.stopPropagation(); refresh(); }; });
+        if (allEl) allEl.onclick = (e) => {
+          e.stopPropagation();
+          const on = allEl.checked;
+          cks().forEach((x) => { x.checked = on; });
+          refresh();
+        };
+        delEl.onclick = () => {
+          const list = picked();
+          if (!list.length) return;
+          if (!confirm(`選んだ ${list.length}件を予定から外します。\n入力した写真・記録は残ります。\nよろしいですか？`)) return;
+          list.forEach((v) => {
+            const sep = v.lastIndexOf("|");
+            const nm = v.slice(0, sep), ds = v.slice(sep + 1);
+            sched[ds] = (sched[ds] || []).filter((x) => x !== nm);
+            if (!sched[ds].length) delete sched[ds];
+          });
+          save(K.sched, sched);
+          toast("予定から外しました", `${list.length}件`);
+          renderCal();
+          if (tab === "prop") renderProps();
+        };
+        refresh();
+      })();
     }
     const back = document.getElementById("side-back");
     if (back) back.onclick = () => { filterView = null; renderCal(); };
