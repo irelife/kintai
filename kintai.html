@@ -1395,6 +1395,10 @@ input,textarea,select,button{touch-action:manipulation;}
 .au-mhead{position:sticky;top:0;z-index:2;background:var(--bg);font-size:13px;font-weight:800;
   padding:.5rem .7rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;}
 .au-mhead span{font-size:12px;font-weight:700;color:var(--muted);}
+.bcard-x{flex:none;margin-left:auto;width:26px;height:26px;border-radius:7px;cursor:pointer;
+  border:1px solid #fca5a5;background:#fff;color:#b91c1c;font-size:16px;font-weight:800;line-height:1;
+  display:flex;align-items:center;justify-content:center;}
+.bcard-x:hover{background:#fff1f1;}
 .bulkbar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
   border:1px solid var(--line,#e2e8f0);background:#f8fafc;border-radius:9px;
   padding:.5rem .7rem;margin-bottom:.6rem;}
@@ -3925,9 +3929,10 @@ function renderProps() {
   wrap.innerHTML = list.map((p) => {
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
     const tn = TONE_NORMAL;   // 地域で色を変えず緑で統一
-    return `<div class="card bcard" style="border-color:${tn.bd};background:${tn.bg}">
+    return `<div class="card bcard" data-pname="${esc(p.name)}" style="border-color:${tn.bd};background:${tn.bg}">
       <div class="bcard-h">
         <span class="bcard-i">${ic("building", 15)}</span>
+        <button class="bcard-x" data-pdel="${esc(p.name)}" title="この物件を削除">×</button>
         <div style="min-width:0;flex:1">
           <div class="bcard-n">${esc(p.name)}</div>
           <div class="bcard-a">${ic("pin", 11)}<span>${esc(p.addr)}</span></div>
@@ -3953,10 +3958,22 @@ function renderProps() {
     </div>`;
   }).join("");
   wrap.querySelectorAll("[data-sched]").forEach((b) => {
-    b.onclick = () => openSched(b.dataset.sched);
+    b.onclick = (e) => { e.stopPropagation(); openSched(b.dataset.sched); };
+  });
+  // カードのどこを押しても予定を入れられる（ボタン以外の場所）
+  wrap.querySelectorAll(".bcard").forEach((c) => {
+    c.style.cursor = "pointer";
+    c.onclick = (e) => {
+      if (e.target.closest("button") || e.target.closest("a")) return;
+      const nm = c.dataset.pname;
+      if (nm) openSched(nm);
+    };
   });
   wrap.querySelectorAll("[data-pedit]").forEach((b) => {
     b.onclick = () => openPropEdit(b.dataset.pedit);
+  });
+  wrap.querySelectorAll("[data-pdel]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); deleteProp(b.dataset.pdel); };
   });
 }
 
@@ -5009,6 +5026,29 @@ async function maybeAutoSchedNextMonth() {
         body: new URLSearchParams({ payload: JSON.stringify({ type: "notice", text: txt, to: "field" }) }) });
     } catch (e) {}
   }
+}
+
+/* 物件を削除する（予定も一緒に外す。清掃記録は残す） */
+function deleteProp(name) {
+  const p = props.find((x) => x.name === name);
+  if (!p) return;
+  let cnt = 0;
+  Object.keys(sched || {}).forEach((d) => {
+    if ((sched[d] || []).includes(name)) cnt++;
+  });
+  const msg = `「${name}」を物件リストから削除します。\n`
+    + (cnt ? `入っている予定 ${cnt}件 も一緒に外れます。\n` : "")
+    + `これまでの清掃記録は残ります。\n\nよろしいですか？`;
+  if (!confirm(msg)) return;
+  Object.keys(sched || {}).forEach((d) => {
+    sched[d] = (sched[d] || []).filter((x) => x !== name);
+    if (!sched[d].length) delete sched[d];
+  });
+  props = props.filter((x) => x.name !== name);
+  save(K.sched, sched);
+  save(K.props, props);
+  toast("物件を削除しました", name);
+  renderProps(); renderCal();
 }
 
 /* ===== 物件の編集（住所・座標） =====
