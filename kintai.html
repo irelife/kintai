@@ -1642,8 +1642,8 @@ input,textarea,select,button{touch-action:manipulation;}
     </div>
     <div class="filters">
       <input class="input" id="p-q" placeholder="物件名・住所で絞り込む">
-      <button class="fbtn on" data-sched="all">すべて表示</button>
-      <button class="fbtn" data-sched="none">予定なしのみ</button>
+      <button class="fbtn" data-sched="all">すべて表示</button>
+      <button class="fbtn on" data-sched="none">予定が入っていない物件</button>
       <span class="fsep"></span>
       <button class="fbtn on" data-city="all">すべて</button>
       <button class="fbtn" data-city="fukuyama">福山市</button>
@@ -2103,7 +2103,7 @@ let openItem = null;    // 展開中の点検項目 key
 let doneOpen = false;   // 完了フォルダの開閉
 let _modalScroll = 0;   // モーダルのスクロール位置（再描画で保持）
 let filterView = null;  // {filter} 月全体の絞り込み一覧を右パネルに出す
-let filterQ = "", filterCity = "all", filterSched = "all";
+let filterQ = "", filterCity = "all", filterSched = "none";   // 既定は「予定なしのみ」＝予定を入れた物件はリストから消える
 let ktMonth = (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() }; })();
 
 const repId = (n, d) => `${n}|${d}`;
