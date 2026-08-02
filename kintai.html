@@ -1602,7 +1602,7 @@ input,textarea,select,button{touch-action:manipulation;}
         <p>清掃する建物の一覧です。物件の追加・住所の修正と、年間の清掃予定づくりをここで行います</p>
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <button class="btn btn-sched" id="p-auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9 14l2 2 4-4"/></svg> 予定を自動作成</button>
+        
         <button class="btn btn-default" id="p-add"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg> 物件追加</button>
       </div>
     </div>
@@ -4816,6 +4816,63 @@ function commitAutoPlan(host) {
   toast("予定を自動作成しました", `${label}／${n}件`);
 }
 
+/* 月末3日前になったら、翌月の予定を自動で作る（アプリを開いたときに判定）
+   すでに翌月の予定がある物件は対象外。作成したらLINEで知らせる */
+async function maybeAutoSchedNextMonth() {
+  const t = parseYmd(today());
+  const lastDay = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  if (t.getDate() < lastDay - 3) return;                 // 月末3日前より前は何もしない
+
+  const nx = new Date(t.getFullYear(), t.getMonth() + 1, 1);
+  const ym = `${nx.getFullYear()}-${pad(nx.getMonth() + 1)}`;
+  cfg.autoSchedMonths = cfg.autoSchedMonths || [];
+  if (cfg.autoSchedMonths.includes(ym)) return;          // その月はもう作成済み
+
+  // 翌月にすでに予定が入っている物件は除外する
+  const already = new Set();
+  Object.keys(sched || {}).forEach((d) => {
+    if (d.slice(0, 7) !== ym) return;
+    (sched[d] || []).forEach((n) => already.add(n));
+  });
+  const route = autoRoute(props).filter((p) => !already.has(p.name));
+  const days = workDaysOf(nx.getFullYear(), nx.getMonth(), [1, 2, 3, 4, 5], true);  // 平日・祝日を除く
+  if (!route.length || !days.length) return;
+
+  // 1日あたりの件数は、月内に収まるよう自動で決める
+  const base = Math.floor(route.length / days.length);
+  const rem = route.length % days.length;
+  let idx = 0, made = 0;
+  days.forEach((ds, i) => {
+    if (idx >= route.length) return;
+    const n = base + (i < rem ? 1 : 0);
+    if (n <= 0) return;
+    sched[ds] = sched[ds] || [];
+    route.slice(idx, idx + n).forEach((p) => {
+      if (!sched[ds].includes(p.name)) { sched[ds].push(p.name); made++; }
+    });
+    idx += n;
+  });
+  if (!made) return;
+
+  save(K.sched, sched);
+  cfg.autoSchedMonths = cfg.autoSchedMonths.concat([ym]);
+  save(K.cfg, cfg);
+  toast("翌月の予定を自動作成しました", `${Number(ym.slice(5))}月分／${made}件`);
+  try { renderSide(); } catch (e) {}
+
+  // LINEで知らせる（GASの notice を使う）
+  if (cfg.gas) {
+    const txt = `📅 ${Number(ym.slice(0, 4))}年${Number(ym.slice(5))}月の清掃予定を作成しました\n`
+      + `${made}件を ${days.length}日に割り振りました（平日・祝日を除く）\n`
+      + (already.size ? `※ すでに予定が入っていた ${already.size}件は除いています\n` : "")
+      + `アプリのカレンダーでご確認ください。`;
+    try {
+      await fetch(cfg.gas, { method: "POST", mode: "no-cors",
+        body: new URLSearchParams({ payload: JSON.stringify({ type: "notice", text: txt, to: "field" }) }) });
+    } catch (e) {}
+  }
+}
+
 function openAdd() {
   const host = document.getElementById("modal-host");
   host.innerHTML = `<div class="mask" id="mask3">
@@ -7350,7 +7407,6 @@ function boot() {
     selDate = today(); renderCal();
   };
   document.getElementById("p-add").onclick = openAdd;
-  document.getElementById("p-auto").onclick = openAutoSched;
   const plq = document.getElementById("pl-q");
   if (plq) plq.oninput = () => { plQuery = plq.value; renderPropList(); };
   const pladd = document.getElementById("pl-add");
@@ -7467,6 +7523,7 @@ function boot() {
   { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "today"); }
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
   setTimeout(() => { try { checkPrevMonthReport(); } catch (e) {} }, 4000);
+  setTimeout(() => { try { maybeAutoSchedNextMonth(); } catch (e) {} }, 5000);
   cleanupRemovedItems();   // 要対応へ移した旧項目の過去データを掃除（初回のみ）
   fixAllStatus();          // 写真枚数とステータスの食い違いを直す（2枚ルールに揃える）
   // 起動時：勤怠同期URLが設定済みなら最新を取り込む
