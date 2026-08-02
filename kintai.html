@@ -1395,6 +1395,19 @@ input,textarea,select,button{touch-action:manipulation;}
 .au-mhead{position:sticky;top:0;z-index:2;background:var(--bg);font-size:13px;font-weight:800;
   padding:.5rem .7rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;}
 .au-mhead span{font-size:12px;font-weight:700;color:var(--muted);}
+.bulkbar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
+  border:1px solid var(--line,#e2e8f0);background:#f8fafc;border-radius:9px;
+  padding:.5rem .7rem;margin-bottom:.6rem;}
+.bulk-all{display:flex;align-items:center;gap:.35rem;font-size:13px;font-weight:700;
+  color:var(--fg,#0f172a);cursor:pointer;user-select:none;}
+.bulk-all input{width:18px;height:18px;accent-color:#0f766e;}
+.bulk-n{font-size:12px;font-weight:700;color:var(--muted,#64748b);margin-left:auto;}
+.bulk-del{font-size:12.5px;font-weight:800;border-radius:7px;padding:.35rem .7rem;cursor:pointer;
+  background:#fff;color:#b91c1c;border:1px solid #fca5a5;display:inline-flex;align-items:center;gap:.25rem;}
+.bulk-del:hover:not(:disabled){background:#fff1f1;}
+.bulk-del:disabled{color:#cbd5e1;border-color:#e2e8f0;cursor:default;}
+.scard-ck{display:flex;align-items:center;padding:.1rem .35rem .1rem 0;cursor:pointer;}
+.scard-ck input{width:19px;height:19px;accent-color:#0f766e;}
 .geoedit{border:1px solid var(--teal-200,#99f6e4);background:#f0fdfa;border-radius:10px;padding:.85rem;}
 .geoedit-h{font-size:14px;font-weight:800;color:var(--teal-700,#0f766e);display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;}
 .geoedit-fix{font-size:10.5px;font-weight:800;background:#0f766e;color:#fff;border-radius:99px;padding:1px 8px;}
@@ -3431,7 +3444,12 @@ function renderSide() {
         <span>現在地から、カレンダーの並び順で案内します</span>
       </button>`
     : "";
-  wrap.innerHTML = routeCard + list.map((n) => {
+  const bulkBar = `<div class="bulkbar" id="bulk-bar">
+      <label class="bulk-all"><input type="checkbox" id="bulk-all"> すべて選ぶ</label>
+      <span class="bulk-n" id="bulk-n">0件を選択</span>
+      <button class="bulk-del" id="bulk-del" disabled>${ic("x", 14)} 予定から外す</button>
+    </div>`;
+  wrap.innerHTML = routeCard + bulkBar + list.map((n) => {
     const p = props.find((x) => x.name === n) || { addr: "" };
     const r = getRep(n, selDate);
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
@@ -3444,7 +3462,9 @@ function renderSide() {
       : r.status === "doing" ? `<span class="badge badge-violet">入力途中</span>`
       : `<span class="badge badge-slate">清掃前</span>`;
     return `<div class="card scard" data-n="${esc(n)}" style="border-color:${sst.bd};background:${sst.bg}">
-      <div class="scard-h"><div class="scard-n">${esc(n)}</div>${badge}
+      <div class="scard-h">
+        <label class="scard-ck" title="選ぶ"><input type="checkbox" class="bulk-ck" value="${esc(n)}"></label>
+        <div class="scard-n">${esc(n)}</div>${badge}
         <button class="navbtn" data-nav="${esc(n)}" title="この物件までの道順を開く">${ic("pin", 13)} ナビ</button></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
@@ -3466,12 +3486,47 @@ function renderSide() {
   }).join("") + lateH + dueH + sendCardHTML();
 
   wrap.querySelectorAll(".scard").forEach((c) => {
-    c.onclick = () => {
+    c.onclick = (e) => {
+      if (e.target.closest(".scard-ck")) return;   // チェックはカードを開かない
       // 遅延完了カードは予定日の記録を開く（data-d を持っている）
       openRep = { name: c.dataset.n, date: c.dataset.d || selDate };
       openItem = null; renderModal();
     };
   });
+  // まとめて予定から外す
+  (() => {
+    const cks = () => Array.from(wrap.querySelectorAll(".bulk-ck"));
+    const picked = () => cks().filter((x) => x.checked).map((x) => x.value);
+    const nEl = wrap.querySelector("#bulk-n");
+    const delEl = wrap.querySelector("#bulk-del");
+    const allEl = wrap.querySelector("#bulk-all");
+    if (!delEl) return;
+    const refresh = () => {
+      const n = picked().length;
+      nEl.textContent = `${n}件を選択`;
+      delEl.disabled = !n;
+      if (allEl) allEl.checked = (n > 0 && n === cks().length);
+    };
+    cks().forEach((x) => { x.onclick = (e) => { e.stopPropagation(); refresh(); }; });
+    if (allEl) allEl.onclick = (e) => {
+      e.stopPropagation();
+      const on = allEl.checked;
+      cks().forEach((x) => { x.checked = on; });
+      refresh();
+    };
+    delEl.onclick = () => {
+      const names = picked();
+      if (!names.length) return;
+      if (!confirm(`${fmtDate(selDate)} の予定から ${names.length}件を外します。\n入力した写真・記録は残ります。\nよろしいですか？`)) return;
+      sched[selDate] = (sched[selDate] || []).filter((v) => !names.includes(v));
+      if (!sched[selDate].length) delete sched[selDate];
+      save(K.sched, sched);
+      toast("予定から外しました", `${names.length}件`);
+      renderCal();
+      if (tab === "prop") renderProps();
+    };
+    refresh();
+  })();
   wrap.querySelectorAll("[data-nav]").forEach((b) => {
     b.onclick = (e) => { e.stopPropagation(); openNav(navUrlOne(b.dataset.nav)); };
   });
@@ -3555,14 +3610,19 @@ async function maybeSendMonthReport(ym, force) {
 
 /* 先月の報告書が未送信のまま月が終わっていたら、未完了のまま送る
    （完了しない月が報告なしで終わるのを防ぐ） */
+/* 終わった月のうち、まだ送っていない報告書をさかのぼって送る
+   （1〜2日にアプリを開かなくても、次に開いたときに必ず送られる） */
 async function checkPrevMonthReport() {
   if (!cfg.gas) return;
   const t = parseYmd(today());
-  const pv = new Date(t.getFullYear(), t.getMonth() - 1, 1);
-  const ym = `${pv.getFullYear()}-${pad(pv.getMonth() + 1)}`;
-  const m = monthProgress(ym);
-  if (!m.total || m.sent) return;
-  await maybeSendMonthReport(ym, true);   // 月は終わっているので強制送信
+  for (let k = 6; k >= 1; k--) {                 // 6か月前まで見る（古い月から順に）
+    const pv = new Date(t.getFullYear(), t.getMonth() - k, 1);
+    const ym = `${pv.getFullYear()}-${pad(pv.getMonth() + 1)}`;
+    const m = monthProgress(ym);
+    if (!m.total || m.sent) continue;
+    await maybeSendMonthReport(ym, true);        // 月は終わっているので強制送信
+    await new Promise((r) => setTimeout(r, 1500));   // 続けて送るときは間隔をあける
+  }
 }
 
 /* 月内の報告HTMLを組む（表紙＋要対応だけ。通常の清掃写真は載せない） */
