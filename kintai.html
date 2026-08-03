@@ -1395,6 +1395,10 @@ input,textarea,select,button{touch-action:manipulation;}
 .au-mhead{position:sticky;top:0;z-index:2;background:var(--bg);font-size:13px;font-weight:800;
   padding:.5rem .7rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;}
 .au-mhead span{font-size:12px;font-weight:700;color:var(--muted);}
+.mailbox{border:1px solid var(--line,#e2e8f0);border-radius:10px;padding:.9rem;background:#f8fafc;
+  display:flex;flex-direction:column;gap:.7rem;}
+.mailbox-h{font-size:14px;font-weight:800;color:var(--teal-700,#0f766e);}
+.mailbox-n{font-size:12px;color:var(--muted,#64748b);line-height:1.6;margin-top:-.4rem;}
 .bcard-x{flex:none;margin-left:auto;width:26px;height:26px;border-radius:7px;cursor:pointer;
   border:1px solid #fca5a5;background:#fff;color:#b91c1c;font-size:16px;font-weight:800;line-height:1;
   display:flex;align-items:center;justify-content:center;}
@@ -1766,15 +1770,23 @@ input,textarea,select,button{touch-action:manipulation;}
       <div style="display:flex;flex-direction:column;gap:1rem">
         <div class="field"><label>始業時刻（遅刻の判定に使います）</label>
           <input type="time" class="input" id="cfg-start" style="max-width:9rem"></div>
-        <div class="field"><label>PDF送信先メールアドレス①（社内用）</label>
-          <input class="input" id="cfg-mail" placeholder="例: report@example.com"></div>
-        <div class="field"><label>PDF送信先メールアドレス②（社長宛）</label>
-          <input class="input" id="cfg-mail2" placeholder="例: shacho@example.com"></div>
-        <div class="field"><label>勤務状況報告書の送信先</label>
-          <input class="input" id="cfg-mailboss" placeholder="空欄なら②へ送ります">
-          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
-            毎月1日に送る勤務状況報告書（減点のまとめ）の宛先です。清掃報告書とは別に指定できます。
-          </span>
+        <div class="mailbox">
+          <div class="mailbox-h">清掃報告書の送信先（毎月1日）</div>
+          <div class="mailbox-n">物件ごとの清掃実施状況と、要対応事項の記録です。</div>
+          <div class="field"><label>宛先①</label>
+            <input class="input" id="cfg-mail" placeholder="例: report@example.com"></div>
+          <div class="field"><label>宛先②</label>
+            <input class="input" id="cfg-mail2" placeholder="例: shacho@example.com"></div>
+          <div class="field"><label>宛先③</label>
+            <input class="input" id="cfg-mail3" placeholder="空欄でも構いません"></div>
+        </div>
+        <div class="mailbox">
+          <div class="mailbox-h">勤務状況報告書の送信先（毎月1日）</div>
+          <div class="mailbox-n">減点の集計・週ごとの推移・作業時間のまとめです。清掃報告書とは別に送ります。</div>
+          <div class="field"><label>宛先①</label>
+            <input class="input" id="cfg-mailboss" placeholder="空欄なら清掃報告書の宛先②へ送ります"></div>
+          <div class="field"><label>宛先②</label>
+            <input class="input" id="cfg-mailboss2" placeholder="空欄でも構いません"></div>
         </div>
         <div class="field"><label>西澤くんのLINE ID</label>
           <input class="input" id="cfg-seisouline" placeholder="U から始まる文字列">
@@ -3641,7 +3653,7 @@ async function maybeSendMonthReport(ym, force) {
   // 通常は「全部完了したとき」。月が終わっていれば未完了でも送る（force）
   if (!force && m.done !== m.total) return;
   if (!cfg.gas) return;
-  const to = [cfg.mail, cfg.mail2].filter(Boolean);
+  const to = [cfg.mail, cfg.mail2, cfg.mail3].filter(Boolean);
   if (!to.length) { toast("PDFの送信先が未設定です", "LINE設定でメールアドレスを登録してください"); return; }
   toast("PDF報告書を作成しています", `${Number(ym.slice(5))}月分（${m.total}件）`);
   try {
@@ -3806,7 +3818,8 @@ async function pushSeisouLineId() {
   if (!cfg.gas) return;
   const body = () => new URLSearchParams({ payload: JSON.stringify({
     type: "setSeisouId", userId: cfg.seisouLine || "",
-    mail: cfg.mail || "", mail2: cfg.mail2 || "", mail3: cfg.mailBoss || "",
+    mail: cfg.mail || "", mail2: cfg.mail2 || "", mailc3: cfg.mail3 || "",
+    mail3: cfg.mailBoss || "", mail4: cfg.mailBoss2 || "",
   }) });
   // まず応答を読める方式で試す（デプロイが古いかどうかまで分かる）
   try {
@@ -3878,7 +3891,7 @@ function sendCardHTML() {
           ? `<div class="send-note done">${ic("mail", 13)} PDF報告書は送信済みです</div>`
           : `<div class="send-note">${ic("mail", 13)} まもなくPDF報告書を自動送信します</div>`)
       : `<div class="send-note">${ic("mail", 13)} 月内の予定がすべて完了すると、PDF報告書を自動でメール送信します（要対応を含む）</div>`}
-    <div class="send-to">送信先：${[cfg.mail, cfg.mail2].filter(Boolean).join(" ／ ") || "未設定（LINE設定タブで登録）"}</div>
+    <div class="send-to">送信先：${[cfg.mail, cfg.mail2, cfg.mail3].filter(Boolean).join(" ／ ") || "未設定（LINE設定タブで登録）"}</div>
   </div>`;
 }
 
@@ -7849,19 +7862,23 @@ function boot() {
 
   document.getElementById("cfg-mail").value = cfg.mail || "";
   document.getElementById("cfg-mail2").value = cfg.mail2 || "";
+  document.getElementById("cfg-mail3").value = cfg.mail3 || "";
   document.getElementById("cfg-mailboss").value = cfg.mailBoss || "";
+  document.getElementById("cfg-mailboss2").value = cfg.mailBoss2 || "";
   document.getElementById("cfg-seisouline").value = cfg.seisouLine || "";
   document.getElementById("cfg-gas").value = cfg.gas;
   document.getElementById("cfg-start").value = cfg.start || "09:00";
   document.getElementById("cfg-save").onclick = () => {
     cfg.mail = document.getElementById("cfg-mail").value.trim();
     cfg.mail2 = document.getElementById("cfg-mail2").value.trim();
+    cfg.mail3 = document.getElementById("cfg-mail3").value.trim();
     cfg.mailBoss = document.getElementById("cfg-mailboss").value.trim();
+    cfg.mailBoss2 = document.getElementById("cfg-mailboss2").value.trim();
     cfg.seisouLine = document.getElementById("cfg-seisouline").value.trim();
     cfg.gas = document.getElementById("cfg-gas").value.trim();
     cfg.start = document.getElementById("cfg-start").value || "09:00";
     save(K.cfg, cfg);
-    const to = [cfg.mail, cfg.mail2].filter(Boolean).length;
+    const to = [cfg.mail, cfg.mail2, cfg.mail3].filter(Boolean).length;
     toast("設定を保存しました", `定時 ${cfg.start}${to ? `／送信先 ${to}件` : ""}`);
     if (cfg.gas) pushSeisouLineId();   // GASへ宛先（LINE ID・メール）を伝える
     renderSide();
