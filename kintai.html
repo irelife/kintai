@@ -5613,13 +5613,16 @@ document.addEventListener("click", (e) => {
 /* ===== 要対応の入力（場所→種類→内容→期限の順に進む） ===== */
 // 場所。物件にない設備は×で消せる（物件ごとに保存）。
 const NG_PLACES = [
-  { key: "exterior",  label: "外観" },
-  { key: "parking",   label: "駐車場" },
-  { key: "delivery",  label: "宅配BOX" },
-  { key: "abandoned", label: "放置物" },
-  { key: "equip",     label: "設備" },
-  { key: "sign",      label: "看板" },
-  { key: "masubuta",  label: "マス蓋" },
+  { key: "exterior",    label: "外観" },
+  { key: "parking",     label: "駐車場" },
+  { key: "illegalpark", label: "迷惑駐車" },
+  { key: "delivery",    label: "宅配BOX" },
+  { key: "abandoned",   label: "放置物" },
+  { key: "bike",        label: "放置自転車" },
+  { key: "garbage",     label: "ゴミ庫" },
+  { key: "equip",       label: "設備" },
+  { key: "sign",        label: "看板" },
+  { key: "masubuta",    label: "マス蓋" },
 ];
 const NG_KINDS = [
   { key: "broken", label: "破損汚損" },
@@ -5639,8 +5642,15 @@ function placesFor(name) {
 
 /* ===== 危険度の高い項目＝見つけた時点で即LINE通知する箇所 =====
    ここに入っていない項目は即時通知せず、「まとめて送る」ボタンで物件ごとに1通にまとめる。 */
-const NG_URGENT = { masubuta: 1, equip: 1 };
+// すべての箇所を、登録した瞬間にLINEへ送る
+const NG_URGENT = {
+  exterior: 1, parking: 1, illegalpark: 1, delivery: 1, abandoned: 1,
+  bike: 1, garbage: 1, equip: 1, sign: 1, masubuta: 1,
+};
 function isUrgentItem(key) { return !!NG_URGENT[key]; }
+// マス蓋だけは危険が大きいので管理者（肉太郎さん）へ。ほかは現場（西澤さん）へ送る
+const NG_TO_OWNER = { masubuta: 1 };
+function ngSendTo(key) { return NG_TO_OWNER[key] ? "owner" : "field"; }
 
 /* ===== 要対応が出たときの対処手順（LINE通知に載せる） ===== */
 const NG_ACTION = {
@@ -5688,6 +5698,29 @@ const NG_ACTION = {
     "【放置自転車】",
     "対応手順は下記を参照してください。",
     "https://theredocs.com/pm/claim/left_bicycle",
+  ],
+  exterior: [
+    "【外観の破損】",
+    "1. IREライフへ連絡し、加入している保険会社を確認してください。",
+    "2. 保険会社へ状況を連絡してください。",
+    "3. 同時に、修繕業者へ状況を説明し、見積もりを依頼してください。",
+    "　 修繕業者：いろや（はまだ）",
+    "　 hamadatakuya95@yahoo.co.jp",
+  ],
+  parking: [
+    "【駐車場の迷惑駐車】",
+    "1. A4サイズの貼り紙を、車に傷がつかないように置いてください。",
+    "2. 文面は「以後、駐車はお控えください」と丁重に記載してください。",
+    "3. 管理会社の名称は記載しないでください。",
+    "※ 契約区画への駐車の場合は、",
+    "　「ご確認ですが、こちらの区画でご契約されていますでしょうか」",
+    "　という丁重な文面の貼り紙を用意し、常時携行してください。",
+  ],
+  delivery: [
+    "【宅配BOXの長期不在荷物】",
+    "1. マスターキーでBOXを開放してください。",
+    "2. 荷物の宛名から所有者を特定してください。",
+    "3. 所有者へ連絡し、受け取りを促してください。",
   ],
 };
 function ngActionText(key) {
@@ -7592,6 +7625,7 @@ async function notifyNgDraft(name, date, idx) {
   if (!g) return;
   const payload = {
     type: "ngAlert", urgent: true,
+    sendTo: ngSendTo(g.place),   // マス蓋は管理者、ほかは現場へ
     property: name, address: p.addr || "", date,
     items: [{ item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`, text: g.text || "",
               deadline: g.deadline, action: ngActionText(g.place),
