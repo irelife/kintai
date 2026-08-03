@@ -5648,9 +5648,9 @@ const NG_URGENT = {
   bike: 1, garbage: 1, equip: 1, sign: 1, masubuta: 1,
 };
 function isUrgentItem(key) { return !!NG_URGENT[key]; }
-// マス蓋だけは危険が大きいので管理者（肉太郎さん）へ。ほかは現場（西澤さん）へ送る
+// マス蓋は危険が大きいので肉太郎さんと西澤さんの両方へ。ほかは現場（西澤さん）へ送る
 const NG_TO_OWNER = { masubuta: 1 };
-function ngSendTo(key) { return NG_TO_OWNER[key] ? "owner" : "field"; }
+function ngSendTo(key) { return NG_TO_OWNER[key] ? "both" : "field"; }
 
 /* ===== 要対応が出たときの対処手順（LINE通知に載せる） ===== */
 const NG_ACTION = {
