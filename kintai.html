@@ -5515,6 +5515,7 @@ async function checkOnSite(name, date) {
       現地に着いてから記録を始めてください。<br>
       物件の前まで移動して、この画面を開き直してください。</div></div>`);
     lockRecord(true);
+    recordFarOpen(name, date, pos, d);
     return false;
   }
   show("");
@@ -5533,6 +5534,25 @@ function lockRecord(on) {
   });
 }
 
+/* 物件から離れた場所で記録を開いた履歴を残す（夜の締めで通知する） */
+async function recordFarOpen(name, date, pos, dist) {
+  try {
+    const r = getRep(name, date);
+    const list = (r.farOpens || []).slice(-9);
+    const now = Date.now();
+    const last = list[list.length - 1];
+    if (last && (now - new Date(last.at).getTime()) < 600000) return;
+    list.push({ at: new Date().toISOString(), lat: pos.lat, lng: pos.lng, dist: dist, addr: "" });
+    setRep(name, date, { farOpens: list });
+    const addr = await reverseGeo(pos.lat, pos.lng);
+    if (!addr) return;
+    const rr = getRep(name, date);
+    const l2 = rr.farOpens || [];
+    if (l2.length) l2[l2.length - 1].addr = addr;
+    setRep(name, date, { farOpens: l2 });
+  } catch (e) {}
+}
+  
 async function stampPos(name, date, phase) {
   const pos = await getPos();
   if (!pos) return null;
