@@ -1307,7 +1307,11 @@ img[data-photo]{cursor:pointer;}
 /* スマホでのタップを素直にする（拡大待ちの遅延をなくす） */
 .cell,.pillu,.pill,.scard,.tdcard,.tdng,.bcard,.btn,.fbtn,.navbtn,.routebtn,
 input,textarea,select,button{touch-action:manipulation;}
-
+/* 予定日を変更するボタン */
+.movebtn{flex:none;display:inline-flex;align-items:center;gap:.25rem;font-size:11.5px;font-weight:800;
+  color:var(--am-700,#b45309);background:#fff;border:1px solid #fcd34d;border-radius:9999px;
+  padding:.22rem .6rem;cursor:pointer;font-family:inherit;line-height:1.4;white-space:nowrap;}
+.movebtn:hover{background:#fffbeb;}
 /* GASのデプロイが古いときの案内 */
 .stalebar{display:flex;align-items:flex-start;gap:.6rem;background:#7f1d1d;color:#fff;
   font-size:12.5px;font-weight:600;line-height:1.65;padding:.7rem 1rem;}
@@ -3529,6 +3533,7 @@ function renderSide() {
       <div class="scard-h">
         <label class="scard-ck" title="選ぶ"><input type="checkbox" class="bulk-ck" value="${esc(n)}"></label>
         <div class="scard-n">${esc(n)}</div>${badge}
+        <button class="movebtn" data-move="${esc(n)}" title="清掃予定日をずらす">${ic("calendar", 13)} 日付変更</button>
         <button class="navbtn" data-nav="${esc(n)}" title="この物件までの道順を開く">${ic("pin", 13)} ナビ</button></div>
       <div class="scard-a">${esc(p.addr)}</div>
       <div class="scard-m">
@@ -3594,12 +3599,112 @@ function renderSide() {
   wrap.querySelectorAll("[data-nav]").forEach((b) => {
     b.onclick = (e) => { e.stopPropagation(); openNav(navUrlOne(b.dataset.nav)); };
   });
+  wrap.querySelectorAll("[data-move]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); openMoveSched(b.dataset.move, selDate); };
+  });
   const rb = wrap.querySelector("#route-btn");
   if (rb) rb.onclick = () => openNav(navUrlRoute(list));
   const sb = null;   // 日次の送信ボタンは廃止（月内の予定が完了したら自動送信）
   const syncb = null;   // 手動同期ボタンは廃止（記録を閉じたときに自動送信される）
 }
+/* 予定日をずらす（自動作成した予定の微調整用） */
+function openMoveSched(name, from) {
+  const p = props.find((x) => x.name === name) || {};
+  const host = document.getElementById("modal-host");
+  host.innerHTML = `<div class="mask" id="maskM">
+    <div class="modal wide schedwide" role="dialog" aria-modal="true">
+      <div class="modal-h"><h2>清掃予定日を変更</h2><button class="x" id="mv-x">${ic("x", 18)}</button></div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="mbox"><div class="mbox-n">${esc(p.name)}</div><div class="mbox-a">${esc(p.addr || "")}</div>
+          <div class="mbox-s">いまの予定：${fmtDate(from)}</div></div>
+        <div class="field"><label>変更後の清掃日</label>
+          <div class="sched-hint">${ic("calendar", 15)} 移す先の日をタップして、下の<b>「この日に変更する」</b>を押してください</div>
+          <div class="mini-cal" id="mv-cal"></div>
+          <div class="mini-cal-sel" id="mv-selview"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem">
+          <button class="btn btn-outline" id="mv-cancel">キャンセル</button>
+          <button class="btn btn-sched" id="mv-ok">${ic("calendar", 15)} この日に変更する</button>
+        </div>
+      </div></div></div>`;
+  const close = () => { host.innerHTML = ""; };
+  host.querySelector("#mv-x").onclick = close;
+  host.querySelector("#mv-cancel").onclick = close;
+  host.querySelector("#maskM").onclick = (e) => { if (e.target.id === "maskM") close(); };
 
+  let _pick = from;
+  let _pc = (() => { const d = parseYmd(from); return { y: d.getFullYear(), m: d.getMonth() }; })();
+  const drawMini = () => {
+    const el = host.querySelector("#mv-cal");
+    const first = new Date(_pc.y, _pc.m, 1);
+    const start = new Date(first); start.setDate(1 - first.getDay());
+    let g = "";
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const ds = ymd(d), out = d.getMonth() !== _pc.m, dow = d.getDay();
+      const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
+                   ds === _pick ? "on" : "", dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
+      const already = (sched[ds] || []);
+      const SHOW = 2;
+      const names = already.length
+        ? `<span class="mc-jobs" title="${esc(already.join("／"))}">`
+          + already.slice(0, SHOW).map((nm) => `<span class="mc-job">${esc(nm)}</span>`).join("")
+          + (already.length > SHOW ? `<span class="mc-job more">他${already.length - SHOW}件</span>` : "")
+          + `</span>` : "";
+      g += `<button type="button" class="${cls} ${already.length ? "hasjob" : ""}" data-pick="${ds}">
+        <span class="mc-dn">${d.getDate()}</span>${names}</button>`;
+    }
+    el.innerHTML = `<div class="mc-h">
+        <button type="button" class="mc-nav" id="mv-prev">${ic("left", 15)}</button>
+        <span class="mc-t">${_pc.y}年 ${_pc.m + 1}月</span>
+        <button type="button" class="mc-nav" id="mv-next">${ic("right", 15)}</button>
+      </div>
+      <div class="mc-wd"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+      <div class="mc-g">${g}</div>`;
+    el.querySelector("#mv-prev").onclick = () => {
+      _pc = _pc.m === 0 ? { y: _pc.y - 1, m: 11 } : { y: _pc.y, m: _pc.m - 1 }; drawMini();
+    };
+    el.querySelector("#mv-next").onclick = () => {
+      _pc = _pc.m === 11 ? { y: _pc.y + 1, m: 0 } : { y: _pc.y, m: _pc.m + 1 }; drawMini();
+    };
+    el.querySelectorAll("[data-pick]").forEach((b) => {
+      b.onclick = () => {
+        _pick = b.dataset.pick;
+        const pd = parseYmd(_pick);
+        _pc = { y: pd.getFullYear(), m: pd.getMonth() };
+        drawMini();
+      };
+    });
+    const already = sched[_pick] || [];
+    host.querySelector("#mv-selview").innerHTML =
+      `<div class="selview-d hot">変更後：${fmtDate(_pick)}</div>` +
+      (already.length
+        ? `<div class="selview-l">この日の予定（${already.length}件）</div>
+           <div class="selview-n">${already.map((x) => `<span>${esc(x)}</span>`).join("")}</div>`
+        : `<div class="selview-l none">この日の予定はまだありません</div>`);
+  };
+  drawMini();
+
+  host.querySelector("#mv-ok").onclick = () => {
+    const to = _pick;
+    if (!to || to === from) { close(); return; }
+    if ((sched[to] || []).includes(name)) { toast("すでにその日に入っています", `${name}／${fmtDate(to)}`); return; }
+    const r = getRep(name, from);
+    const hasData = r.status !== "yet" || Object.keys(r.items || {}).length || (r.ngs || []).length;
+    if (hasData && !confirm(`${name} には ${fmtDate(from)} の記録があります。\n予定日だけを ${fmtDate(to)} に移します。記録は元の日付に残ります。\nよろしいですか？`)) return;
+    sched[from] = (sched[from] || []).filter((x) => x !== name);
+    if (!sched[from].length) delete sched[from];
+    sched[to] = sched[to] || [];
+    sched[to].push(name);
+    save(K.sched, sched);
+    const dd = parseYmd(to);
+    cursor = { y: dd.getFullYear(), m: dd.getMonth() };
+    selDate = to;
+    close();
+    renderCal();
+    toast("予定日を変更しました", `${name}／${fmtDate(from)} → ${fmtDate(to)}`);
+  };
+}
 /* =========================================================
  *  Googleマップへの案内（1件ずつ／その日をまとめて巡回）
  * ======================================================= */
