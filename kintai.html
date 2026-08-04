@@ -8012,7 +8012,7 @@ function boot() {
   };
   // カレンダーを左右にスワイプして月を移動する（スマホ用）
   (() => {
-    const g = document.getElementById("cal-grid");
+    const g = document.querySelector(".cal-h");
     if (!g) return;
     let x0 = 0, y0 = 0, t0 = 0, on = false;
     g.addEventListener("touchstart", (e) => {
