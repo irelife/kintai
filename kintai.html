@@ -3483,7 +3483,7 @@ function renderSide() {
   const dueHere = ngDueMap()[selDate] || [];
   document.getElementById("side-count").textContent = `${list.length + lateHere.length + dueHere.length}件`;
 
-  if (!list.length && !lateHere.length && !dueHere.length) {
+  if (false) {
     wrap.innerHTML = `<div class="card empty">予定はありません。<br>物件リストから清掃を予定してください。</div>`;
     return;
   }
