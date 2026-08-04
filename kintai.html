@@ -1824,14 +1824,6 @@ input,textarea,select,button{touch-action:manipulation;}
             未設定のときは、送信ボタンで印刷ダイアログが開きます。そこからPDFとして保存できます。
           </span>
         </div>
-        <div class="field"><label>清掃を入れない日</label>
-          <textarea class="input" id="cfg-off" rows="3"
-            placeholder="2026-12-29&#10;2026-12-30&#10;2027-01-02"></textarea>
-          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
-            年末年始やお盆など、清掃を入れたくない日を1行に1つ書いてください。<br>
-            翌月の予定を自動で作るとき、ここに書いた日は避けます。
-          </span>
-        </div>
         <div><button class="btn btn-default" id="cfg-save">保存する</button></div>
         <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
           🔄 GAS Webhook URL を設定すると、物件・予定・清掃記録・項目リストが他の端末とも自動で同期されます（写真はfileIdのみ・軽量／変更のたび自動同期し、起動時にも取り込みます）。専用の設定は不要です。
@@ -8097,7 +8089,6 @@ function boot() {
   document.getElementById("cfg-mailboss2").value = cfg.mailBoss2 || "";
   document.getElementById("cfg-seisouline").value = cfg.seisouLine || "";
   document.getElementById("cfg-gas").value = cfg.gas;
-  document.getElementById("cfg-off").value = cfg.offDays || "";
   document.getElementById("cfg-start").value = cfg.start || "09:00";
   document.getElementById("cfg-save").onclick = () => {
     cfg.mail = document.getElementById("cfg-mail").value.trim();
@@ -8107,7 +8098,6 @@ function boot() {
     cfg.mailBoss2 = document.getElementById("cfg-mailboss2").value.trim();
     cfg.seisouLine = document.getElementById("cfg-seisouline").value.trim();
     cfg.offDays = document.getElementById("cfg-off").value;
-    cfg.gas = document.getElementById("cfg-gas").value.trim();
     cfg.start = document.getElementById("cfg-start").value || "09:00";
     save(K.cfg, cfg);
     const to = [cfg.mail, cfg.mail2, cfg.mail3].filter(Boolean).length;
