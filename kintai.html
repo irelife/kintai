@@ -1315,6 +1315,21 @@ input,textarea,select,button{touch-action:manipulation;}
   color:var(--am-700,#b45309);background:#fff;border:1px solid #fcd34d;border-radius:9999px;
   padding:.22rem .6rem;cursor:pointer;font-family:inherit;line-height:1.4;white-space:nowrap;}
 .movebtn:hover{background:#fffbeb;}
+  /* 清掃の公休日（カレンダーのセル） */
+.cell:has(.cell-d.coff){background:#fef2f2;}
+.cell-d.coff{color:#b91c1c;}
+.cell-coff{display:block;margin-top:.1rem;font-size:10px;font-weight:800;color:#b91c1c;
+  line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* 右パネルの公休日設定 */
+.offbar{border:2px dashed #fca5a5;background:#fef2f2;border-radius:.7rem;padding:.75rem;margin-bottom:.75rem;}
+.offbar-h{display:flex;align-items:center;gap:.35rem;font-size:13px;font-weight:800;color:#b91c1c;margin-bottom:.5rem;}
+.offbar-r{display:flex;gap:.5rem;}
+.offbar-r input{flex:1;min-width:0;border:1px solid var(--border);border-radius:var(--r);
+  padding:.45rem .6rem;font-size:13px;font-family:inherit;}
+.offbar-b{flex:none;border:0;border-radius:var(--r);padding:.45rem .8rem;font-size:12.5px;
+  font-weight:800;cursor:pointer;font-family:inherit;background:#dc2626;color:#fff;white-space:nowrap;}
+.offbar-b.undo{background:#fff;color:#b91c1c;border:1px solid #fca5a5;}
+.offbar-now{font-size:12px;color:#b91c1c;font-weight:700;margin-bottom:.5rem;}
 /* GASのデプロイが古いときの案内 */
 .stalebar{display:flex;align-items:flex-start;gap:.6rem;background:#7f1d1d;color:#fff;
   font-size:12.5px;font-weight:600;line-height:1.65;padding:.7rem 1rem;}
@@ -2079,6 +2094,10 @@ let kintai = load(K.kintai, {});   // { "YYYY-MM-DD": { 原田:{in,out,off}, ...
 let cfg = Object.assign({ mail: "", gas: "", ktGas: "", offDays: "", staff: ["原田", "大石"], start: "09:00" }, load(K.cfg, {}));
 let itemlists = load(K.itemlists, {}); // { 物件名: [{key,label,optional?}] }  未登録なら既定ITEMSを使う
 let choli = load(K.choli, {});         // 会社休日 { "YYYY-MM-DD": {name, _t} または削除マーカー {__del, _t} }
+let coff = load("cm_cleanoff_v1", {});  // 清掃の公休日 { "YYYY-MM-DD": "夏季休暇" }
+function coffName(ds) { const v = coff[ds]; return (typeof v === "string" && v) ? v : (v === true ? "公休日" : null); }
+function setCoff(ds, name) { coff[ds] = name || "公休日"; save("cm_cleanoff_v1", coff); }
+function delCoff(ds) { delete coff[ds]; save("cm_cleanoff_v1", coff); }  
 // 清掃クラウド同期：URLは既存の cfg.gas（GAS Webhook URL）を流用。専用欄は作らない。
 // メタはキー単位のタイムスタンプ／削除墓標。
 const CLEAN_META_KEY = "clean_meta_v1";
@@ -3179,10 +3198,12 @@ function renderCal() {
     const ds = ymd(d), out = d.getMonth() !== cursor.m;
     const list = sched[ds] || [], dow = d.getDay();
     const hol = holidayName(ds);
+    const cof = coffName(ds);
     const dcls = ["cell-d", out ? "out"
-      : (ds === today() ? "today" : (dow === 0 || hol) ? "sun" : dow === 6 ? "sat" : "")].join(" ");
+      : (ds === today() ? "today" : (dow === 0 || hol) ? "sun" : dow === 6 ? "sat" : ""),
+      (cof && !out) ? "coff" : ""].join(" ");
     const holH = (hol && !out) ? `<span class="cell-hol">${esc(hol)}</span>` : "";
-    let pills = "";
+    const cofH = (cof && !out) ? `<span class="cell-coff">${esc(cof)}</span>` : "";
     if (list.length <= PILL_MAX) {
       // 少ない日：物件名の帯をそのまま表示（すべて統一レイアウト）
       pills = list.map((n) => {
@@ -3292,8 +3313,8 @@ function renderCal() {
     pills += duePills;
 
     h += `<button class="cell ${out ? "out" : ""} ${ds === selDate ? "sel" : ""}" data-d="${ds}">
-      <span class="cell-dh"><span class="${dcls}">${d.getDate()}</span>${holH}</span>${pills}${pop}</button>`;
-  }
+      <span class="cell-dh"><span class="${dcls}">${d.getDate()}</span>${holH}${cofH}</span>${pills}${pop}</button>`;
+    }
   document.getElementById("cal-grid").innerHTML = h;
   renderPropList();
   document.querySelectorAll("#cal-grid .cell").forEach((b) => {
@@ -3510,13 +3531,41 @@ function renderSide() {
       ${x.text ? `<div class="scard-late-r">内容：${esc(x.text)}</div>` : ""}
     </div>`;
   }).join("");
+  const bindOffBar = (w) => {
+    const bs = w.querySelector("#off-set");
+    if (bs) bs.onclick = () => {
+      const nm = (w.querySelector("#off-name").value || "").trim();
+      setCoff(selDate, nm);
+      renderCal();
+      toast("公休日にしました", `${fmtDate(selDate)}／${nm || "公休日"}`);
+    };
+    const bd = w.querySelector("#off-del");
+    if (bd) bd.onclick = () => {
+      delCoff(selDate);
+      renderCal();
+      toast("公休日を解除しました", fmtDate(selDate));
+    };
+  };
+  const offBar = (() => {
+    const cur = coffName(selDate);
+    return `<div class="offbar">
+      <div class="offbar-h">${ic("calendar", 14)} 公休日設定（${fmtDate(selDate)}）</div>
+      ${cur ? `<div class="offbar-now">この日は公休日です：${esc(cur)}</div>` : ""}
+      <div class="offbar-r">
+        <input id="off-name" placeholder="例）夏季休暇" value="${esc(cur || "")}">
+        <button class="offbar-b" id="off-set">${cur ? "変更する" : "公休日にする"}</button>
+        ${cur ? `<button class="offbar-b undo" id="off-del">解除</button>` : ""}
+      </div></div>`;
+  })();
   if (!list.length) {
-    wrap.innerHTML = lateH + dueH;
+    wrap.innerHTML = offBar + lateH + dueH;
+    bindOffBar(wrap);
     wrap.querySelectorAll(".scard").forEach((c) => {
       c.onclick = () => { openRep = { name: c.dataset.n, date: c.dataset.d || selDate }; openItem = null; renderModal(); };
     });
     return;
   }
+  
   const routeCard = list.length > 1
     ? `<button class="routebtn" id="route-btn">
         ${ic("pin", 16)} <b>この日の${list.length}件を巡回ルートで開く</b>
@@ -3528,7 +3577,7 @@ function renderSide() {
       <span class="bulk-n" id="bulk-n">0件を選択</span>
       <button class="bulk-del" id="bulk-del" disabled>${ic("x", 14)} 予定から外す</button>
     </div>`;
-  wrap.innerHTML = routeCard + bulkBar + list.map((n) => {
+  wrap.innerHTML = offBar + routeCard + bulkBar + list.map((n) => {
     const p = props.find((x) => x.name === n) || { addr: "" };
     const r = getRep(n, selDate);
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
@@ -3613,6 +3662,7 @@ function renderSide() {
   wrap.querySelectorAll("[data-move]").forEach((b) => {
     b.onclick = (e) => { e.stopPropagation(); openMoveSched(b.dataset.move, selDate); };
   });
+  bindOffBar(wrap);
   const rb = wrap.querySelector("#route-btn");
   if (rb) rb.onclick = () => openNav(navUrlRoute(list));
   const sb = null;   // 日次の送信ボタンは廃止（月内の予定が完了したら自動送信）
@@ -5120,7 +5170,8 @@ async function maybeAutoSchedNextMonth() {
   });
   const route = autoRoute(props).filter((p) => !already.has(p.name));
   const offSet = new Set(String(cfg.offDays || "").split(/[\s,、]+/).map((s) => s.trim()).filter(Boolean));
-  const days = workDaysOf(nx.getFullYear(), nx.getMonth(), [1, 2, 3, 4, 5], true).filter((d) => !offSet.has(d));
+  const days = workDaysOf(nx.getFullYear(), nx.getMonth(), [1, 2, 3, 4, 5], true)
+    .filter((d) => !offSet.has(d) && !coffName(d));
   if (!route.length || !days.length) return;
 
   // 1日あたりの件数は、月内に収まるよう自動で決める
