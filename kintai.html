@@ -3742,6 +3742,11 @@ function openMoveSched(name, from) {
   host.querySelector("#mv-ok").onclick = () => {
     const to = _pick;
     if (!to || to === from) { close(); return; }
+    const _cof = coffName(to);
+    const _dw = parseYmd(to).getDay();
+    const _hl = holidayName(to);
+    const _why = _cof ? `公休日（${_cof}）` : _hl ? `祝日（${_hl}）` : _dw === 0 ? "日曜日" : _dw === 6 ? "土曜日" : "";
+    if (_why && !confirm(`${fmtDate(to)} は${_why}です。\nこの日に予定を入れますか？`)) return;
     if ((sched[to] || []).includes(name)) { toast("すでにその日に入っています", `${name}／${fmtDate(to)}`); return; }
     const r = getRep(name, from);
     const hasData = r.status !== "yet" || Object.keys(r.items || {}).length || (r.ngs || []).length;
@@ -4884,6 +4889,11 @@ function openSched(name) {
   host.querySelector("#s-ok").onclick = () => {
     const d = host.querySelector("#s-date").value;
     if (!d) return;
+    const _cof = coffName(d);
+    const _dw = parseYmd(d).getDay();
+    const _hl = holidayName(d);
+    const _why = _cof ? `公休日（${_cof}）` : _hl ? `祝日（${_hl}）` : _dw === 0 ? "日曜日" : _dw === 6 ? "土曜日" : "";
+    if (_why && !confirm(`${fmtDate(d)} は${_why}です。\nこの日に予定を入れますか？`)) return;
     sched[d] = sched[d] || [];
     if (sched[d].includes(name)) { toast("すでに予定に入っています", `${name}／${d}`); close(); return; }
     sched[d].push(name);
