@@ -1317,6 +1317,7 @@ input,textarea,select,button{touch-action:manipulation;}
 .movebtn:hover{background:#fffbeb;}
   /* 清掃の公休日（カレンダーのセル） */
 .cell:has(.cell-d.coff){background:#fef2f2;}
+.cell:has(.cell-d.sun),.cell:has(.cell-d.sat){background:#fef2f2;}
 .cell-d.coff{color:#b91c1c;}
 .cell-coff{display:block;margin-top:.1rem;font-size:10px;font-weight:800;color:#b91c1c;
   line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -5062,7 +5063,8 @@ function buildAutoPlan(host) {
   for (let k = 0; k < span; k++) {
     const d0 = new Date(y0, m0 - 1 + k, 1);
     const ym = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}`;
-    const days = workDaysOf(d0.getFullYear(), d0.getMonth(), dows, skipHol);
+    const days = workDaysOf(d0.getFullYear(), d0.getMonth(), dows, skipHol)
+      .filter((d) => !coffName(d));
     // その月にすでに予定が入っている物件は対象から外す
     const already = new Set();
     Object.keys(sched || {}).forEach((d) => {
