@@ -1629,6 +1629,8 @@ input,textarea,select,button{touch-action:manipulation;}
   #side-panel.open{transform:translateY(0);}
   #side-grip{display:block;flex:none;width:38px;height:4px;border-radius:99px;
     background:var(--muted-3);margin:.55rem auto .15rem;}
+  #side-grip,#side-panel .side-h{touch-action:none;}
+  #side-panel::before{content:"";position:absolute;left:0;right:0;top:0;height:3.4rem;}
   #side-close{position:absolute;top:.75rem;right:.8rem;z-index:3;
     width:2rem;height:2rem;padding:0;border-radius:9999px;
     border:1px solid var(--border);background:#fff;color:var(--muted);
@@ -8177,6 +8179,38 @@ function boot() {
   })();
   const _sideClose = document.getElementById("side-close");
   if (_sideClose) _sideClose.onclick = closeSideSheet;
+  // 持ち手・日付の行を下へスワイプすると閉じる
+  (() => {
+    const p = document.getElementById("side-panel");
+    if (!p || !("ontouchstart" in window)) return;
+    const bd = document.getElementById("side-backdrop");
+    let y0 = 0, dy = 0, on = false;
+    p.addEventListener("touchstart", (e) => {
+      if (!isPhone() || !p.classList.contains("open")) return;
+      if (e.touches.length !== 1) return;
+      if (!e.target.closest("#side-grip, .side-h")) return;   // 掴めるのは上部だけ
+      if (e.target.closest("button")) return;                 // ×や戻るは除く
+      y0 = e.touches[0].clientY; dy = 0; on = true;
+      p.style.transition = "none";
+    }, { passive: true });
+    p.addEventListener("touchmove", (e) => {
+      if (!on) return;
+      dy = Math.max(0, e.touches[0].clientY - y0);            // 下方向だけ
+      if (e.cancelable) e.preventDefault();
+      p.style.transform = `translateY(${dy}px)`;
+      if (bd) bd.style.opacity = String(Math.max(0, 1 - dy / 320));
+    }, { passive: false });
+    const end = () => {
+      if (!on) return;
+      on = false;
+      p.style.transition = "";
+      p.style.transform = "";
+      if (bd) bd.style.opacity = "";
+      if (dy > 90) closeSideSheet();                          // ここを超えたら閉じる
+    };
+    p.addEventListener("touchend", end, { passive: true });
+    p.addEventListener("touchcancel", end, { passive: true });
+  })();
   const _sideBd = document.getElementById("side-backdrop");
   if (_sideBd) _sideBd.onclick = closeSideSheet;
   document.getElementById("p-coord").onclick = openCoordCheck;
