@@ -1145,8 +1145,12 @@ img[data-photo]{cursor:pointer;}
   .ishot,.iadd{width:6.5rem;height:6.5rem;}
   .toast{left:1rem;right:1rem;width:auto;}
 }
-/* スマホでは横に動かないよう固定する（スワイプを効かせるため） */
-@media(max-width:768px){ html,body{max-width:100%;overflow-x:hidden;} }
+/* スマホではカレンダーの7列を画面内に収める */
+@media(max-width:768px){
+  .cal-g{grid-template-columns:repeat(7,minmax(0,1fr));}
+  .cell{min-width:0;overflow:hidden;}
+  .cell *{min-width:0;max-width:100%;}
+}
 @media(prefers-reduced-motion:reduce){ *{transition:none !important;animation:none !important;} }
 
 /* ══ 全体を少し大きく（px固定のサイズを底上げ・約1.15倍） ══ */
