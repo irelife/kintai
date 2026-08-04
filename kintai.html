@@ -7994,6 +7994,28 @@ function boot() {
     cursor = { y: t.getFullYear(), m: t.getMonth() };
     selDate = today(); renderCal();
   };
+  // カレンダーを左右にスワイプして月を移動する（スマホ用）
+  (() => {
+    const g = document.getElementById("cal-grid");
+    if (!g) return;
+    let x0 = 0, y0 = 0, t0 = 0, on = false;
+    g.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) { on = false; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+      t0 = Date.now(); on = true;
+    }, { passive: true });
+    g.addEventListener("touchend", (e) => {
+      if (!on) return;
+      on = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Date.now() - t0 > 600) return;
+      if (Math.abs(dx) < 60) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      const b = document.getElementById(dx < 0 ? "cal-next" : "cal-prev");
+      if (b) b.click();
+    }, { passive: true });
+  })();
   document.getElementById("p-coord").onclick = openCoordCheck;
   document.getElementById("p-add").onclick = openAdd;
   const plq = document.getElementById("pl-q");
