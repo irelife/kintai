@@ -8049,9 +8049,9 @@ function boot() {
     if (!g || !("ontouchstart" in window)) return;
     let x0 = 0, y0 = 0, on = false, lock = null, dx = 0, busy = false;
     const width = () => g.getBoundingClientRect().width || 320;
-    const move = (px, ms) => {
-      g.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
-      g.style.transform = px ? `translateX(${px}px)` : "";
+    const move = (px, ms, ease) => {
+      g.style.transition = ms ? `transform ${ms}ms ${ease || "cubic-bezier(.22,.61,.36,1)"}` : "none";
+      g.style.transform = px ? `translate3d(${px}px,0,0)` : "translate3d(0,0,0)";
     };
     const step = (dir) => {
       if (dir > 0) cursor = cursor.m === 11 ? { y: cursor.y + 1, m: 0 } : { y: cursor.y, m: cursor.m + 1 };
@@ -8074,7 +8074,7 @@ function boot() {
       }
       if (lock !== "x") return;
       if (e.cancelable) e.preventDefault();
-      dx = ax * 0.85;                                            // 少し重くして誤爆を減らす
+      dx = ax;                                                   // 指の位置にそのまま付ける
       move(dx, 0);
     }, { passive: false });
     const finish = () => {
@@ -8083,17 +8083,42 @@ function boot() {
       if (lock !== "x") { move(0, 0); return; }
       const w = width();
       const need = Math.min(72, w * 0.22);                       // この距離を超えたら月を送る
-      if (Math.abs(dx) <= need) { move(0, 160); return; }
+      if (Math.abs(dx) <= need) { move(0, 190, "cubic-bezier(.22,.61,.36,1)"); return; }
+
       const dir = dx < 0 ? 1 : -1;
+      const goal = dir > 0 ? -w : w;                             // 画面外まで完全に抜く
       busy = true;
-      move(dir > 0 ? -w * 0.35 : w * 0.35, 150);                 // 送る向きへ抜ける
-      setTimeout(() => {
-        step(dir);
-        move(dir > 0 ? w * 0.35 : -w * 0.35, 0);                 // 反対側から
-        g.getBoundingClientRect();                               // 位置を確定させてから戻す
-        move(0, 170);
-        setTimeout(() => { g.style.transition = ""; busy = false; }, 190);
-      }, 150);
+
+      // 残りの距離に合わせて時間を決める（指の勢いを引き継ぐ）
+      const rest = Math.max(0, Math.abs(goal - dx)) / w;
+      const outMs = Math.max(110, Math.round(230 * rest));
+
+      const swap = () => {
+        g.removeEventListener("transitionend", onOut);
+        clearTimeout(guard);
+        step(dir);                                               // ここで中身を作り直す（画面外なので見えない）
+        move(-goal, 0);                                          // 反対側の画面外へ置く
+        g.getBoundingClientRect();
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {                          // 新しい中身を1度描かせてから動かす
+            move(0, 240, "cubic-bezier(.22,.61,.36,1)");
+            const done = (ev) => {
+              if (ev && (ev.target !== g || ev.propertyName !== "transform")) return;
+              g.removeEventListener("transitionend", done);
+              g.style.transition = ""; g.style.transform = ""; busy = false;
+            };
+            g.addEventListener("transitionend", done);
+            setTimeout(done, 320);
+          });
+        });
+      };
+      const onOut = (ev) => {
+        if (ev.target !== g || ev.propertyName !== "transform") return;
+        swap();
+      };
+      g.addEventListener("transitionend", onOut);
+      const guard = setTimeout(swap, outMs + 90);                // 念のための保険
+      move(goal, outMs, "cubic-bezier(.4,0,1,1)");
     };
     g.addEventListener("touchend", finish, { passive: true });
     g.addEventListener("touchcancel", finish, { passive: true });
