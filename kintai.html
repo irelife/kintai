@@ -1558,12 +1558,15 @@ input,textarea,select,button{touch-action:manipulation;}
   .cell{min-height:7rem;padding:.4rem .35rem;gap:.2rem;}
   .cell-d{height:1.6rem;min-width:1.6rem;font-size:13px;}
   /* 1文字ずつ縦積みになるのを止める：1行に収めて溢れは「…」 */
-.pillu-nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:clip;
-      font-size:11px;line-height:1.25;}
-    .pillu-sub{display:none;}
-    .pillu{display:block;width:100%;padding:.1rem .25rem;border-radius:3px;
-      margin-bottom:1px;white-space:nowrap;overflow:hidden;}
-    .cell{min-height:4.5rem;padding:.2rem;gap:1px;}
+.pillu{display:flex;width:100%;padding:.1rem .25rem;border-radius:3px;
+      margin-bottom:1px;gap:0;align-items:center;}
+    .pillu-body{display:block;min-width:0;flex:1;}
+    .pillu-row1{display:block;min-width:0;}
+    .pillu-nm{display:block;white-space:nowrap;overflow:hidden;text-overflow:clip;
+      font-size:11px;line-height:1.3;}
+    .pillu-b,.pillu-sub{display:none;}
+    .pillu .pill-x{display:none;}
+    .cell{min-height:5.5rem;padding:.2rem;gap:1px;}
 }
 
 /* ===== Googleカレンダー風・拡大表示（このブロックを消せば元に戻ります） ===== */
