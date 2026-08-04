@@ -1554,7 +1554,7 @@ input,textarea,select,button{touch-action:manipulation;}
 /* ===== スマホ：カレンダーを横スクロールにして枠を広く取る ===== */
 @media(max-width:768px){
   .cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;}
-  .cal-scroll .cal-wd,.cal-scroll .cal-g{min-width:700px;}
+  .cal-scroll .cal-wd,.cal-scroll .cal-g{min-width:0;}
   .cell{min-height:7rem;padding:.4rem .35rem;gap:.2rem;}
   .cell-d{height:1.6rem;min-width:1.6rem;font-size:13px;}
   /* 1文字ずつ縦積みになるのを止める：1行に収めて溢れは「…」 */
@@ -8012,7 +8012,7 @@ function boot() {
   };
   // カレンダーを左右にスワイプして月を移動する（スマホ用）
   (() => {
-    const g = document.querySelector(".cal-h");
+    const g = document.getElementById("cal-grid");
     if (!g) return;
     let x0 = 0, y0 = 0, t0 = 0, on = false;
     g.addEventListener("touchstart", (e) => {
