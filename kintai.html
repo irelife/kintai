@@ -1612,6 +1612,34 @@ input,textarea,select,button{touch-action:manipulation;}
   .cell .daycount-b .dc-over{display:block;font-size:9px;padding:0 3px;line-height:14px;
     border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 }
+
+/* ===== スマホ：日をタップすると予定が重なって出る（このブロックを消せば元に戻ります） ===== */
+@media(max-width:768px){
+  #side-backdrop{position:fixed;inset:0;z-index:44;background:rgba(15,23,42,.45);
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);touch-action:none;
+    opacity:0;pointer-events:none;transition:opacity .22s;}
+  #side-backdrop.open{opacity:1;pointer-events:auto;}
+  #side-panel{position:fixed;left:0;right:0;bottom:0;z-index:45;
+    display:flex;flex-direction:column;max-height:84vh;
+    background:var(--bg);border-radius:16px 16px 0 0;
+    box-shadow:0 -8px 30px rgba(0,0,0,.28);
+    padding:0 .9rem calc(.8rem + env(safe-area-inset-bottom));
+    transform:translateY(101%);
+    transition:transform .26s cubic-bezier(.22,.61,.36,1);}
+  #side-panel.open{transform:translateY(0);}
+  #side-grip{display:block;flex:none;width:38px;height:4px;border-radius:99px;
+    background:var(--muted-3);margin:.55rem auto .15rem;}
+  #side-close{position:absolute;top:.75rem;right:.8rem;z-index:3;
+    width:2rem;height:2rem;padding:0;border-radius:9999px;
+    border:1px solid var(--border);background:#fff;color:var(--muted);
+    font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  #side-panel .side-h{position:sticky;top:0;z-index:2;background:var(--bg);
+    flex:none;margin:0;padding:.5rem 2.4rem .6rem .1rem;align-items:center;}
+  #side-panel .side-h h3{font-size:17px;font-weight:800;}
+  #side-panel .side-list{flex:1;min-height:0;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:.4rem;}
+}
+@media(min-width:769px){ #side-backdrop,#side-grip,#side-close{display:none;} }
 </style>
 </head>
 <body>
@@ -1691,7 +1719,9 @@ input,textarea,select,button{touch-action:manipulation;}
         </div>
       </div>
 
-      <div>
+      <div id="side-panel">
+        <span id="side-grip"></span>
+        <button id="side-close" aria-label="閉じる">×</button>
         <div class="side-h"><h3 id="side-date">—</h3><span id="side-count">0件</span></div>
         <div class="side-list" id="side-list"></div>
       </div>
@@ -1891,6 +1921,7 @@ input,textarea,select,button{touch-action:manipulation;}
 
 </main>
 
+<div id="side-backdrop"></div>
 <div id="modal-host"></div>
 <div id="assign-host"></div>
 <div id="lightbox-host"></div>
@@ -3203,6 +3234,7 @@ function renderCal() {
       const f = card.dataset.filter;
       filterView = (filterView && filterView.filter === f) ? null : { filter: f };
       renderCal();
+      if (filterView) openSideSheet(); else closeSideSheet();
     };
   });
   document.getElementById("cal-title").textContent = `${cursor.y}年 ${cursor.m + 1}月`;
@@ -3365,6 +3397,7 @@ function renderCal() {
         return;
       }
       selDate = b.dataset.d; filterView = null; renderCal();
+      openSideSheet();                       // スマホでは下から重ねて出す
     };
   });
   // 予定帯の×：セルの日付選択より先に処理し、伝播を止める
@@ -3409,6 +3442,23 @@ function renderCal() {
     };
   });
   renderSide();
+}
+
+/* スマホ：予定パネルを下から重ねて出す */
+const isPhone = () => window.matchMedia("(max-width:768px)").matches;
+function openSideSheet() {
+  if (!isPhone()) return;
+  const p = document.getElementById("side-panel");
+  const b = document.getElementById("side-backdrop");
+  if (!p || !b) return;
+  p.classList.add("open"); b.classList.add("open");
+  const l = p.querySelector(".side-list"); if (l) l.scrollTop = 0;
+}
+function closeSideSheet() {
+  const p = document.getElementById("side-panel");
+  const b = document.getElementById("side-backdrop");
+  if (p) p.classList.remove("open");
+  if (b) b.classList.remove("open");
 }
 
 function renderSide() {
@@ -7959,6 +8009,7 @@ function renderNgTab() {
 }
 
 function go(t) {
+  closeSideSheet();
   tab = t;
   try { sessionStorage.setItem("last_tab_v1", t); } catch(e){}
   if (t === "today") { /* 現場向けの初期画面 */ }
@@ -8124,6 +8175,10 @@ function boot() {
     g.addEventListener("touchend", finish, { passive: true });
     g.addEventListener("touchcancel", finish, { passive: true });
   })();
+  const _sideClose = document.getElementById("side-close");
+  if (_sideClose) _sideClose.onclick = closeSideSheet;
+  const _sideBd = document.getElementById("side-backdrop");
+  if (_sideBd) _sideBd.onclick = closeSideSheet;
   document.getElementById("p-coord").onclick = openCoordCheck;
   document.getElementById("p-add").onclick = openAdd;
   const plq = document.getElementById("pl-q");
@@ -8240,7 +8295,8 @@ function boot() {
   document.getElementById("cfg-backup").onclick = doBackup;
   document.getElementById("cfg-restore").onclick = doRestore;
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); }
+    if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); return; }
+    if (e.key === "Escape") closeSideSheet();
   });
   { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "today"); }
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
