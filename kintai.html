@@ -1593,7 +1593,8 @@ input,textarea,select,button{touch-action:manipulation;}
 
 /* ===== スマホ：Googleカレンダー風の月表示（このブロックを消せば元に戻ります） ===== */
 @media(max-width:768px){
-  .cal-g{grid-auto-rows:minmax(4.6rem,1fr);}
+  .cal-scroll{overflow-x:hidden;}
+  .cal-g{grid-auto-rows:minmax(4.6rem,1fr);touch-action:pan-y;will-change:transform;}
   .cell{min-height:4.6rem;padding:2px 2px 3px;gap:0;overflow:hidden;}
   .cell-d{height:1.3rem;min-width:1.3rem;font-size:12px;padding:0 .2rem;margin:0;}
   .cell-hol,.cell-coff{font-size:8.5px;font-weight:700;line-height:1.2;margin:0 0 1px;}
@@ -8042,27 +8043,60 @@ function boot() {
     cursor = { y: t.getFullYear(), m: t.getMonth() };
     selDate = today(); renderCal();
   };
-  // カレンダーを左右にスワイプして月を移動する（スマホ用）
+  // カレンダーを左右にスワイプして月を移動する（スマホ用・指に追従）
   (() => {
     const g = document.getElementById("cal-grid");
-    if (!g) return;
-    let x0 = 0, y0 = 0, t0 = 0, on = false;
+    if (!g || !("ontouchstart" in window)) return;
+    let x0 = 0, y0 = 0, on = false, lock = null, dx = 0, busy = false;
+    const width = () => g.getBoundingClientRect().width || 320;
+    const move = (px, ms) => {
+      g.style.transition = ms ? `transform ${ms}ms ease-out` : "none";
+      g.style.transform = px ? `translateX(${px}px)` : "";
+    };
+    const step = (dir) => {
+      if (dir > 0) cursor = cursor.m === 11 ? { y: cursor.y + 1, m: 0 } : { y: cursor.y, m: cursor.m + 1 };
+      else         cursor = cursor.m === 0 ? { y: cursor.y - 1, m: 11 } : { y: cursor.y, m: cursor.m - 1 };
+      renderCal();
+    };
     g.addEventListener("touchstart", (e) => {
-      if (e.touches.length !== 1) { on = false; return; }
+      if (busy || e.touches.length !== 1) { on = false; return; }
       x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
-      t0 = Date.now(); on = true;
+      on = true; lock = null; dx = 0;
+      move(0, 0);
     }, { passive: true });
-    g.addEventListener("touchend", (e) => {
+    g.addEventListener("touchmove", (e) => {
+      if (!on) return;
+      const t = e.touches[0];
+      const ax = t.clientX - x0, ay = t.clientY - y0;
+      if (lock === null) {
+        if (Math.abs(ax) < 8 && Math.abs(ay) < 8) return;
+        lock = Math.abs(ax) > Math.abs(ay) * 1.3 ? "x" : "y";   // 縦に振ったらページのスクロールに譲る
+      }
+      if (lock !== "x") return;
+      if (e.cancelable) e.preventDefault();
+      dx = ax * 0.85;                                            // 少し重くして誤爆を減らす
+      move(dx, 0);
+    }, { passive: false });
+    const finish = () => {
       if (!on) return;
       on = false;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - x0, dy = t.clientY - y0;
-      if (Date.now() - t0 > 1200) return;
-      if (Math.abs(dx) < 30) return;
-      if (Math.abs(dx) < Math.abs(dy)) return;
-      const b = document.getElementById(dx < 0 ? "cal-next" : "cal-prev");
-      if (b) b.click();
-    }, { passive: true });
+      if (lock !== "x") { move(0, 0); return; }
+      const w = width();
+      const need = Math.min(72, w * 0.22);                       // この距離を超えたら月を送る
+      if (Math.abs(dx) <= need) { move(0, 160); return; }
+      const dir = dx < 0 ? 1 : -1;
+      busy = true;
+      move(dir > 0 ? -w * 0.35 : w * 0.35, 150);                 // 送る向きへ抜ける
+      setTimeout(() => {
+        step(dir);
+        move(dir > 0 ? w * 0.35 : -w * 0.35, 0);                 // 反対側から
+        g.getBoundingClientRect();                               // 位置を確定させてから戻す
+        move(0, 170);
+        setTimeout(() => { g.style.transition = ""; busy = false; }, 190);
+      }, 150);
+    };
+    g.addEventListener("touchend", finish, { passive: true });
+    g.addEventListener("touchcancel", finish, { passive: true });
   })();
   document.getElementById("p-coord").onclick = openCoordCheck;
   document.getElementById("p-add").onclick = openAdd;
