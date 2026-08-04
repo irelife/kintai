@@ -3236,6 +3236,7 @@ function renderCal() {
       (cof && !out) ? "coff" : ""].join(" ");
     const holH = (hol && !out) ? `<span class="cell-hol">${esc(hol)}</span>` : "";
     const cofH = (cof && !out) ? `<span class="cell-coff">${esc(cof)}</span>` : "";
+    let pills = "";
     if (list.length <= PILL_MAX) {
       // 少ない日：物件名の帯をそのまま表示（すべて統一レイアウト）
       pills = list.map((n) => {
@@ -8226,7 +8227,6 @@ function boot() {
     cfg.mailBoss = document.getElementById("cfg-mailboss").value.trim();
     cfg.mailBoss2 = document.getElementById("cfg-mailboss2").value.trim();
     cfg.seisouLine = document.getElementById("cfg-seisouline").value.trim();
-    cfg.offDays = document.getElementById("cfg-off").value;
     cfg.start = document.getElementById("cfg-start").value || "09:00";
     save(K.cfg, cfg);
     const to = [cfg.mail, cfg.mail2, cfg.mail3].filter(Boolean).length;
