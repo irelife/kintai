@@ -889,6 +889,15 @@ img[data-photo]{cursor:pointer;}
 .tabbadge.urgent{background:#dc2626;}
 .tabbadge.hidden{display:none;}
 .ng-sec{margin:1.1rem 0 .5rem;font-size:15px;font-weight:800;}
+/* 要対応の一覧：カードを並べて表示する */
+#ng-list{display:grid;grid-template-columns:1fr;gap:.7rem;align-items:start;}
+#ng-list .ng-sec{grid-column:1/-1;margin:.8rem 0 0;}
+#ng-list .ng-row{height:100%;display:flex;flex-direction:column;gap:.3rem;}
+#ng-list .ng-row-t{flex:1;}
+@media(min-width:769px){
+  #ng-list{grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.8rem;}
+  #ng-list .ng-row{min-height:11rem;}
+}
 .ng-sec:first-child{margin-top:.4rem;}
 .ng-row{display:block;width:100%;text-align:left;border:2px solid var(--border);border-radius:.7rem;
   padding:.9rem 1rem;margin-bottom:.6rem;cursor:pointer;transition:box-shadow .15s;}
@@ -1033,6 +1042,10 @@ img[data-photo]{cursor:pointer;}
 .tdpark.full{color:#b45309;background:#fffbeb;border-color:#fcd34d;}
 .tdpark-m{font-weight:600;font-size:11.5px;color:var(--muted-2);}
 /* ===== トップページ ===== */
+/* サブタブの TOP ボタン */
+.hd-sub .tab-top{background:var(--teal-700,#0f766e)!important;color:#fff!important;
+  border-color:var(--teal-700,#0f766e)!important;font-weight:800;}
+.hd-sub .tab-top.on{background:var(--teal-800,#115e59)!important;}
 .hm-head{text-align:center;padding:1.4rem 0 1.2rem;}
 .hm-d{font-size:26px;font-weight:800;letter-spacing:.02em;}
 .hm-sub{font-size:14px;color:var(--muted-2);font-weight:600;margin-top:.2rem;}
@@ -1797,7 +1810,7 @@ input,textarea,select,button{touch-action:manipulation;}
 
 <header class="hd">
   <div class="wrap hd-in">
-    <div class="hd-brand" onclick="reloadKeepTab()" style="cursor:pointer" title="タップで再読み込み">
+    <div class="hd-brand" onclick="go('home')" style="cursor:pointer" title="タップでTOPへ戻る">
       <span class="hd-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/></svg></span>
       <span>
         <span class="hd-t1" id="hd-t1" style="display:block">清掃管理</span>
@@ -1811,6 +1824,7 @@ input,textarea,select,button{touch-action:manipulation;}
   </div>
   <div class="wrap hd-sub-in">
     <nav class="hd-sub" id="hd-sub">
+      <button data-tab="home" class="tab-top"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/></svg><span>TOP</span></button>
       <button data-tab="today" class="on"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg><span>今日</span></button>
       <button data-tab="cal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect width="18" height="18" x="3" y="4" rx="2"/></svg><span>カレンダー</span></button>
       <button data-tab="ng"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg><span>要対応</span><i class="tabbadge" id="ng-badge"></i></button>
@@ -2194,9 +2208,11 @@ const TONE_NORMAL = { bd: "#6ee7b7", bg: "#f0fdf9" };
 const BADGE_NORMAL = { bg: "#ecfdf5", fg: "#047857" };
 function cardTone(name, ds) {
   if (isOverdue(name, ds)) return TONE.overdue;
-  if (hasOpenNg(name, ds)) return TONE.ng;   // 要対応＝黄（完了していても要対応が残っていれば黄が優先）
   const st = getRep(name, ds).status;
+  // 予定日のカードは「その日の清掃が終わったか」を示す。
+  // 完了していればグレー。要対応の黄は、対応期限の日のカードで示す。
   if (st === "done") return TONE.done;
+  if (hasOpenNg(name, ds)) return TONE.ng;   // 未完了で要対応あり＝黄
   if (st === "doing") return TONE.doing;   // 入力途中＝紫
   return TONE_NORMAL;
 }
@@ -3369,7 +3385,6 @@ function renderHome() {
       ${card("ng", "alert", "要対応", ngN ? `未解決 ${ngN}件` : "ありません", ngN, ngN ? "warn" : "")}
       ${card("cal", "calendar", "カレンダー", "予定を見る・入れる", 0, "")}
       ${card("prop", "building", "物件リスト", `${props.length}件の物件`, 0, "")}
-      ${card("kt", "clock", "勤怠", "出勤・退勤の記録", 0, "")}
       ${card("set", "message", "LINE設定", "通知先・バックアップ", 0, "")}
     </div>`;
 
@@ -8588,7 +8603,11 @@ function go(t) {
   // サブタブ：勤怠のときは隠す。清掃のときは表示＋現在のサブをハイライト
   const sub = document.getElementById("hd-sub");
   if (sub) {
-    sub.classList.toggle("hidden", isKt);
+    sub.classList.toggle("hidden", false);
+    sub.querySelectorAll("button").forEach((b) => {
+      // 勤怠のときは TOP だけ残す
+      b.style.display = (isKt && b.dataset.tab !== "home") ? "none" : "";
+    });
     sub.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
   }
   // ヘッダーのタイトル
