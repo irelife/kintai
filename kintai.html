@@ -3370,7 +3370,7 @@ function renderToday() {
 
     ${todayList.length > 1 ? `<button class="routebtn" id="td-route">
       ${ic("pin", 16)} <b>今日の${todayList.length}件を巡回ルートで開く</b>
-      <span>現在地から、順番に案内します</span></button>` : ""}
+      <span>現在地から近い順に、まだ終わっていない物件だけ案内します</span></button>` : ""}
 
     ${todayList.length ? `<div class="tdsec"><h3>${ic("calendar", 15)} 今日おこなう清掃</h3>
       ${todayList.map((n) => jobCard(n, t, false)).join("")}</div>` : ""}
@@ -3405,7 +3405,7 @@ function renderToday() {
     b.onclick = (e) => { e.stopPropagation(); openNav(navUrlOne(b.dataset.nav)); };
   });
   const rb = box.querySelector("#td-route");
-  if (rb) rb.onclick = () => openNav(navUrlRoute(todayList));
+  if (rb) rb.onclick = () => openRoute(todayList, t);
 }
 
 /* ===== 描画：カレンダー ===== */
@@ -3943,7 +3943,7 @@ function renderSide() {
   const routeCard = list.length > 1
     ? `<button class="routebtn" id="route-btn">
         ${ic("pin", 16)} <b>この日の${list.length}件を巡回ルートで開く</b>
-        <span>現在地から、カレンダーの並び順で案内します</span>
+        <span>現在地から近い順に、まだ終わっていない物件だけ案内します</span>
       </button>`
     : "";
   const addBar = `<button class="sideadd" id="side-add">${ic("plus", 16)}
@@ -4045,7 +4045,7 @@ function renderSide() {
   });
   bindOffBar(wrap);
   const rb = wrap.querySelector("#route-btn");
-  if (rb) rb.onclick = () => openNav(navUrlRoute(list));
+  if (rb) rb.onclick = () => openRoute(list, selDate);
   const sb = null;   // 日次の送信ボタンは廃止（月内の予定が完了したら自動送信）
   const syncb = null;   // 手動同期ボタンは廃止（記録を閉じたときに自動送信される）
 }
@@ -4167,6 +4167,49 @@ function navUrlOne(name) {
   const dst = navPoint(p);
   if (!dst) return "";
   return "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURIComponent(dst);
+}
+/* まだ回っていない物件だけを残す（完了したものはルートから外す） */
+function routeTargets(names, ds) {
+  return (names || []).filter((n) => getRep(n, ds).status !== "done");
+}
+/* 現在地から近い順に並べ替える（近いところから順に拾っていく）
+   座標のない物件は最後に、元の並び順のまま付ける。 */
+function orderByNear(names, from) {
+  const withPt = [], noPt = [];
+  (names || []).forEach((n) => {
+    const p = props.find((x) => x.name === n);
+    if (p && p.lat && p.lng) withPt.push({ n, lat: +p.lat, lng: +p.lng });
+    else noPt.push(n);
+  });
+  if (!from || !withPt.length) return withPt.map((x) => x.n).concat(noPt);
+  const out = [];
+  let cur = { lat: from.lat, lng: from.lng };
+  const rest = withPt.slice();
+  while (rest.length) {
+    let bi = 0, bd = Infinity;
+    rest.forEach((x, i) => {
+      const d = distM(cur, x);
+      if (d != null && d < bd) { bd = d; bi = i; }
+    });
+    const pick = rest.splice(bi, 1)[0];
+    out.push(pick.n);
+    cur = { lat: pick.lat, lng: pick.lng };
+  }
+  return out.concat(noPt);
+}
+/* 巡回ルートを開く。完了ぶんを外し、現在地から近い順に並べてから案内する。 */
+async function openRoute(names, ds) {
+  const left = routeTargets(names, ds);
+  if (!left.length) { toast("回る先がありません", "この日の清掃はすべて終わっています"); return; }
+  let order = left;
+  if (left.length > 1) {
+    const pos = await getPos();
+    if (pos) order = orderByNear(left, pos);
+    else toast("現在地が取れませんでした", "並び順のまま案内します");
+  }
+  const skipped = (names || []).length - left.length;
+  if (skipped > 0) toast(`完了した${skipped}件はルートから外しました`, `残り${left.length}件を案内します`);
+  openNav(navUrlRoute(order));
 }
 // その日の予定をまとめて巡回する（現在地 → 1件目 → … → 最終）
 function navUrlRoute(names) {
