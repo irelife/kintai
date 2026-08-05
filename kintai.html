@@ -2148,6 +2148,39 @@ main.homeflow #page-today .flow-h{margin-top:1.2rem;}
   font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.1em;}
 #pagetop.on{display:flex;}
 
+/* 要対応の一覧：写真つきの記事リスト型（左に細い罫 → 写真 → 分類・物件名・内容） */
+#ng-list{display:grid;grid-template-columns:1fr;gap:0;align-items:start;}
+#ng-list .ng-sec{grid-column:1/-1;margin:1.6rem 0 .2rem;font-size:13px;font-weight:700;
+  letter-spacing:.12em;}
+@media(min-width:900px){ #ng-list{grid-template-columns:1fr 1fr;column-gap:2rem;} }
+.ng-row{display:flex;align-items:flex-start;gap:1rem;width:100%;text-align:left;
+  background:transparent;border:0;border-left:2px solid var(--rule,var(--border));
+  border-radius:0;padding:1.1rem 0 1.1rem 1.1rem;margin:0;cursor:pointer;
+  transition:background-color .15s;}
+.ng-row + .ng-row{border-top:1px solid var(--border-soft);}
+.ng-row:hover{background:rgb(255 255 255 / .6);box-shadow:none;}
+.ng-row-th{flex:none;width:6.5rem;height:6.5rem;border-radius:.9rem;overflow:hidden;
+  background:var(--border-soft);display:flex;align-items:center;justify-content:center;}
+.ng-row-th img{width:100%;height:100%;object-fit:cover;border-radius:.9rem;}
+.ng-row-noth{color:var(--muted-3);}
+.ng-row-b{display:flex;flex-direction:column;gap:.25rem;min-width:0;flex:1;}
+.ng-row-i{font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--teal-700);
+  margin:0;text-transform:none;}
+.ng-row-p{font-size:17px;font-weight:700;color:var(--fg);line-height:1.45;}
+.ng-row-t{font-size:14.5px;color:var(--fg);line-height:1.6;margin:0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.ng-row-m{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+  font-size:12px;color:var(--muted-2);margin-top:.15rem;}
+.ng-row-due{flex:none;color:#fff;font-size:11.5px;font-weight:700;
+  border-radius:9999px;padding:.15rem .6rem;letter-spacing:.04em;}
+@media(max-width:640px){
+  .ng-row-th{width:5.2rem;height:5.2rem;}
+  .ng-row-p{font-size:16px;}
+}
+
+/* いちばん下：「ひらく」ボタンと ↑TOP が重ならないよう、下に余白を置く */
+main.homeflow{padding-bottom:7rem;}
+
 </style>
 </head>
 <body>
@@ -7103,6 +7136,7 @@ function collectOpenNg() {
         property: name, date, key,
         item: labelOf(key),
         text: c.text || "",
+        thumb: (c.before || [])[0] || (c.photos || [])[0] || "",
         deadline: c.deadline || "",
         due: ngDueState(c.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -7114,6 +7148,7 @@ function collectOpenNg() {
         property: name, date, key: "ng:" + i,
         item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`,
         text: g.text || "",
+        thumb: (g.before || [])[0] || "",
         deadline: g.deadline || "",
         due: ngDueState(g.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -7124,6 +7159,7 @@ function collectOpenNg() {
       out.push({
         property: name, date, key: "todo:" + t.id,
         item: t.item || "その他", text: t.text || "",
+        thumb: (t.before || [])[0] || "",
         deadline: t.deadline || "",
         due: ngDueState(t.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -8988,17 +9024,21 @@ function renderNgTab() {
       lastKey = x.due.key;
     }
     html += `<button class="ng-row" data-open="${esc(x.property)}|${esc(x.date)}"
-        style="border-color:${st.bd};background:${st.bg}">
-      <div class="ng-row-h">
+        style="--rule:${st.bd}">
+      <span class="ng-row-th">${x.thumb ? imgTag(x.thumb) : `<span class="ng-row-noth">${ic("camera", 20)}</span>`}</span>
+      <span class="ng-row-b">
+        <span class="ng-row-i">${esc(x.item)}</span>
         <span class="ng-row-p">${esc(x.property)}</span>
-        <span class="ng-row-due" style="background:${st.bd}">${esc(x.due.label)}</span>
-      </div>
-      <div class="ng-row-i" style="color:${st.fg}">${esc(x.item)}</div>
-      ${x.text ? `<div class="ng-row-t">${esc(x.text)}</div>` : ""}
-      <div class="ng-row-m">${esc(fmtDate(x.date))} の記録${x.deadline ? `　期限 ${esc(fmtDate(x.deadline))}` : ""}</div>
+        ${x.text ? `<span class="ng-row-t">${esc(x.text)}</span>` : ""}
+        <span class="ng-row-m">
+          <span class="ng-row-due" style="background:${st.bd}">${esc(x.due.label)}</span>
+          ${x.deadline ? `期限 ${esc(fmtDate(x.deadline))}` : "期限なし"}　/　${esc(fmtDate(x.date))} の記録
+        </span>
+      </span>
     </button>`;
   });
   host.innerHTML = html;
+  hydratePhotos(host);
   host.querySelectorAll("[data-open]").forEach((b) => {
     b.onclick = () => {
       const [nm, dt] = b.dataset.open.split("|");
