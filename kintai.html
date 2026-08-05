@@ -1243,6 +1243,14 @@ img[data-photo]{cursor:pointer;}
   .pill-x{align-self:flex-start;}
   .pill-why{font-size:9px;}
   .modal{padding:1.25rem;}
+  /* 記録の画面が横に動かないよう、中身を画面幅に収める */
+  .mask{overflow-x:hidden;}
+  .modal,.modal.xwide{max-width:100%;overflow-x:hidden;}
+  .modal *{min-width:0;max-width:100%;}
+  .modal .twocol,.modal #m-body,.modal .field{max-width:100%;}
+  .modal img,.modal table,.modal pre{max-width:100%;height:auto;}
+  .modal .mini-cal,.modal .ngcal{max-width:100%;overflow-x:auto;}
+  .modal .picktabs,.modal .itemcards{max-width:100%;}
   /* ビフォー・アフターは横に並べて、縦を短くする */
   .phases{grid-template-columns:repeat(2,1fr);gap:.5rem;}
   .phase{padding:.55rem;border-width:1.5px;}
@@ -7982,7 +7990,7 @@ function renderNgEntry(name, date) {
       <div class="ngitem-m ngitem-m-tap ${g.deadline && g.deadline < today() && !g.fixed ? "over" : ""}" data-ngedit="${i}" title="押すと期限を変更できます">
         ${g.deadline
           ? `<span class="ngitem-m-l">${g.deadline < today() && !g.fixed ? "期限切れ" : "対応期限"}</span><span class="ngitem-m-d">${esc(fmtDate(g.deadline))}</span>`
-          : `<span class="ngitem-m-l none">対応期限 未設定</span>`}${g.notified ? `<span class="ngitem-m-n">通知済み</span>` : ""}<span class="ngitem-m-edit">${ic("file", 13)} 変更</span></div>
+          : `<span class="ngitem-m-l none">対応期限 未設定</span>`}${g.notified ? `<span class="ngitem-m-n">通知済み</span>` : ""}</div>
       ${g.fixed
         ? `<div class="ngitem-done">${ic("check2", 16)} 解決済み${g.fixedAt ? `（${esc(fmtDate(g.fixedAt))}）` : ""}
              <button class="btn btn-outline btn-sm" data-ngunfix="${i}">未解決に戻す</button></div>`
