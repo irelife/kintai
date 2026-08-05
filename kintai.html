@@ -579,6 +579,12 @@ main{padding:1.5rem 0 4rem;}
 .pickcell img{width:100%;height:100%;object-fit:cover;display:block;}
 .pickcell.on{border-color:var(--teal-600,#0d9488);transform:translateY(-1px);}
 .pickcell-no{position:absolute;top:4px;left:4px;min-width:20px;height:20px;border-radius:50%;background:var(--teal-600,#0d9488);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;}
+.pickwrap-c{position:relative;}
+.pickdel{position:absolute;top:4px;right:4px;width:24px;height:24px;border:none;border-radius:50%;
+  background:rgba(0,0,0,.62);color:#fff;display:flex;align-items:center;justify-content:center;
+  padding:0;cursor:pointer;z-index:2;}
+.pickdel:hover{background:#b91c1c;}
+@media(max-width:768px){ .pickdel{width:28px;height:28px;} }
 .pick-f{display:flex;gap:.5rem;margin-top:.9rem;flex-wrap:wrap;}
 .pick-f .btn{flex:1 1 8rem;justify-content:center;}
 .pick-ok{background:var(--teal-600,#0d9488);color:#fff;border:none;font-weight:800;}
@@ -1011,6 +1017,14 @@ img[data-photo]{cursor:pointer;}
 .tdlist li{font-size:12.5px;line-height:1.7;color:var(--fg);}
 .tdlist li.done{color:var(--muted-2);}
 .tdlist li .n{font-size:11px;color:var(--muted-2);}
+/* 今日タブ：やることの折りたたみ */
+.tdhowto{margin-top:1rem;border:1px solid var(--border);border-radius:.7rem;background:#fff;padding:.7rem .9rem;}
+.tdhowto summary{cursor:pointer;font-size:14px;font-weight:800;color:var(--teal-800,#115e59);
+  list-style:none;display:flex;align-items:center;gap:.4rem;}
+.tdhowto summary::-webkit-details-marker{display:none;}
+.tdhowto summary::after{content:"開く";margin-left:auto;font-size:12px;font-weight:700;color:var(--muted-2);}
+.tdhowto[open] summary::after{content:"閉じる";}
+.tdhowto .howto{margin-top:.8rem;}
 
 /* 要対応 */
 .todo{border:1px solid var(--am-200);background:#fffbeb80;border-radius:var(--r);padding:.625rem;}
@@ -2900,10 +2914,10 @@ function openPickForItem(key) {
         ${list.length
           ? `<div class="pickgrid">${list.map((src, i) => {
               const on = sel.indexOf(i) >= 0;
-              return `<button class="pickcell ${on ? "on" : ""}" data-pk="${i}">
+              return `<div class="pickwrap-c"><button class="pickcell ${on ? "on" : ""}" data-pk="${i}">
                 ${imgTag(src)}
                 ${on ? `<span class="pickcell-no">${sel.indexOf(i) + 1}</span>` : ""}
-              </button>`;
+              </button><button class="pickdel" data-pkdel="${i}" aria-label="この写真を捨てる" title="この写真を捨てる">${ic("x", 12)}</button></div>`;
             }).join("")}</div>`
           : `<div class="assign-empty">${ic("alert", 22)}
               <b>選べる写真がありません</b>
@@ -2924,6 +2938,20 @@ function openPickForItem(key) {
     // 箇所の切り替え（選びかけの写真は持ち越さない）
     host.querySelectorAll("[data-ptab]").forEach((b) => {
       b.onclick = () => { if (b.dataset.ptab === cur) return; cur = b.dataset.ptab; sel = []; draw(); };
+    });
+
+    // 写真を捨てる（取り込みからも消える。撮り直して入れ直せる）
+    host.querySelectorAll("[data-pkdel]").forEach((b) => {
+      b.onclick = (e) => {
+        e.stopPropagation();
+        const i = +b.dataset.pkdel;
+        if (!confirm("この写真を捨てますか？\n取り込んだ写真から消えます。")) return;
+        const rr2 = getRep(openRep.name, openRep.date);
+        (rr2.inbox || []).splice(i, 1);
+        setRep(openRep.name, openRep.date, { inbox: rr2.inbox });
+        sel = sel.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x));
+        draw();
+      };
     });
 
     // 写真を選ぶ／選び直す
@@ -3066,6 +3094,43 @@ function shortShots(name, ds) {
     return n < NEED_SHOTS ? `${x.label}(${n}/${NEED_SHOTS})` : null;
   }).filter(Boolean);
 }
+// 清掃でやること（今日タブに置く。記録の中からはここへ移した）
+function howtoHtml() {
+  return `<div class="howto">
+          <div class="howto-h">${ic("check2", 22)} この記録でやること</div>
+
+          <div class="howto-step">
+            <div class="howto-no1">1</div>
+            <div class="howto-step-b">
+              <div class="howto-t"><span class="howto-key teal">清掃後</span>に、下の箇所を それぞれ <span class="howto-key teal">写真2枚ずつ</span> 登録する</div>
+              <div class="howto-two">
+                <div class="howto-card">
+                  <div class="howto-card-h">アパートの場合</div>
+                  <div class="howto-card-b">玄関前／共用部分／駐車場／ゴミ庫／放置自転車</div>
+                </div>
+                <div class="howto-card">
+                  <div class="howto-card-h">マンションの場合</div>
+                  <div class="howto-card-b">エントランス（エレベーターホール含む）／共用部分／駐車場／ゴミ庫／放置自転車</div>
+                </div>
+              </div>
+              <div class="howto-t2 teal">やること</div>
+              <div class="howto-do">拭き掃除・掃き掃除　／　蜘蛛の巣・ハチの巣の除去　／　ゴミ庫の分別確認と清掃　／　草取り　／　植栽の剪定</div>
+            </div>
+          </div>
+
+          <div class="howto-step">
+            <div class="howto-no1 red">2</div>
+            <div class="howto-step-b">
+              <div class="howto-t">その日に<span class="howto-key red">解決できないもの</span>は<span class="howto-key red">「要対応」</span>に登録する</div>
+              <div class="howto-t2 red">要対応にするもの</div>
+              <div class="howto-ng">放置物　／　迷惑駐車　／　外壁・マス蓋・雨樋・管理看板の破損　／　その他 設備・アスファルト・階段の破損や重度の汚損　／　ゴミの不法投棄・分別違反　／　大量の草抜き　／　植栽の剪定・伐採　／　用水路の掃除</div>
+            </div>
+          </div>
+
+          <div class="howto-must">${ic("alert", 20)}<span class="howto-must-t"><b>登録したら終わりではありません。</b>写真・内容・期限を入れて登録し、<b>期限までに対応して「解決済み」にすること。</b></span></div>
+          <div class="howto-no">${ic("x", 20)} <b>糞尿・嘔吐物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
+</div>`;
+}
 function renderToday() {
   const box = document.getElementById("today-body");
   if (!box) return;
@@ -3154,6 +3219,9 @@ function renderToday() {
 
     ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
       <div class="tddone">${doneToday.map((n) => `<span data-open="${esc(n)}|${esc(t)}" title="完了した内容を見る">${esc(n)}</span>`).join("")}</div></div>` : ""}
+
+    <details class="tdhowto"><summary>${ic("check2", 15)} 清掃でやること・要対応にするもの</summary>
+      ${howtoHtml()}</details>
 
     `;
 
@@ -4568,40 +4636,6 @@ function renderModal() {
             ${r.lateReason ? `<div class="late-ok">${ic("check2", 15)} 入力済みです。写真の登録に進めます。</div>` : ""}
           </div>`;
         })()}
-        <div class="howto">
-          <div class="howto-h">${ic("check2", 22)} この記録でやること</div>
-
-          <div class="howto-step">
-            <div class="howto-no1">1</div>
-            <div class="howto-step-b">
-              <div class="howto-t"><span class="howto-key teal">清掃後</span>に、下の箇所を それぞれ <span class="howto-key teal">写真2枚ずつ</span> 登録する</div>
-              <div class="howto-two">
-                <div class="howto-card">
-                  <div class="howto-card-h">アパートの場合</div>
-                  <div class="howto-card-b">玄関前／共用部分／駐車場／ゴミ庫／放置自転車</div>
-                </div>
-                <div class="howto-card">
-                  <div class="howto-card-h">マンションの場合</div>
-                  <div class="howto-card-b">エントランス（エレベーターホール含む）／共用部分／駐車場／ゴミ庫／放置自転車</div>
-                </div>
-              </div>
-              <div class="howto-t2 teal">やること</div>
-              <div class="howto-do">拭き掃除・掃き掃除　／　蜘蛛の巣・ハチの巣の除去　／　ゴミ庫の分別確認と清掃　／　草取り　／　植栽の剪定</div>
-            </div>
-          </div>
-
-          <div class="howto-step">
-            <div class="howto-no1 red">2</div>
-            <div class="howto-step-b">
-              <div class="howto-t">その日に<span class="howto-key red">解決できないもの</span>は<span class="howto-key red">「要対応」</span>に登録する</div>
-              <div class="howto-t2 red">要対応にするもの</div>
-              <div class="howto-ng">放置物　／　迷惑駐車　／　外壁・マス蓋・雨樋・管理看板の破損　／　その他 設備・アスファルト・階段の破損や重度の汚損　／　ゴミの不法投棄・分別違反　／　大量の草抜き　／　植栽の剪定・伐採　／　用水路の掃除</div>
-            </div>
-          </div>
-
-          <div class="howto-must">${ic("alert", 20)}<span class="howto-must-t"><b>登録したら終わりではありません。</b>写真・内容・期限を入れて登録し、<b>期限までに対応して「解決済み」にすること。</b></span></div>
-          <div class="howto-no">${ic("x", 20)} <b>糞尿・嘔吐物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
-        </div>
         <div class="field" style="margin-bottom:-.4rem">
           ${(r.status !== "done" && date < today() && !r.lateReason) ? "" : `
           ${pendingItems.length ? (_cap > 0 ? `
