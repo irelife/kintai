@@ -988,6 +988,29 @@ img[data-photo]{cursor:pointer;}
   transition:border-color .15s,background-color .15s;}
 .add-shot:hover{border-color:var(--muted);background:var(--bg);}
 .add-shot:disabled{opacity:.4;pointer-events:none;}
+/* 写真の処理中に出す覆い（二重押し防止） */
+#photo-busy{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;
+  background:rgba(28,25,23,.45);backdrop-filter:blur(2px);}
+#photo-busy .pb-box{background:#fff;border-radius:1rem;padding:1.6rem 2rem;text-align:center;
+  box-shadow:0 12px 40px rgb(0 0 0 / .25);display:flex;flex-direction:column;align-items:center;gap:.5rem;}
+#photo-busy .pb-box b{font-size:16px;}
+#photo-busy .pb-box span{font-size:13px;color:var(--muted);}
+#photo-busy .pb-sp{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--teal-700,#0f766e);
+  border-radius:50%;animation:pbspin .8s linear infinite;margin-bottom:.3rem;}
+@keyframes pbspin{to{transform:rotate(360deg)}}
+/* 今日タブ：おわった清掃をタップできるようにする */
+.tddone span{cursor:pointer;}
+.tddone span:hover{filter:brightness(.95);}
+/* 今日タブ：清掃する箇所の一覧 */
+.tdlist{margin-top:.5rem;border-top:1px dashed var(--border);padding-top:.45rem;}
+.tdlist summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted);list-style:none;}
+.tdlist summary::-webkit-details-marker{display:none;}
+.tdlist summary::before{content:"▶ ";font-size:10px;}
+.tdlist[open] summary::before{content:"▼ ";}
+.tdlist ul{margin:.4rem 0 0;padding-left:1.1rem;}
+.tdlist li{font-size:12.5px;line-height:1.7;color:var(--fg);}
+.tdlist li.done{color:var(--muted-2);}
+.tdlist li .n{font-size:11px;color:var(--muted-2);}
 
 /* 要対応 */
 .todo{border:1px solid var(--am-200);background:#fffbeb80;border-radius:var(--r);padding:.625rem;}
@@ -1629,8 +1652,6 @@ input,textarea,select,button{touch-action:manipulation;}
   #side-panel.open{transform:translateY(0);}
   #side-grip{display:block;flex:none;width:38px;height:4px;border-radius:99px;
     background:var(--muted-3);margin:.55rem auto .15rem;}
-  #side-grip,#side-panel .side-h{touch-action:none;}
-  #side-panel::before{content:"";position:absolute;left:0;right:0;top:0;height:3.4rem;}
   #side-close{position:absolute;top:.75rem;right:.8rem;z-index:3;
     width:2rem;height:2rem;padding:0;border-radius:9999px;
     border:1px solid var(--border);background:#fff;color:var(--muted);
@@ -2495,6 +2516,25 @@ function showPhotoWarn(warns) {
 }
 
 async function addPhotosToArray(files, arr, persist, opts) {
+  if (window._photoBusy) { toast("写真を処理しています", "終わるまでお待ちください"); return 0; }
+  window._photoBusy = true; showPhotoBusy(true);
+  try { return await _addPhotosToArrayRaw(files, arr, persist, opts); }
+  finally { window._photoBusy = false; showPhotoBusy(false); }
+}
+// 写真の処理中に画面を覆って、二重押しを防ぐ
+function showPhotoBusy(on) {
+  let el = document.getElementById("photo-busy");
+  if (on) {
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "photo-busy";
+      el.innerHTML = '<div class="pb-box"><div class="pb-sp"></div><b>写真を処理しています</b><span>そのままお待ちください</span></div>';
+      document.body.appendChild(el);
+    }
+    el.style.display = "flex";
+  } else if (el) { el.style.display = "none"; }
+}
+async function _addPhotosToArrayRaw(files, arr, persist, opts) {
   opts = opts || {};
   let added = 0; const jobs = []; const warns = [];
   const recKey = (opts.name && opts.date) ? (opts.name + "|" + opts.date) : "";
@@ -3070,6 +3110,18 @@ function renderToday() {
       ${miss.length
         ? `<div class="tdcard-miss">${ic("camera", 12)} 写真があと：${miss.slice(0, 4).map(esc).join("・")}</div>`
         : `<div class="tdcard-ok">${ic("check2", 12)} 写真はそろっています</div>`}
+      ${(() => {
+        const list = itemsFor(n);
+        if (!list.length) return "";
+        return `<details class="tdlist"><summary>清掃する箇所 ${list.length}か所</summary><ul>${
+          list.map((x) => {
+            const c = r.items[x.key] || {};
+            const cnt = (c.photos || []).length;
+            const fin = !!c.status && c.status !== "na";
+            return `<li class="${fin ? "done" : ""}">${fin ? "✓ " : "・"}${esc(x.label)}`
+                 + `${x.optional ? "" : ` <span class="n">(${cnt}/${NEED_SHOTS})</span>`}</li>`;
+          }).join("")}</ul></details>`;
+      })()}
     </div>`;
   };
 
@@ -3101,13 +3153,14 @@ function renderToday() {
     </div>` : ""}
 
     ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
-      <div class="tddone">${doneToday.map((n) => `<span>${esc(n)}</span>`).join("")}</div></div>` : ""}
+      <div class="tddone">${doneToday.map((n) => `<span data-open="${esc(n)}|${esc(t)}" title="完了した内容を見る">${esc(n)}</span>`).join("")}</div></div>` : ""}
 
     `;
 
   box.querySelectorAll("[data-open]").forEach((c) => {
     c.onclick = (e) => {
       if (e.target.closest("[data-nav]")) return;
+      if (e.target.closest(".tdlist")) return;   // 箇所一覧の開閉では記録を開かない
       const [n, d] = c.dataset.open.split("|");
       openRep = { name: n, date: d }; openItem = null; renderModal();
     };
@@ -4481,7 +4534,7 @@ function renderModal() {
   host.innerHTML = `<div class="mask" id="mask">
     <div class="modal xwide" role="dialog" aria-modal="true">
       <div class="modal-h"><h2>清掃記録</h2><button class="x" id="m-x">${ic("x", 18)}</button></div>
-      <div style="display:flex;flex-direction:column;gap:1.25rem">
+      <div id="m-body" style="display:flex;flex-direction:column;gap:1.25rem">
         <div class="mbox">
           <div class="mbox-n">${esc(name)}
             <button class="navbtn" id="m-nav" title="この物件までの道順を開く">${ic("pin", 13)} ナビ</button></div>
@@ -4717,6 +4770,7 @@ function renderModal() {
     };
   }
   renderNgEntry(name, date);
+  lockRecord(true);          // 確認が通るまでは入力させない
   checkOnSite(name, date);   // 現地にいるか確かめてから、到着の位置を残す
   const ngSend = q("#m-ngsend");
   if (ngSend) ngSend.onclick = async () => {
@@ -5753,7 +5807,7 @@ const ONSITE_M = 300;   // この距離までは現地とみなす（m）
 
 async function checkOnSite(name, date) {
   const r = getRep(name, date);
-  if (r.geo && r.geo.open) return true;         // すでに到着を記録済み
+  if (r.geo && r.geo.open) { lockRecord(false); return true; }   // すでに到着を記録済み
   const box = document.getElementById("onsite-warn");
   const show = (html) => { if (box) box.innerHTML = html; };
 
@@ -5763,11 +5817,13 @@ async function checkOnSite(name, date) {
     show(`<div class="os-ng">${ic("alert", 16)}
       <div><b>現在地が取れませんでした。</b>位置情報を許可してから開き直してください。<br>
       電波が届かない場所では、外に出てからもう一度お試しください。</div></div>`);
+    lockRecord(true);
     return false;
   }
   const pc = await propCoord(name);
   if (!pc) {                                     // 物件の座標が無いときは通す
     show("");
+    lockRecord(false);
     stampPos(name, date, "open");
     return true;
   }
@@ -5775,9 +5831,9 @@ async function checkOnSite(name, date) {
   if (d != null && d > ONSITE_M) {
     const km = (d >= 1000) ? (d / 1000).toFixed(1) + "km" : Math.round(d) + "m";
     show(`<div class="os-ng">${ic("alert", 16)}
-      <div><b>この物件から ${km} 離れています。</b>
-      現地に着いてから記録を始めてください。<br>
-      物件の前まで移動して、この画面を開き直してください。</div></div>`);
+      <div><b>この物件から ${km} 離れています。</b><br>
+      現地に到着してから記録を開いてください。<br>
+      物件の前まで移動して、この画面を開き直すと入力できるようになります。</div></div>`);
     lockRecord(true);
     recordFarOpen(name, date, pos, d);
     return false;
@@ -5788,10 +5844,19 @@ async function checkOnSite(name, date) {
   return true;
 }
 
-// 現地でないときは、写真の追加と要対応の登録を止める
+// 現地でないときは、記録の入力すべてを止める（閲覧だけできる）
 function lockRecord(on) {
   const m = document.getElementById("modal-host");
   if (!m) return;
+  const body = m.querySelector("#m-body");
+  if (body) {
+    Array.from(body.children).forEach((el) => {
+      if (el.classList.contains("mbox")) return;   // 物件名と警告は残す
+      el.style.pointerEvents = on ? "none" : "";
+      el.style.opacity = on ? ".4" : "";
+      el.setAttribute("aria-disabled", on ? "true" : "false");
+    });
+  }
   m.querySelectorAll(".dropbox,.dropbox-add,[data-pickitem],#ng-add,.ngadd").forEach((el) => {
     el.style.pointerEvents = on ? "none" : "";
     el.style.opacity = on ? ".45" : "";
@@ -8179,38 +8244,6 @@ function boot() {
   })();
   const _sideClose = document.getElementById("side-close");
   if (_sideClose) _sideClose.onclick = closeSideSheet;
-  // 持ち手・日付の行を下へスワイプすると閉じる
-  (() => {
-    const p = document.getElementById("side-panel");
-    if (!p || !("ontouchstart" in window)) return;
-    const bd = document.getElementById("side-backdrop");
-    let y0 = 0, dy = 0, on = false;
-    p.addEventListener("touchstart", (e) => {
-      if (!isPhone() || !p.classList.contains("open")) return;
-      if (e.touches.length !== 1) return;
-      if (!e.target.closest("#side-grip, .side-h")) return;   // 掴めるのは上部だけ
-      if (e.target.closest("button")) return;                 // ×や戻るは除く
-      y0 = e.touches[0].clientY; dy = 0; on = true;
-      p.style.transition = "none";
-    }, { passive: true });
-    p.addEventListener("touchmove", (e) => {
-      if (!on) return;
-      dy = Math.max(0, e.touches[0].clientY - y0);            // 下方向だけ
-      if (e.cancelable) e.preventDefault();
-      p.style.transform = `translateY(${dy}px)`;
-      if (bd) bd.style.opacity = String(Math.max(0, 1 - dy / 320));
-    }, { passive: false });
-    const end = () => {
-      if (!on) return;
-      on = false;
-      p.style.transition = "";
-      p.style.transform = "";
-      if (bd) bd.style.opacity = "";
-      if (dy > 90) closeSideSheet();                          // ここを超えたら閉じる
-    };
-    p.addEventListener("touchend", end, { passive: true });
-    p.addEventListener("touchcancel", end, { passive: true });
-  })();
   const _sideBd = document.getElementById("side-backdrop");
   if (_sideBd) _sideBd.onclick = closeSideSheet;
   document.getElementById("p-coord").onclick = openCoordCheck;
