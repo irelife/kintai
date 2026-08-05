@@ -8787,8 +8787,10 @@ function openFromUrl() {
     openRep = { name, date }; openItem = null;
     ngOnly = true;                       // LINEから開いたときは要対応だけ出す
     renderCal(); renderModal();
-    // 開いたらURLからパラメータを消す（再読み込みで再度開かないように）
-    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    // URLは消さない。LINEの内蔵ブラウザは表示後に読み込み直すことがあり、
+    // ここで消すと2回目に「ただの起動」になって要対応が出なくなる。
+    // 代わりに、同じリンクを開き直したときだけ効くよう印を残す。
+    try { sessionStorage.setItem("lastOpen", raw); } catch (e) {}
   } catch (e) {}
 }
 document.addEventListener("DOMContentLoaded", boot);
