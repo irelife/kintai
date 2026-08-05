@@ -6196,7 +6196,13 @@ function applyNgOnly() {
 
   Array.from(body.children).forEach((el) => {
     if (el.classList.contains("mbox")) return;      // 物件名は残す
-    if (el.classList.contains("twocol")) return;    // 要対応の一覧・登録は残す
+    if (el.classList.contains("twocol")) {
+      // 登録済みの要対応を先頭に出す。案内と新規登録の入口は隠す。
+      el.querySelectorAll(".ng-guide,.ngstart,.howto,.ngsend-btn").forEach((x) => {
+        x.style.display = "none"; x.setAttribute("data-hid-ng", "1");
+      });
+      return;
+    }
     if (!keep.has(el)) { el.style.display = "none"; el.setAttribute("data-hid-ng", "1"); return; }
     // 残す入れ物の中では、要対応でないカードと清掃の案内を隠す
     el.querySelectorAll("[data-drop^='item|']").forEach((c) => {
@@ -6211,19 +6217,19 @@ function applyNgOnly() {
   if (mb) {
     const tip = document.createElement("div");
     tip.id = "ngonly-tip";
-    tip.innerHTML = (ngKeys.length || (r.ngs || []).length)
-      ? "LINEの通知から開きました。<b>要対応だけを表示しています。</b>"
+    const nNg = ngKeys.length + (r.ngs || []).filter((g) => g && !g.fixed).length;
+    tip.innerHTML = nNg
+      ? `LINEの通知から開きました。<b>未解決の要対応 ${nNg}件</b>を表示しています。`
       : "LINEの通知から開きました。<b>この記録に未解決の要対応は見つかりませんでした。</b>";
     mb.appendChild(tip);
   }
 
   // 要対応の位置まで動かす
   setTimeout(() => {
-    let t = null;
-    keep.forEach((el) => { if (!t && el.matches && el.matches("[data-drop^='item|']")) t = el; });
-    t = t || m.querySelector(".ngitem");
-    if (t && t.scrollIntoView) t.scrollIntoView({ block: "center" });
-  }, 80);
+    let t = m.querySelector(".ngitem");
+    if (!t) keep.forEach((el) => { if (!t && el.matches && el.matches("[data-drop^='item|']")) t = el; });
+    if (t && t.scrollIntoView) t.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, 120);
 }
 // 現地でないときは、記録の入力すべてを止める（閲覧だけできる）
 function lockRecord(on) {
