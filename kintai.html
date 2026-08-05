@@ -1882,6 +1882,126 @@ button,.hm-c,.card,.scard,.tdcard,.tdng,.ng-row,.bcard,.pcard,.pillu{
   #side-panel .scard-t,#side-panel .scard-a{overflow:hidden;text-overflow:ellipsis;}
 }
 @media(min-width:769px){ #side-backdrop,#side-grip,#side-close{display:none;} }
+
+/* ═══════════ 2026/08/05 改修 ═══════════ */
+
+/* ① 案内文が変な位置で折り返す問題の修正
+   flex で並べると <b> の前後がそれぞれ別の箱になり、各自が勝手に折り返す。
+   （例：「清掃する日をタップ / して選び、下の」「「予定に入 / れる」」）
+   1つの文として流れるよう、ブロック表示に戻してアイコンを行内に置く。 */
+.sched-hint,.ng-need-before,.ng-todo,.howto-no,.ng-guide-note,.ng-guide-x,
+.au-info,.send-warn,.inbox-hint,.late-ok,.ng-sent,.ng-req{
+  display:block;text-align:left;
+  word-break:normal;overflow-wrap:break-word;line-break:strict;
+  word-break:auto-phrase;          /* 対応端末では文節の切れ目で折り返す */
+}
+.sched-hint > svg,.ng-need-before > svg,.ng-todo > svg,.howto-no > svg,
+.ng-guide-note > svg,.ng-guide-x > svg,.au-info > svg,.send-warn > svg,
+.late-ok > svg,.ng-sent > svg,.ng-req > svg{
+  vertical-align:-.18em;margin-right:.3rem;flex:none;display:inline-block;
+}
+.sched-hint b{white-space:nowrap;}   /* 「予定に入れる」などの短い引用は途中で切らない */
+.sched-hint{line-height:1.75;}
+
+/* ② スマホの予定カレンダーを見やすく
+   物件名を各マスに並べると縦に伸びて細長くなるため、スマホでは点で示し、
+   日をタップしたときに下の「この日の予定」で名前を読む形にする。 */
+@media(max-width:768px){
+  .mini-cal{padding:.55rem;}
+  .mini-cal .mc-h{margin-bottom:.5rem;}
+  .mini-cal .mc-nav{padding:.45rem .7rem;}
+  .mini-cal:not(.ngcal) .mc-t{font-size:18px;font-weight:800;}
+  .mini-cal:not(.ngcal) .mc-g{gap:3px;}
+  .mini-cal:not(.ngcal) .mc-d{min-height:2.9rem;padding:.3rem .1rem;font-size:16px;
+    justify-content:center;border:1px solid transparent;}
+  .mini-cal:not(.ngcal) .mc-d.hasjob{border-color:var(--teal-200,#99f6e4);background:#f0fdfa;}
+  .mini-cal .mc-jobs{flex-direction:row;flex-wrap:wrap;justify-content:center;
+    align-items:center;gap:2px;margin-top:3px;}
+  .mini-cal .mc-job{width:6px;height:6px;min-width:6px;padding:0;margin:0;
+    border-radius:9999px;font-size:0;line-height:0;color:transparent;overflow:hidden;}
+  .mini-cal .mc-job.more{background:#94a3b8;}
+  .mini-cal:not(.ngcal) .mc-d.on .mc-job{background:#78350f;}
+  .mini-cal-sel{margin-top:.6rem;font-size:14px;}
+  .selview-d.hot{font-size:19px;font-weight:800;}
+}
+/* 予定の入っている日が点だけでも分かるよう、日付を太字に */
+.mc-d.hasjob .mc-dn{font-weight:800;}
+
+/* ③ 対応期限は「月」→「日」をタップして選ぶ（カレンダーのマス目は使わない） */
+.duepick{border:2px solid var(--border);border-radius:.6rem;background:#fff;padding:.7rem;}
+.dp-l{font-size:13px;font-weight:800;color:var(--muted);margin:0 0 .35rem;}
+.dp-months{display:flex;gap:.35rem;overflow-x:auto;padding-bottom:.25rem;margin-bottom:.8rem;
+  -webkit-overflow-scrolling:touch;}
+.dpm{flex:none;border:2px solid var(--border);background:#fff;border-radius:9999px;
+  padding:.45rem 1rem;font-size:16px;font-weight:800;color:var(--fg);cursor:pointer;
+  white-space:nowrap;}
+.dpm.on{background:#c2410c;border-color:#c2410c;color:#fff;}
+.dp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.dpd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  border:1.5px solid var(--border);background:#fff;border-radius:.5rem;padding:.4rem 0 .3rem;
+  font-size:17px;font-weight:800;color:var(--fg);cursor:pointer;line-height:1.15;}
+.dpd .dpd-w{font-size:10px;font-weight:700;color:var(--muted-2);}
+.dpd.sun{color:var(--rose-500);} .dpd.sat{color:var(--blue-500);}
+.dpd.today{box-shadow:inset 0 0 0 2px var(--teal-700);}
+.dpd.on{background:#c2410c;border-color:#c2410c;color:#fff;}
+.dpd.on .dpd-w{color:#fff;}
+.dpd.off{opacity:.35;background:var(--bg);cursor:not-allowed;text-decoration:line-through;}
+.dp-sel{margin-top:.7rem;font-size:17px;font-weight:800;color:#9a3412;}
+.dp-sel.none{color:var(--muted);font-weight:700;}
+
+/* ③-2 ビフォーは大きく1枚ずつ、その下にアフター（横並びをやめる） */
+.phases{grid-template-columns:1fr;gap:.7rem;}
+.phase{padding:.8rem;}
+.phase-t{font-size:16px;font-weight:800;}
+.phase-c{font-size:13px;font-weight:700;}
+.ngitem .phase,.ngphase{min-height:0;}
+.ngitem .phase .shots,.ngphase .shots{min-height:0;}
+.phase .shots{flex-direction:column;flex-wrap:nowrap;gap:.55rem;}
+.phase .shots > .shot,.phase .shots > .add-shot,.phase .shots > .shot-locked{
+  width:100%;max-width:100%;height:auto;aspect-ratio:4/3;}
+.phase .shots > .shot img{width:100%;height:100%;object-fit:cover;}
+.phase .shots > .add-shot{flex-direction:column;gap:.3rem;}
+.phase .shots > .add-shot svg{width:28px;height:28px;}
+
+/* 要対応カードは横いっぱいに置く（項目カードの格子に混ざっても崩れないように） */
+.itemcards > .ngitem{grid-column:1/-1;}
+.ngitem-content{cursor:pointer;}
+.ngitem-content:hover{filter:brightness(.98);}
+.ngedit-t{min-height:4.5rem;font-size:16px;line-height:1.6;}
+
+/* 要対応の「どこ」「種類」はプルダウンに（チップの×が重なって読みにくいため） */
+.ngselrow{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.ngsel{flex:1;min-width:12rem;appearance:auto;font-family:inherit;
+  font-size:18px;font-weight:800;color:var(--fg);background:#fff;
+  border:2px solid #fca5a5;border-radius:.6rem;padding:.7rem .8rem;cursor:pointer;}
+.ngsel:disabled{opacity:.45;background:var(--bg);cursor:not-allowed;}
+.ngsel:focus{outline:2px solid #dc2626;outline-offset:1px;}
+.ngsel-hide{flex:none;display:inline-flex;align-items:center;gap:.25rem;
+  border:1px solid var(--border);background:#fff;color:var(--muted-2);
+  border-radius:9999px;padding:.4rem .8rem;font-size:12.5px;font-weight:700;cursor:pointer;}
+.ngsel-hide:hover{background:var(--bg);color:#b91c1c;border-color:#fca5a5;}
+
+/* 対応期限の欄（押すとカレンダーが浮いて出る） */
+.duefield{display:flex;align-items:center;gap:.7rem;width:100%;text-align:left;cursor:pointer;
+  border:2px solid #dc2626;background:#fff;border-radius:.6rem;padding:.7rem .85rem;
+  font-family:inherit;}
+.duefield:disabled{opacity:.45;cursor:not-allowed;border-color:var(--border);}
+.duefield-l{flex:none;font-size:14px;font-weight:800;color:#c2410c;background:#ffedd5;
+  border-radius:9999px;padding:.2rem .7rem;}
+.duefield-d{flex:1;font-size:22px;font-weight:900;color:#9a3412;line-height:1.15;}
+.duefield-d.none{font-size:17px;font-weight:700;color:var(--muted);}
+.duefield-i{flex:none;color:var(--muted-2);}
+
+/* 浮かせて出す日付えらび */
+.duepop-mask{position:fixed;inset:0;z-index:300;background:rgb(15 23 42 / .55);
+  display:flex;align-items:center;justify-content:center;padding:1rem;}
+.duepop{width:100%;max-width:26rem;max-height:88vh;overflow:auto;background:#fff;
+  border-radius:.9rem;box-shadow:0 20px 50px rgb(0 0 0 / .35);padding:1rem;}
+.duepop-h{display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+  font-size:17px;font-weight:800;margin-bottom:.7rem;}
+.duepop-x{flex:none;border:0;background:transparent;color:var(--muted-2);cursor:pointer;padding:.3rem;line-height:0;}
+.duepop .duepick{border:0;padding:0;}
+.duepop-f{display:flex;justify-content:flex-end;gap:.5rem;margin-top:.9rem;}
 </style>
 </head>
 <body>
@@ -2462,6 +2582,7 @@ let openRep = null;     // {name, date}
 let openItem = null;
 let ngOnly = false;   // LINE通知から開いたか（要対応だけ表示する）    // 展開中の点検項目 key
 let doneOpen = false;   // 完了フォルダの開閉
+let _itemDueEdit = null;   // 要対応（項目）で内容・期限を編集中のキー
 let _modalScroll = 0;   // モーダルのスクロール位置（再描画で保持）
 let filterView = null;  // {filter} 月全体の絞り込み一覧を右パネルに出す
 let filterQ = "", filterCity = "all", filterSched = "none";   // 既定は「予定なしのみ」＝予定を入れた物件はリストから消える
@@ -4272,8 +4393,10 @@ function openMoveSched(name, from) {
     const el = host.querySelector("#mv-cal");
     const first = new Date(_pc.y, _pc.m, 1);
     const start = new Date(first); start.setDate(1 - first.getDay());
+    // 必要な週数だけ描く（いつも6週ぶん描くと、下に空の行ができて縦に長くなる）
+    const _cells = Math.ceil((first.getDay() + new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()) / 7) * 7;
     let g = "";
-    for (let i = 0; i < 42; i++) {
+    for (let i = 0; i < _cells; i++) {
       const d = new Date(start); d.setDate(start.getDate() + i);
       const ds = ymd(d), out = d.getMonth() !== _pc.m, dow = d.getDay();
       const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
@@ -4937,34 +5060,59 @@ function renderModal() {
     const cat = catOf(it.key);
     const maxN = NEED_SHOTS;   // 清掃箇所は2枚まで
 
-    let shotsBlock;
+    // 要対応は「追加した要対応」と同じ書式にそろえる
+    // （場所＋種類 → 対応内容 → ビフォー／アフター → 対応期限の帯）
     if (isNg) {
+      const overdue = c.deadline && !c.fixed && c.deadline < today();
       const panel = (ph, label, cls) => {
         const arr = c[ph] || [];
         const strip = arr.map((src, i) =>
-          `<div class="ishot">${imgTag(src)}<button data-del="item|${it.key}|${ph}|${i}">${ic("x", 11)}</button></div>`
+          `<div class="shot">${imgTag(src)}<button data-del="item|${it.key}|${ph}|${i}" aria-label="写真を消す">${ic("x", 13)}</button></div>`
         ).join("") +
-        (arr.length < maxN ? `<button class="iadd small" data-add="item|${it.key}|${ph}">${ic("camera", 16)}</button>` : "");
+        (arr.length < maxN ? `<button class="add-shot" data-add="item|${it.key}|${ph}">${ic("camera", 24)}<span class="add-shot-l">追加</span></button>` : "");
         return `<div class="phase">
-          <div class="phase-h"><span class="phase-t" style="color:${cat.fg}">${label}</span><span class="phase-c" style="color:${cat.fg}">${arr.length}/${maxN}枚</span></div>
+          <div class="phase-h"><span class="phase-t ${cls}">${label}</span><span class="phase-c">${arr.length}/${maxN}枚</span></div>
           <div class="shots">${strip}</div>
         </div>`;
       };
-      const today0 = today();
-      const overdue = c.deadline && !c.fixed && c.deadline < today0;
-      shotsBlock = `<div class="phases" style="margin-top:.6rem">
-        ${panel("before", "ビフォー", "")}
-        ${panel("after", "アフター", "a")}
-      </div>
-      <textarea class="ng-note" data-ngtext="${it.key}" placeholder="要対応の内容（例：放置自転車2台、東側駐輪場。警告札を貼付。撤去手配中。）">${esc(c.text || "")}</textarea>
-      ${(!(c.text && c.text.trim()) || !c.deadline) ? `<div class="ng-todo">${ic("alert", 16)} 異常ありとして記録しました。${!(c.text && c.text.trim()) ? "内容" : ""}${(!(c.text && c.text.trim()) && !c.deadline) ? "と" : ""}${!c.deadline ? "対応期限" : ""}を入力してください</div>` : ""}
-      <div class="ng-deadline ${overdue ? "over" : ""}">
-        <label>対応期限${overdue ? "（期限切れ）" : ""}</label>
-        <div class="ngcal" data-ngcal="${it.key}"></div>
-        <div class="ngcal-sel">${c.deadline ? `選択中：${fmtDate(c.deadline)}` : "日付を選んでください"}</div>
-        ${!c.deadline ? `<span class="ng-req">${ic("alert", 12)} 期限を入れると通知・解決ができます</span>` : ""}
+      const editing = (_itemDueEdit === it.key);
+      const canFix = (c.after || []).length && c.deadline;
+      return `<div class="ngitem">
+        <div class="ngitem-h">
+          <span class="ngitem-p">${esc(itemShort(it.key, it.label))}</span>
+          <span class="ngitem-k">要対応</span>
+          <button class="ngitem-x" data-delitem="${it.key}" aria-label="削除">${ic("x", 15)}</button>
+        </div>
+        ${editing
+          ? `<div class="ngitem-editbox">
+               <label class="ngedit-l">対応内容</label>
+               <textarea class="ngedit-t" data-ngtext="${it.key}" rows="2"
+                 placeholder="例：放置自転車2台、東側駐輪場。警告札を貼付。撤去手配中。">${esc(c.text || "")}</textarea>
+               <div class="ngedit-f">
+                 <button class="btn btn-sm" style="background:var(--teal-700);color:#fff;border:none"
+                   data-itemdueclose="${it.key}">${ic("check2", 15)} 入力を終える</button>
+               </div>
+             </div>`
+          : `<div class="ngitem-content" data-itemedit="${it.key}" title="押すと対応内容を書き直せます">
+               <span class="ngitem-content-l">対応内容</span>
+               <span class="ngitem-content-t">${esc(c.text || "（未入力）")}</span>
+             </div>`}
+        <div class="phases" style="margin-top:.7rem">${panel("before", "ビフォー", "")}${panel("after", "アフター", "a")}</div>
+        <div class="ngitem-m ngitem-m-tap ${overdue ? "over" : ""}" data-itemdue="${it.key}" title="押すと期限を変更できます">
+          ${c.deadline
+            ? `<span class="ngitem-m-l">${overdue ? "期限切れ" : "対応期限"}</span><span class="ngitem-m-d">${esc(fmtDate(c.deadline))}</span>`
+            : `<span class="ngitem-m-l none">対応期限 未設定</span>`}${c.notified ? `<span class="ngitem-m-n">通知済み</span>` : ""}</div>
+        ${c.fixed
+          ? `<div class="ngitem-done">${ic("check2", 16)} 解決済み
+               <button class="btn btn-outline btn-sm" data-itemunfix="${it.key}">未解決に戻す</button></div>`
+          : `<button class="btn ngfix-btn" data-itemfix="${it.key}" ${canFix ? "" : "disabled"}>
+               ${ic("check2", 17)} ${canFix ? "解決済みにする"
+                 : ((c.after || []).length ? "対応期限を入れると解決できます" : "アフター写真を入れると解決できます")}</button>`}
       </div>`;
-    } else {
+    }
+
+    let shotsBlock;
+    {
       const arr = (c.photos || []).slice(0, maxN);
       const shots = arr.map((src, i) =>
         `<div class="ishot">${imgTag(src)}<button data-del="item|${it.key}||${i}" aria-label="写真を消す">${ic("x", 11)}</button></div>`
@@ -4982,7 +5130,7 @@ function renderModal() {
     const FG = isDone ? "#1d4ed8" : cat.fg;
     const cardStyle = `border-color:${BD};background:${BG}`;
     const labelStyle = `color:${FG}`;
-    return `<div class="itemcard ${isDone ? "done" : ""} ${isNg ? "isng" : ""}" data-drop="item|${it.key}" style="${cardStyle}">
+    return `<div class="itemcard ${isDone ? "done" : ""}" data-drop="item|${it.key}" style="${cardStyle}">
       <div class="itemcard-top">
         <span class="itemcard-name" style="border-color:${BD};color:${FG};background:#fff">${esc(itemShort(it.key, it.label))}${it.optional ? `<span class="item-o">任意</span>` : ""}</span>
         <span class="itemcard-top-r">
@@ -4992,15 +5140,8 @@ function renderModal() {
       <div class="itemcard-h">
         <span class="itemcard-l done-mark" style="${labelStyle}">${ic("check2", 17)} 撮影済み（完了）</span>
       </div>
-      ${!isNg ? `<div class="itemcard-hint" style="${labelStyle}">${catHint(it.key)}</div>` : ""}
-      ${isNg && c.fixed ? '<div class="ng-fixed-badge">解決済み</div>' : ""}
+      <div class="itemcard-hint" style="${labelStyle}">${catHint(it.key)}</div>
       ${shotsBlock}
-      ${isNg ? `<div class="ng-actions">
-        <button class="btn btn-outline btn-sm" data-ngfix="${it.key}" ${!c.deadline ? "disabled" : ""}>
-          ${c.fixed ? "未解決に戻す" : "解決済みにする"}
-        </button>
-      </div>
-      ${c.notified ? `<div class="ng-sent">${ic("check2", 11)} ${c.notifiedAt ? esc(c.notifiedAt.slice(0, 10)) + " に" : ""}通知済み</div>` : ""}` : ""}
     </div>`;
   };
 
@@ -5167,7 +5308,7 @@ function renderModal() {
     const nm = openRep && openRep.name;
     // 完了かどうかは写真の枚数だけで決める（途中で閉じても勝手に完了にしない）
     if (d && nm) refreshStatus(nm, d);
-    openRep = null; openItem = null; renderModal(); renderCal();
+    openRep = null; openItem = null; _itemDueEdit = null; renderModal(); renderCal();
     if (tab === "today") renderToday();      // 今日画面を開いていれば最新にする
     if (d && cfg.gas) syncToSheet(d, true);  // 記録を閉じたら静かに同期
   };
@@ -5312,60 +5453,66 @@ function renderModal() {
       await addPhotosToArray(files.slice(0, room), it.photos, persist, { name, date });
     });
   });
-  host.querySelectorAll("[data-ngcal]").forEach((el) => {
-    const k = el.dataset.ngcal;
-    const cur = itemOf(r, k).deadline || "";
-    // 表示する月：期限が入っていればその月、なければ今月
-    let vm = (() => {
-      const d = cur ? parseYmd(cur) : new Date();
-      return { y: d.getFullYear(), m: d.getMonth() };
-    })();
-    const draw = () => {
-      const sel = itemOf(r, k).deadline || "";
-      const first = new Date(vm.y, vm.m, 1);
-      const start = new Date(first); start.setDate(1 - first.getDay());
-      let g = "";
-      for (let i = 0; i < 42; i++) {
-        const d = new Date(start); d.setDate(start.getDate() + i);
-        const ds = ymd(d), out = d.getMonth() !== vm.m, dow = d.getDay();
-        // 対応期限は「清掃予定日（date）」より前には設定させない（さかのぼり防止）
-        const tooEarly = ds < date;
-        const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
-                     ds === sel ? "on" : "", tooEarly ? "disabled" : "",
-                     dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
-        g += `<button type="button" class="${cls}" data-pick="${ds}" ${tooEarly ? "disabled" : ""}>${d.getDate()}</button>`;
-      }
-      el.innerHTML = `<div class="mc-h">
-          <button type="button" class="mc-nav" data-mv="-1">${ic("left", 15)}</button>
-          <span class="mc-t">${vm.y}年 ${vm.m + 1}月</span>
-          <button type="button" class="mc-nav" data-mv="1">${ic("right", 15)}</button>
-        </div>
-        <div class="mc-wd"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
-        <div class="mc-g">${g}</div>`;
-      el.querySelectorAll("[data-mv]").forEach((b) => {
-        b.onclick = (e) => {
-          e.stopPropagation();
-          const mv = Number(b.dataset.mv);
-          const nm = vm.m + mv;
-          vm = { y: vm.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 };
-          draw();
-        };
-      });
-      el.querySelectorAll("[data-pick]").forEach((b) => {
-        b.onclick = (e) => {
-          e.stopPropagation();
-          if (b.dataset.pick < date) { toast("清掃予定日より前は選べません", `${fmtDate(date)}以降で選んでください`); return; }
-          const it = itemOf(r, k);
-          // 同じ日をもう一度押したら解除できる
-          it.deadline = (it.deadline === b.dataset.pick) ? "" : b.dataset.pick;
-          r.items[k] = it;
-          setRep(name, date, { items: r.items });
+  // 要対応（項目）：対応内容を押すと入力欄が開く
+  host.querySelectorAll("[data-itemedit]").forEach((b) => {
+    b.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const k = b.dataset.itemedit;
+      _itemDueEdit = (_itemDueEdit === k) ? null : k;
+      renderModal();
+    };
+  });
+  // 要対応（項目）：期限の帯を押すと、浮いたカレンダーが出る
+  host.querySelectorAll("[data-itemdue]").forEach((b) => {
+    b.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const k = b.dataset.itemdue;
+      openDuePicker({
+        min: date, value: itemOf(getRep(name, date), k).deadline || "",
+        title: `${itemShort(k, k)}の対応期限`,
+        onPick: (ds) => {
+          const r2 = getRep(name, date);
+          const it2 = itemOf(r2, k);
+          it2.deadline = ds;
+          r2.items[k] = it2;
+          setRep(name, date, { items: r2.items });
           maybeAutoNotifyNg(name, date, k);   // 内容＋期限が揃えば自動でLINE通知
-          renderModal();
-        };
+          renderModal(); renderNgBadge();
+        },
       });
     };
-    draw();
+  });
+  host.querySelectorAll("[data-itemdueclose]").forEach((b) => {
+    b.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      maybeAutoNotifyNg(name, date, b.dataset.itemdueclose);
+      _itemDueEdit = null;
+      renderModal();
+    };
+  });
+  // 要対応（項目）：解決済みにする／未解決に戻す
+  host.querySelectorAll("[data-itemfix]").forEach((b) => {
+    b.onclick = () => {
+      const k = b.dataset.itemfix;
+      const r2 = getRep(name, date);
+      const it2 = itemOf(r2, k);
+      it2.fixed = true; it2.fixedAt = today();
+      r2.items[k] = it2;
+      setRep(name, date, { items: r2.items });
+      toast("解決済みにしました", itemShort(k, k));
+      renderModal(); renderNgBadge();
+    };
+  });
+  host.querySelectorAll("[data-itemunfix]").forEach((b) => {
+    b.onclick = () => {
+      const k = b.dataset.itemunfix;
+      const r2 = getRep(name, date);
+      const it2 = itemOf(r2, k);
+      it2.fixed = false; it2.fixedAt = "";
+      r2.items[k] = it2;
+      setRep(name, date, { items: r2.items });
+      renderModal(); renderNgBadge();
+    };
   });
   // 要対応の本文（項目キー単位）
   host.querySelectorAll("[data-ngtext]").forEach((t) => {
@@ -5421,8 +5568,10 @@ function openSched(name) {
     const el = host.querySelector("#s-cal");
     const first = new Date(_pc.y, _pc.m, 1);
     const start = new Date(first); start.setDate(1 - first.getDay());
+    // 必要な週数だけ描く（いつも6週ぶん描くと、下に空の行ができて縦に長くなる）
+    const _cells = Math.ceil((first.getDay() + new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()) / 7) * 7;
     let g = "";
-    for (let i = 0; i < 42; i++) {
+    for (let i = 0; i < _cells; i++) {
       const d = new Date(start); d.setDate(start.getDate() + i);
       const ds = ymd(d), out = d.getMonth() !== _pc.m, dow = d.getDay();
       const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
@@ -8132,22 +8281,19 @@ function renderNgEntry(name, date) {
       </div>
       ${g._editing
         ? `<div class="ngitem-editbox">
-             <label class="ngedit-l">内容</label>
+             <label class="ngedit-l">対応内容</label>
              <textarea class="ngedit-t" data-ngedittext="${i}" rows="2" placeholder="気づいたことを入力">${esc(g.text || "")}</textarea>
-             <label class="ngedit-l">対応期限</label>
-             <div class="ngcal" data-ngcalg="${i}"></div>
-             <div class="ngcal-sel">${g.deadline ? `選択中：${fmtDate(g.deadline)}` : "日付を選んでください"}</div>
              <div class="ngedit-f">
                <button class="btn btn-default btn-sm" data-ngeditcancel="${i}">キャンセル</button>
                <button class="btn btn-sm" style="background:var(--teal-700);color:#fff;border:none" data-ngeditsave="${i}">${ic("check2", 15)} 保存</button>
              </div>
            </div>`
-        : `<div class="ngitem-content">
+        : `<div class="ngitem-content" data-ngedit="${i}" title="押すと対応内容を書き直せます">
              <span class="ngitem-content-l">対応内容</span>
              <span class="ngitem-content-t">${esc(g.text || "（未入力）")}</span>
            </div>`}
       <div class="phases" style="margin-top:.7rem">${panel("before", "ビフォー", "")}${panel("after", "アフター", "a")}</div>
-      <div class="ngitem-m ngitem-m-tap ${g.deadline && g.deadline < today() && !g.fixed ? "over" : ""}" data-ngedit="${i}" title="押すと期限を変更できます">
+      <div class="ngitem-m ngitem-m-tap ${g.deadline && g.deadline < today() && !g.fixed ? "over" : ""}" data-ngdue="${i}" title="押すと期限を変更できます">
         ${g.deadline
           ? `<span class="ngitem-m-l">${g.deadline < today() && !g.fixed ? "期限切れ" : "対応期限"}</span><span class="ngitem-m-d">${esc(fmtDate(g.deadline))}</span>`
           : `<span class="ngitem-m-l none">対応期限 未設定</span>`}${g.notified ? `<span class="ngitem-m-n">通知済み</span>` : ""}</div>
@@ -8187,17 +8333,23 @@ function renderNgEntry(name, date) {
     <div class="ngform">
       <div class="ngstep ${d.place ? "done" : "now"}">
         <div class="ngstep-l">1. どこですか</div>
-        <div class="ngchips">${places.map((p) => `
-          <span class="ngchip-w">
-            <button class="ngchip ${d.place === p.key ? "on" : ""}" data-place="${p.key}">${esc(p.label)}</button>
-            <button class="ngchip-x" data-hideplace="${p.key}" title="この物件にはない項目を消す">${ic("x", 11)}</button>
-          </span>`).join("")}</div>
+        <div class="ngselrow">
+          <select class="ngsel" id="ng-place">
+            <option value="" ${d.place ? "" : "selected"}>選んでください</option>
+            ${places.map((p) => `<option value="${esc(p.key)}" ${d.place === p.key ? "selected" : ""}>${esc(p.label)}</option>`).join("")}
+          </select>
+          ${d.place ? `<button class="ngsel-hide" id="ng-placehide" title="この物件にはない項目を消す">${ic("x", 13)} この物件にはない</button>` : ""}
+        </div>
       </div>
 
       <div class="ngstep ${!step2 ? "off" : (d.kind ? "done" : "now")}">
         <div class="ngstep-l">2. 種類</div>
-        <div class="ngchips">${NG_KINDS.map((k) => `
-          <button class="ngchip ${d.kind === k.key ? "on" : ""}" data-kind="${k.key}" ${step2 ? "" : "disabled"}>${esc(k.label)}</button>`).join("")}</div>
+        <div class="ngselrow">
+          <select class="ngsel" id="ng-kind" ${step2 ? "" : "disabled"}>
+            <option value="" ${d.kind ? "" : "selected"}>選んでください</option>
+            ${NG_KINDS.map((k) => `<option value="${esc(k.key)}" ${d.kind === k.key ? "selected" : ""}>${esc(k.label)}</option>`).join("")}
+          </select>
+        </div>
       </div>
 
       <div class="ngstep ${!step3 ? "off" : (step4 ? "done" : "now")}">
@@ -8237,8 +8389,11 @@ function renderNgEntry(name, date) {
       <div class="ngstep ${!step5 ? "off" : "now"}">
         <div class="ngstep-l">5. 対応期限</div>
         ${step4 && !step5 ? `<div class="ng-need-before">${ic("alert", 15)} 先に上の<b>ビフォー写真</b>を登録すると、ここで期限を選べます</div>` : ""}
-        <div class="ngcal" id="ng-draftcal"></div>
-        <div class="ngcal-sel">${d.deadline ? `選択中：${fmtDate(d.deadline)}` : "日付を選んでください"}</div>
+        <button type="button" class="duefield ${d.deadline ? "" : "empty"}" id="ng-draftdue" ${step5 ? "" : "disabled"}>
+          <span class="duefield-l">対応期限</span>
+          <span class="duefield-d ${d.deadline ? "" : "none"}">${d.deadline ? esc(fmtDate(d.deadline)) : "タップして選ぶ"}</span>
+          ${ic("calendar", 18, "duefield-i")}
+        </button>
       </div>
 
       <div class="ngform-f">
@@ -8248,34 +8403,49 @@ function renderNgEntry(name, date) {
     </div>`;
 
   hydratePhotos(host);   // プレースホルダに実画像を差し込む
-  // 1. 場所
-  host.querySelectorAll("[data-place]").forEach((b) => {
-    b.onclick = () => { const rr = getRep(name, date); rr.ngDraft.place = b.dataset.place;
-      setRep(name, date, { ngDraft: rr.ngDraft }); renderNgEntry(name, date); };
-  });
-  host.querySelectorAll("[data-hideplace]").forEach((b) => {
-    b.onclick = () => {
-      const k = b.dataset.hideplace;
-      if (!confirm(`「${placeLabel(k)}」をこの物件の選択肢から消しますか？`)) return;
-      ngHidden[name] = [...hiddenPlaces(name), k];
-      save(K.ngHidden, ngHidden);
-      if (d.place === k) d.place = "";
-      renderNgEntry(name, date);
-    };
-  });
-  // 2. 種類
-  host.querySelectorAll("[data-kind]").forEach((b) => {
-    b.onclick = () => { if (!step2) return; const rr = getRep(name, date); rr.ngDraft.kind = b.dataset.kind;
-      setRep(name, date, { ngDraft: rr.ngDraft }); renderNgEntry(name, date); };
-  });
+  // 1. 場所（プルダウン）
+  const selPlace = document.getElementById("ng-place");
+  if (selPlace) selPlace.onchange = () => {
+    const rr = getRep(name, date); rr.ngDraft.place = selPlace.value;
+    setRep(name, date, { ngDraft: rr.ngDraft }); renderNgEntry(name, date);
+  };
+  const hidePlace = document.getElementById("ng-placehide");
+  if (hidePlace) hidePlace.onclick = () => {
+    const k = d.place; if (!k) return;
+    if (!confirm(`「${placeLabel(k)}」をこの物件の選択肢から消しますか？`)) return;
+    ngHidden[name] = [...hiddenPlaces(name), k];
+    save(K.ngHidden, ngHidden);
+    const rr = getRep(name, date); rr.ngDraft.place = "";
+    setRep(name, date, { ngDraft: rr.ngDraft });
+    renderNgEntry(name, date);
+  };
+  // 2. 種類（プルダウン）
+  const selKind = document.getElementById("ng-kind");
+  if (selKind) selKind.onchange = () => {
+    if (!step2) return;
+    const rr = getRep(name, date); rr.ngDraft.kind = selKind.value;
+    setRep(name, date, { ngDraft: rr.ngDraft }); renderNgEntry(name, date);
+  };
   // 3. 内容
   const ta = document.getElementById("ng-text");
   if (ta) {
     ta.oninput = () => { const rr = getRep(name, date); rr.ngDraft.text = ta.value; setRep(name, date, { ngDraft: rr.ngDraft }); };
     ta.onblur = () => { renderNgEntry(name, date); };
   }
-  // 4. 期限
-  if (step5) drawNgDraftCal(name, date);
+  // 4. 期限（欄をタップ → 浮かせたカレンダーでえらぶ）
+  const dueBtn = document.getElementById("ng-draftdue");
+  if (dueBtn && step5) dueBtn.onclick = () => {
+    openDuePicker({
+      min: date, value: (getNgDraft(name, date) || {}).deadline || "",
+      onPick: (ds) => {
+        const rr = getRep(name, date);
+        if (!rr.ngDraft) return;
+        rr.ngDraft.deadline = ds;
+        setRep(name, date, { ngDraft: rr.ngDraft });
+        renderNgEntry(name, date);
+      },
+    });
+  };
   // 保存・取消
   document.getElementById("ng-cancel").onclick = () => {
     const rr = getRep(name, date); delete rr.ngDraft;
@@ -8352,6 +8522,96 @@ function renderNgEntry(name, date) {
 
 /* 登録済みの要対応カード：写真の追加・削除・ドロップ・カード削除をまとめて有効にする。
    下書きの有無にかかわらず必ず呼ぶこと（呼び忘れると×が効かなくなる）。 */
+/* ===== 対応期限のえらび方（カレンダーは使わない） =====
+   7×6のマス目はスマホで小さく押しにくいので、
+   「月」のボタン → 「日」のボタン の2段階でえらぶ形にした。
+   opt = { min:"YYYY-MM-DD"(これより前は選べない), value:現在値 or 関数, onPick:(ds)=>{} } */
+const WD_JA = ["日", "月", "火", "水", "木", "金", "土"];
+function drawDuePicker(el, opt) {
+  if (!el) return;
+  const min = opt.min || "";
+  const onPick = opt.onPick || function () {};
+  const val = () => (typeof opt.value === "function" ? opt.value() : opt.value) || "";
+  const base = min ? parseYmd(min) : new Date();
+  const months = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    months.push({ y: d.getFullYear(), m: d.getMonth() });
+  }
+  let vm = (() => {
+    const cur = val();
+    if (cur) { const d = parseYmd(cur); return { y: d.getFullYear(), m: d.getMonth() }; }
+    return { y: months[0].y, m: months[0].m };
+  })();
+  const draw = () => {
+    const cur = val();
+    const last = new Date(vm.y, vm.m + 1, 0).getDate();
+    let days = "";
+    for (let n = 1; n <= last; n++) {
+      const d = new Date(vm.y, vm.m, n), ds = ymd(d), dow = d.getDay();
+      const off = !!(min && ds < min);
+      const cls = ["dpd", ds === cur ? "on" : "", off ? "off" : "",
+                   ds === today() ? "today" : "",
+                   dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
+      days += `<button type="button" class="${cls}" data-dp="${ds}" ${off ? "disabled" : ""}>${n}<span class="dpd-w">${WD_JA[dow]}</span></button>`;
+    }
+    const thisY = new Date().getFullYear();
+    el.innerHTML = `<div class="dp-l">1. 月をえらぶ</div>
+      <div class="dp-months">${months.map((x) =>
+        `<button type="button" class="dpm ${x.y === vm.y && x.m === vm.m ? "on" : ""}"
+           data-dpm="${x.y}.${x.m}">${x.y !== thisY ? x.y + "年" : ""}${x.m + 1}月</button>`).join("")}</div>
+      <div class="dp-l">2. 日をえらぶ</div>
+      <div class="dp-days">${days}</div>
+      <div class="dp-sel ${cur ? "" : "none"}">${cur ? "選択中：" + fmtDate(cur) : "日をタップしてください"}</div>`;
+    el.querySelectorAll("[data-dpm]").forEach((b) => {
+      b.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const p = b.dataset.dpm.split("."); vm = { y: +p[0], m: +p[1] }; draw();
+      };
+    });
+    el.querySelectorAll("[data-dp]").forEach((b) => {
+      b.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (min && b.dataset.dp < min) {
+          toast("清掃予定日より前は選べません", `${fmtDate(min)}以降で選んでください`); return;
+        }
+        onPick(b.dataset.dp);
+      };
+    });
+  };
+  draw();
+}
+
+/* 期限の欄をタップすると、画面の上に浮かせて日付をえらばせる（欄の中には出さない） */
+function openDuePicker(opt) {
+  const old = document.getElementById("due-pop");
+  if (old) old.remove();
+  const wrap = document.createElement("div");
+  wrap.id = "due-pop";
+  wrap.className = "duepop-mask";
+  wrap.innerHTML = `<div class="duepop" role="dialog" aria-modal="true">
+      <div class="duepop-h"><span>${esc(opt.title || "対応期限をえらぶ")}</span>
+        <button class="duepop-x" aria-label="閉じる">${ic("x", 20)}</button></div>
+      <div class="duepop-b"></div>
+      <div class="duepop-f">
+        ${opt.value ? `<button class="btn btn-outline btn-sm duepop-clear">期限を消す</button>` : ""}
+        <button class="btn btn-default btn-sm duepop-cancel">やめる</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = () => { wrap.remove(); };
+  wrap.onclick = (e) => { if (e.target === wrap) close(); };
+  wrap.querySelector(".duepop-x").onclick = close;
+  wrap.querySelector(".duepop-cancel").onclick = close;
+  const clr = wrap.querySelector(".duepop-clear");
+  if (clr) clr.onclick = () => { close(); opt.onPick(""); };
+  drawDuePicker(wrap.querySelector(".duepop-b"), {
+    min: opt.min,
+    value: opt.value || "",
+    onPick: (ds) => { close(); opt.onPick(ds); },   // えらんだらすぐ閉じる
+  });
+}
+
 function bindNgListed(host, name, date) {
   // ドラッグ&ドロップで写真を入れる
   host.querySelectorAll("[data-drop]").forEach((zone) => {
@@ -8450,7 +8710,7 @@ function bindNgListed(host, name, date) {
     setRep(name, date, { ngs: rr.ngs });
     renderNgEntry(name, date);
     if (g._editing) setTimeout(() => {
-      const cal = host.querySelector("[data-ngcalg]");
+      const cal = host.querySelector(".ngitem-editbox");
       if (cal && cal.scrollIntoView) cal.scrollIntoView({ block: "center", behavior: "smooth" });
     }, 60);
   };
@@ -8462,56 +8722,23 @@ function bindNgListed(host, name, date) {
       setRep(name, date, { ngs: getRep(name, date).ngs });
     };
   });
-  // 編集：期限カレンダー（清掃予定日より前は選べない）
-  host.querySelectorAll("[data-ngcalg]").forEach((el) => {
-    const gi = +el.dataset.ngcalg;
-    let vm = (() => {
-      const cur = ((getRep(name, date).ngs || [])[gi] || {}).deadline;
-      const d = cur ? parseYmd(cur) : new Date();
-      return { y: d.getFullYear(), m: d.getMonth() };
-    })();
-    const draw = () => {
-      const g = (getRep(name, date).ngs || [])[gi] || {};
-      const sel = g.deadline || "";
-      const first = new Date(vm.y, vm.m, 1);
-      const start = new Date(first); start.setDate(1 - first.getDay());
-      let grid = "";
-      for (let i = 0; i < 42; i++) {
-        const d = new Date(start); d.setDate(start.getDate() + i);
-        const ds = ymd(d), out = d.getMonth() !== vm.m, dow = d.getDay();
-        const tooEarly = ds < date;
-        const cls = ["mc-d", out ? "out" : "", ds === today() ? "today" : "",
-                     ds === sel ? "on" : "", tooEarly ? "disabled" : "",
-                     dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
-        grid += `<button type="button" class="${cls}" data-pk="${ds}" ${tooEarly ? "disabled" : ""}>${d.getDate()}</button>`;
-      }
-      el.innerHTML = `<div class="mc-h">
-          <button type="button" class="mc-nav" data-mv="-1">${ic("left", 15)}</button>
-          <span class="mc-t">${vm.y}年 ${vm.m + 1}月</span>
-          <button type="button" class="mc-nav" data-mv="1">${ic("right", 15)}</button>
-        </div>
-        <div class="mc-wd"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
-        <div class="mc-g">${grid}</div>`;
-      el.querySelectorAll("[data-mv]").forEach((bb) => {
-        bb.onclick = (e) => {
-          e.stopPropagation();
-          const nm = vm.m + Number(bb.dataset.mv);
-          vm = { y: vm.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 };
-          draw();
-        };
-      });
-      el.querySelectorAll("[data-pk]").forEach((bb) => {
-        bb.onclick = (e) => {
-          e.stopPropagation();
-          if (bb.dataset.pk < date) { toast("清掃予定日より前は選べません", `${fmtDate(date)}以降で選んでください`); return; }
-          const g2 = (getRep(name, date).ngs || [])[gi]; if (!g2) return;
-          g2.deadline = (g2.deadline === bb.dataset.pk) ? "" : bb.dataset.pk;
+  // 対応期限の帯：押すと画面の上に浮いたカレンダーが出て、そこでえらぶ
+  host.querySelectorAll("[data-ngdue]").forEach((b) => {
+    b.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const gi = +b.dataset.ngdue;
+      const g2 = (getRep(name, date).ngs || [])[gi]; if (!g2) return;
+      openDuePicker({
+        min: date, value: g2.deadline || "",
+        title: `${placeLabel(g2.place)}の対応期限`,
+        onPick: (ds) => {
+          const g3 = (getRep(name, date).ngs || [])[gi]; if (!g3) return;
+          g3.deadline = ds;
           setRep(name, date, { ngs: getRep(name, date).ngs });
-          renderNgEntry(name, date);
-        };
+          renderNgEntry(name, date); renderModal(); renderNgBadge();
+        },
       });
     };
-    draw();
   });
   // 編集：保存／キャンセル（編集モードを閉じる）
   host.querySelectorAll("[data-ngeditsave]").forEach((b) => {
@@ -8531,41 +8758,6 @@ function bindNgListed(host, name, date) {
       renderNgEntry(name, date);
     };
   });
-}
-// 期限のミニカレンダー（下書き用）
-function drawNgDraftCal(name, date) {
-  const el = document.getElementById("ng-draftcal");
-  const dr = getNgDraft(name, date);
-  if (!el || !dr) return;
-  let vm = (() => { const d = dr.deadline ? parseYmd(dr.deadline) : new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
-  const draw = () => {
-    const sel = dr.deadline || "";
-    const first = new Date(vm.y, vm.m, 1);
-    const start = new Date(first); start.setDate(1 - first.getDay());
-    let g = "";
-    for (let i = 0; i < 42; i++) {
-      const dd = new Date(start); dd.setDate(start.getDate() + i);
-      const ds = ymd(dd), out = dd.getMonth() !== vm.m, dow = dd.getDay();
-      g += `<button type="button" class="${["mc-d", out ? "out" : "", ds === today() ? "today" : "", ds === sel ? "on" : "", dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ")}" data-pick="${ds}">${dd.getDate()}</button>`;
-    }
-    el.innerHTML = `<div class="mc-h">
-        <button type="button" class="mc-nav" data-mv="-1">${ic("left", 15)}</button>
-        <span class="mc-t">${vm.y}年 ${vm.m + 1}月</span>
-        <button type="button" class="mc-nav" data-mv="1">${ic("right", 15)}</button>
-      </div>
-      <div class="mc-wd"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
-      <div class="mc-g">${g}</div>`;
-    el.querySelectorAll("[data-mv]").forEach((b) => {
-      b.onclick = (e) => { e.stopPropagation(); const nm = vm.m + Number(b.dataset.mv);
-        vm = { y: vm.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 }; draw(); };
-    });
-    el.querySelectorAll("[data-pick]").forEach((b) => {
-      b.onclick = (e) => { e.stopPropagation();
-        const rr = getRep(name, date); rr.ngDraft.deadline = b.dataset.pick;
-        setRep(name, date, { ngDraft: rr.ngDraft }); renderNgEntry(name, date); };
-    });
-  };
-  draw();
 }
 // 危険な場所（設備・マス蓋）は登録した瞬間にLINEへ送る
 async function notifyNgDraft(name, date, idx) {
