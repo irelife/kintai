@@ -1032,14 +1032,24 @@ img[data-photo]{cursor:pointer;}
 .tdpark b{font-size:14px;}
 .tdpark.full{color:#b45309;background:#fffbeb;border-color:#fcd34d;}
 .tdpark-m{font-weight:600;font-size:11.5px;color:var(--muted-2);}
-/* 今日タブ：やることの折りたたみ */
-.tdhowto{margin-top:1rem;border:1px solid var(--border);border-radius:.7rem;background:#fff;padding:.7rem .9rem;}
-.tdhowto summary{cursor:pointer;font-size:14px;font-weight:800;color:var(--teal-800,#115e59);
-  list-style:none;display:flex;align-items:center;gap:.4rem;}
+/* 今日タブ：やること（一番上に置いて目立たせる） */
+.tdhowto{margin:0 0 1rem;border:2px solid var(--am-400,#fbbf24);border-radius:.8rem;
+  background:#fffbeb;padding:.9rem 1rem;box-shadow:0 2px 8px rgb(180 83 9 / .10);}
+.tdhowto summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;}
 .tdhowto summary::-webkit-details-marker{display:none;}
-.tdhowto summary::after{content:"開く";margin-left:auto;font-size:12px;font-weight:700;color:var(--muted-2);}
-.tdhowto[open] summary::after{content:"閉じる";}
-.tdhowto .howto{margin-top:.8rem;}
+.tdhowto-badge{background:#b45309;color:#fff;font-size:12px;font-weight:800;
+  padding:.2rem .6rem;border-radius:999px;flex:0 0 auto;}
+.tdhowto-t{font-size:16.5px;font-weight:800;color:#92400e;line-height:1.4;}
+.tdhowto summary::after{content:"▼ ひらく";margin-left:auto;font-size:13px;font-weight:800;color:#b45309;}
+.tdhowto[open] summary::after{content:"▲ とじる";}
+.tdhowto[open]{background:#fff;}
+.tdhowto .howto{margin-top:.9rem;}
+/* LINEから開いたときの案内 */
+#ngonly-tip{margin-top:.6rem;background:#f0fdfa;border:1px solid #99f6e4;border-radius:.5rem;
+  padding:.55rem .7rem;font-size:12.5px;color:#115e59;line-height:1.6;}
+#ngonly-tip button{display:block;margin-top:.45rem;background:#fff;border:1px solid #99f6e4;
+  border-radius:999px;padding:.3rem .8rem;font-size:12px;font-weight:700;color:#115e59;
+  cursor:pointer;font-family:inherit;}
 
 /* 要対応 */
 .todo{border:1px solid var(--am-200);background:#fffbeb80;border-radius:var(--r);padding:.625rem;}
@@ -2264,7 +2274,8 @@ let tab = "cal";
 let cursor = (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() }; })();
 let selDate = today();
 let openRep = null;     // {name, date}
-let openItem = null;    // 展開中の点検項目 key
+let openItem = null;
+let ngOnly = false;   // LINE通知から開いたか（要対応だけ表示する）    // 展開中の点検項目 key
 let doneOpen = false;   // 完了フォルダの開閉
 let _modalScroll = 0;   // モーダルのスクロール位置（再描画で保持）
 let filterView = null;  // {filter} 月全体の絞り込み一覧を右パネルに出す
@@ -3301,6 +3312,11 @@ function renderToday() {
   };
 
   box.innerHTML = `
+    <details class="tdhowto"><summary>
+      <span class="tdhowto-badge">必ず見る</span>
+      <span class="tdhowto-t">清掃でやること・要対応にするもの</span></summary>
+      ${howtoHtml()}</details>
+
     <div class="tdhead">
       <div class="tdhead-d">${Number(t.slice(5, 7))}月${Number(t.slice(8))}日(${w})</div>
       <div class="tdhead-s">${todayList.length ? `今日の清掃 <b>${todayList.length}</b>件` : "今日の清掃はありません"}${
@@ -3329,9 +3345,6 @@ function renderToday() {
 
     ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
       <div class="tddone">${doneToday.map((n) => `<span data-open="${esc(n)}|${esc(t)}" title="完了した内容を見る">${esc(n)}</span>`).join("")}</div></div>` : ""}
-
-    <details class="tdhowto"><summary>${ic("check2", 15)} 清掃でやること・要対応にするもの</summary>
-      ${howtoHtml()}</details>
 
     `;
 
@@ -4576,7 +4589,7 @@ function openLateDeleteDialog(name, planned) {
 
 function renderModal() {
   const host = document.getElementById("modal-host");
-  if (!openRep) { host.innerHTML = ""; _modalScroll = 0; return; }
+  if (!openRep) { host.innerHTML = ""; _modalScroll = 0; ngOnly = false; return; }
   // 再描画でスクロール位置が先頭に戻らないよう、現在位置を退避（オーバーレイ経由でも保持）
   const _prevMask = host.querySelector("#mask");
   if (_prevMask) _modalScroll = _prevMask.scrollTop;
@@ -4914,6 +4927,7 @@ function renderModal() {
     };
   }
   renderNgEntry(name, date);
+  applyNgOnly();             // LINEから開いたときは清掃の部分を隠す
   lockRecord(true);          // 確認が通るまでは入力させない
   checkOnSite(name, date);   // 現地にいるか確かめてから、到着の位置を残す
   const ngSend = q("#m-ngsend");
@@ -5987,6 +6001,35 @@ async function checkOnSite(name, date) {
   lockRecord(false);
   stampPos(name, date, "open");
   return true;
+}
+
+/* LINE通知のリンクから開いたときは、要対応だけを見せる。
+   清掃の写真や項目は触れないので、出すとかえって迷う。 */
+function applyNgOnly() {
+  const m = document.getElementById("modal-host");
+  if (!m) return;
+  const body = m.querySelector("#m-body");
+  if (!body) return;
+  const on = !!ngOnly;
+  Array.from(body.children).forEach((el) => {
+    if (el.classList.contains("mbox")) return;      // 物件名は残す
+    if (el.classList.contains("twocol")) return;    // 要対応は残す
+    el.style.display = on ? "none" : "";
+  });
+  const h = m.querySelector(".modal-h h2");
+  if (h) h.textContent = on ? "要対応" : "清掃記録";
+  let tip = m.querySelector("#ngonly-tip");
+  if (on && !tip) {
+    tip = document.createElement("div");
+    tip.id = "ngonly-tip";
+    tip.innerHTML = "LINEの通知から開きました。<b>要対応だけを表示しています。</b>"
+      + '<button type="button" id="ngonly-all">清掃の記録も見る</button>';
+    const mb = body.querySelector(".mbox");
+    if (mb) mb.appendChild(tip);
+  }
+  const btn = m.querySelector("#ngonly-all");
+  if (btn) btn.onclick = () => { ngOnly = false; renderModal(); };
+  if (!on && tip) tip.remove();
 }
 
 // 現地でないときは、記録の入力すべてを止める（閲覧だけできる）
@@ -8546,6 +8589,7 @@ function openFromUrl() {
     const d = parseYmd(date);
     if (d && !isNaN(d)) { cursor = { y: d.getFullYear(), m: d.getMonth() }; selDate = date; }
     openRep = { name, date }; openItem = null;
+    ngOnly = true;                       // LINEから開いたときは要対応だけ出す
     renderCal(); renderModal();
     // 開いたらURLからパラメータを消す（再読み込みで再度開かないように）
     try { history.replaceState(null, "", location.pathname); } catch (e) {}
