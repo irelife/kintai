@@ -2014,6 +2014,106 @@ button,.hm-c,.card,.scard,.tdcard,.tdng,.ng-row,.bcard,.pcard,.pillu{
 .duepop-x{flex:none;border:0;background:transparent;color:var(--muted-2);cursor:pointer;padding:.3rem;line-height:0;}
 .duepop .duepick{border:0;padding:0;}
 .duepop-f{display:flex;justify-content:flex-end;gap:.5rem;margin-top:.9rem;}
+
+/* ═══════════════════════════════════════════════════════════════
+   テーマ：sweetweb.jp のような、生成りの紙面＋くすんだ色使い
+   ・見た目だけを変える層。ここを丸ごと消せば元の配色に戻ります。
+   ・要対応や期限切れの色だけは、現場で見落とさない強さを残しています。
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#F6F0E8;             /* 生成り＝紙の面 */
+  --card:#FFFFFF;
+  --border:#E6DACD;
+  --border-soft:#F2EBE2;
+  --fg:#332F3B;             /* 黒よりやわらかい紫紺 */
+  --muted:#867C86;
+  --muted-2:#B0A49C;
+  --muted-3:#DDD2C6;
+  --teal-50:#EDF3F1; --teal-700:#5E8380; --teal-800:#4E6F6C; --teal-900:#3F5A58;
+  --em-50:#EFF4EA; --em-100:#DFE9D1; --em-500:#7C9A5D; --em-700:#5C7A41;
+  --am-50:#FBF3E6; --am-200:#F0D9A8; --am-500:#D9A441; --am-700:#A9762A; --am-800:#87591B;
+  --rose-50:#FCEFEC; --rose-200:#EFC9C2; --rose-500:#D9695F; --rose-600:#C4483F; --rose-700:#A63B33;
+  --blue-500:#7E90B8; --blue-700:#5B6E9C;
+  --ink-deep:#4A4657;       /* 濃い面（フッター的な帯） */
+  --pill:#B8827E;           /* くすみローズ＝押せる合図 */
+  --r-sm:.4rem; --r:.7rem; --r-lg:1.1rem;
+  --sh-sm:0 1px 2px rgb(51 47 59 / .05);
+  --sh-md:0 8px 22px -14px rgb(51 47 59 / .45);
+  --sh-lg:0 22px 48px -22px rgb(51 47 59 / .5);
+}
+body{background:var(--bg);color:var(--fg);}
+
+/* 見出しに使う欧文（数字と英字だけ効く。日本語は今までのゴシックのまま） */
+.enface{font-family:"Didot","Hiragino Mincho ProN","Yu Mincho",serif;}
+
+/* ヘッダーを紙面から浮かせる */
+.hd{background:transparent;border-bottom:0;padding:.55rem 0 .1rem;}
+.hd-in{background:#fff;border-radius:1.5rem;padding:.6rem 1.1rem;box-shadow:var(--sh-md);}
+.hd-sub-in{border-top:0;}
+.hd-sub{background:#fff;border-radius:1.5rem;padding:.4rem .6rem;margin-top:.5rem;
+  box-shadow:var(--sh-sm);overflow-x:auto;}
+.hd-nav button,.hd-sub button{border-radius:9999px;}
+.hd-nav button.on,.hd-sub button.on{background:var(--ink-deep);color:#fff;}
+.hd-ico{border-radius:9999px;background:var(--ink-deep);}
+.hd-t1{font-size:17px;font-weight:700;letter-spacing:.04em;}
+.hd-t2{letter-spacing:.16em;text-transform:uppercase;font-size:9.5px;color:var(--muted-2);}
+
+/* ボタンは丸く。押せるものが丸い、という一貫した合図 */
+.btn{border-radius:9999px;letter-spacing:.04em;}
+.btn-default{background:var(--ink-deep);}
+.btn-default:hover{background:#3B384A;}
+.btn-outline{border-color:var(--border);}
+.ngstart{border-radius:var(--r-lg);}
+.ngfix-btn{border-radius:9999px;background:var(--pill);}
+.ngfix-btn:disabled{background:#E3CFCB;color:#fff;}
+
+/* カードは角を大きく、線は細く、影で浮かせる */
+.card,.stat,.pcard,.scard,.tdcard,.itemcard,.ngitem,.geocard,.modal,.hm-c{
+  border-radius:var(--r-lg);}
+.card{border-color:var(--border);box-shadow:var(--sh-sm);}
+img,.shot img,.ishot img{border-radius:.8rem;}
+.shot,.add-shot,.shot-locked{border-radius:.9rem;}
+
+/* トップページ：カテゴリの英字を小さく置き、その下に日本語（見本と同じ組み方） */
+.hm-head{padding:2rem 0 1.6rem;}
+.hm-eyebrow{font-size:11px;font-weight:700;letter-spacing:.34em;color:var(--teal-700);
+  text-transform:uppercase;margin-bottom:.5rem;}
+.hm-d{font-size:34px;font-weight:400;letter-spacing:.04em;}
+.hm-sub{color:var(--muted);font-weight:500;margin-top:.5rem;letter-spacing:.05em;}
+.hm-g{gap:1rem;}
+.hm-c{align-items:flex-start;text-align:left;padding:1.1rem 1.1rem 1.2rem;gap:.15rem;
+  border:1px solid var(--border);background:#fff;box-shadow:var(--sh-sm);}
+.hm-c::before{content:"";position:absolute;left:0;top:1.15rem;bottom:1.15rem;width:3px;
+  border-radius:0 3px 3px 0;background:var(--teal-700);opacity:.55;}
+.hm-c:hover{box-shadow:var(--sh-md);}
+.hm-en{font-size:10.5px;font-weight:700;letter-spacing:.22em;color:var(--teal-700);
+  text-transform:uppercase;}
+.hm-i{margin-bottom:.35rem;color:var(--teal-700);}
+.hm-t{font-size:19px;font-weight:700;letter-spacing:.02em;}
+.hm-s{text-align:left;color:var(--muted);}
+.hm-c.big{border-color:var(--border);background:#fff;}
+.hm-c.big::before{background:var(--teal-700);opacity:1;width:4px;}
+.hm-c.warn{background:var(--rose-50);border-color:var(--rose-200);}
+.hm-c.warn::before{background:var(--rose-600);opacity:1;width:4px;}
+.hm-c.warn .hm-i,.hm-c.warn .hm-en{color:var(--rose-700);}
+.hm-n{background:var(--rose-600);}
+
+/* 要対応：紙面になじむ淡い色に。強い赤は期限と警告の文字だけに残す */
+.ngitem{border:1px solid var(--rose-200);background:#FDF6F2;}
+.ngitem-content{border-radius:var(--r);}
+.ngitem-m{border-radius:var(--r);}
+.ngitem-m.over{background:var(--rose-50);}
+.ngstep{border-radius:var(--r-lg);}
+
+/* 一覧のうるささを抑える：区切りは線ではなく余白で */
+.tdcard{border-radius:var(--r-lg);border-left-width:4px;}
+.duepop{border-radius:1.3rem;}
+.dpm,.dpd{font-family:inherit;}
+.dpm.on,.dpd.on{background:var(--pill);border-color:var(--pill);}
+.duefield{border-color:var(--rose-200);}
+.duefield-l{background:#F4E4DF;color:var(--rose-700);}
+.duefield-d{color:var(--rose-700);}
+
 </style>
 </head>
 <body>
@@ -3597,9 +3697,10 @@ function renderHome() {
   const ngN = collectOpenNg().length;
   const w = ["日", "月", "火", "水", "木", "金", "土"][parseYmd(t).getDay()];
 
-  const card = (tab, ico, ttl, sub, n, cls) => `
+  const card = (tab, ico, en, ttl, sub, n, cls) => `
     <button class="hm-c ${cls || ""}" data-hm="${tab}">
-      <span class="hm-i">${ic(ico, 34)}</span>
+      <span class="hm-i">${ic(ico, 30)}</span>
+      <span class="hm-en">${en}</span>
       <span class="hm-t">${ttl}</span>
       <span class="hm-s">${sub}</span>
       ${n ? `<span class="hm-n">${n}</span>` : ""}
@@ -3607,18 +3708,19 @@ function renderHome() {
 
   box.innerHTML = `
     <div class="hm-head">
-      <div class="hm-d">${Number(t.slice(5, 7))}月${Number(t.slice(8))}日(${w})</div>
+      <div class="hm-eyebrow">seisou tuti</div>
+      <div class="hm-d enface">${Number(t.slice(5, 7))}月${Number(t.slice(8))}日<span style="font-size:.6em">(${w})</span></div>
       <div class="hm-sub">したいことを えらんでください</div>
     </div>
     <div class="hm-g">
-      ${card("today", "pin", "今日の清掃",
+      ${card("today", "pin", "today", "今日の清掃",
         yet ? `未実施 ${yet}件` : (list.length ? "ぜんぶ おわりました" : "予定はありません"),
         yet, yet ? "big warn" : "big")}
-      ${card("ng", "alert", "要対応", ngN ? `未解決 ${ngN}件` : "ありません", ngN, ngN ? "warn" : "")}
-      ${card("cal", "calendar", "カレンダー", "予定を見る・入れる", 0, "")}
-      ${card("prop", "building", "物件リスト", `${props.length}件の物件`, 0, "")}
-      ${card("set", "message", "LINE設定", "通知先・バックアップ", 0, "")}
-      ${card("kt", "clock", "勤怠", "出勤・退勤の記録", 0, "wide")}
+      ${card("ng", "alert", "issues", "要対応", ngN ? `未解決 ${ngN}件` : "ありません", ngN, ngN ? "warn" : "")}
+      ${card("cal", "calendar", "calendar", "カレンダー", "予定を見る・入れる", 0, "")}
+      ${card("prop", "building", "properties", "物件リスト", `${props.length}件の物件`, 0, "")}
+      ${card("set", "message", "line", "LINE設定", "通知先・バックアップ", 0, "")}
+      ${card("kt", "clock", "attendance", "勤怠", "出勤・退勤の記録", 0, "wide")}
     </div>`;
 
   box.querySelectorAll("[data-hm]").forEach((b) => {
@@ -6359,6 +6461,8 @@ function buildReportHTML(date) {
  img{width:150px;height:112px;object-fit:cover;border-radius:4px;border:1px solid #e2e8f0;display:block;}
  figcaption{font-size:9px;color:#64748b;margin-top:2px;}
  @media print{ body{margin:12mm;} }
+
+
 </style></head><body>
 <h1>定期清掃報告書</h1>
 <p class="sub">${fmtDate(date)}　物件${s.total}件／完了${s.done}件${s.ng ? `／要対応${s.ng}件` : ""}</p>
