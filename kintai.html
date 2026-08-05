@@ -1001,6 +1001,14 @@ img[data-photo]{cursor:pointer;}
   box-shadow:0 12px 40px rgb(0 0 0 / .25);display:flex;flex-direction:column;align-items:center;gap:.5rem;}
 #photo-busy .pb-box b{font-size:16px;}
 #photo-busy .pb-box span{font-size:13px;color:var(--muted);}
+/* 写真の保存の進捗（下に細い帯で出す。操作は止めない） */
+#up-prog{position:fixed;left:0;right:0;bottom:0;z-index:9998;display:none;align-items:center;
+  gap:.5rem;background:rgba(15,118,110,.96);color:#fff;font-size:13px;font-weight:700;
+  padding:.6rem .9rem;box-shadow:0 -2px 12px rgb(0 0 0 / .18);flex-wrap:wrap;}
+#up-prog b{font-size:14px;}
+#up-prog .up-note{font-weight:600;font-size:11.5px;opacity:.85;margin-left:auto;}
+#up-prog .up-sp{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+  border-radius:50%;animation:pbspin .8s linear infinite;flex:0 0 auto;}
 #photo-busy .pb-sp{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--teal-700,#0f766e);
   border-radius:50%;animation:pbspin .8s linear infinite;margin-bottom:.3rem;}
 @keyframes pbspin{to{transform:rotate(360deg)}}
@@ -2406,8 +2414,77 @@ function imgTag(id) {
 }
 
 // ---- 追加した写真をアップロードして temp_ → fileId に確定 ----
-async function uploadPhotoBg(tempId, dataUrl, opts) {
+/* 写真のアップロードは順番待ちの列で流す。
+   同時に投げるとGAS側で詰まり、回線も食いつぶすため、2本ずつに絞る。 */
+const _upQ = [];
+let _upRun = 0, _upTotal = 0, _upDone = 0, _upDirty = false, _upTimer = null;
+const UP_PARALLEL = 2;
+
+function uploadPhotoBg(tempId, dataUrl, opts) {
   if (!cfg.gas) return;
+  _upQ.push({ tempId, dataUrl, opts });
+  _upTotal++;
+  showUpProgress();
+  pumpUpQ();
+}
+function pumpUpQ() {
+  while (_upRun < UP_PARALLEL && _upQ.length) {
+    const j = _upQ.shift();
+    _upRun++;
+    uploadPhotoNow(j.tempId, j.dataUrl, j.opts)
+      .catch(() => {})
+      .then(() => {
+        _upRun--; _upDone++;
+        showUpProgress();
+        if (!_upQ.length && !_upRun) {           // 全部終わった
+          _upTotal = 0; _upDone = 0;
+          hideUpProgress();
+          flushUpRender();
+        } else {
+          scheduleUpRender();                    // 途中は間隔をあけて描き直す
+        }
+        pumpUpQ();
+      });
+  }
+}
+// 再描画をまとめる（1枚ごとに描き直すと重くなる）
+function scheduleUpRender() {
+  _upDirty = true;
+  if (_upTimer) return;
+  _upTimer = setTimeout(() => { _upTimer = null; flushUpRender(); }, 2500);
+}
+function flushUpRender() {
+  if (_upTimer) { clearTimeout(_upTimer); _upTimer = null; }
+  if (!_upDirty) return;
+  _upDirty = false;
+  save(K.reps, reps);
+  const o = _upLastOpts;
+  if (o && openRep && openRep.name === o.name && openRep.date === o.date) {
+    renderModal();
+    renderNgEntry(o.name, o.date);
+  }
+}
+let _upLastOpts = null;
+// 画面の下に細い帯で進捗を出す（操作は止めない）
+function showUpProgress() {
+  let el = document.getElementById("up-prog");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "up-prog";
+    document.body.appendChild(el);
+  }
+  const left = _upQ.length + _upRun;
+  el.innerHTML = `<span class="up-sp"></span>写真を保存中　<b>${_upDone}/${_upTotal}</b>　残り${left}枚`
+    + `<span class="up-note">この画面は閉じないでください</span>`;
+  el.style.display = "flex";
+}
+function hideUpProgress() {
+  const el = document.getElementById("up-prog");
+  if (el) el.style.display = "none";
+}
+async function uploadPhotoNow(tempId, dataUrl, opts) {
+  if (!cfg.gas) return;
+  _upLastOpts = opts;
   let fileId = null;
   try {
     const res = await postToGas(cfg.gas, { action: "uploadImage", property: opts.name || "", date: opts.date || "", base64: dataUrl }, 60000);
@@ -2427,11 +2504,7 @@ async function uploadPhotoBg(tempId, dataUrl, opts) {
   // temp_ の実体はしばらく残す（差し替え直後の再描画で画像が消えないように）。
   // 差し替えが済んでいれば参照されないので、少し遅らせて掃除する。
   if (fileId) setTimeout(() => { delete _imgCache[tempId]; }, 8000);
-  save(K.reps, reps);
-  if (openRep && openRep.name === opts.name && openRep.date === opts.date) {
-    renderModal();
-    renderNgEntry(opts.name, opts.date);   // 要対応の写真も差し替え後の状態で描き直す
-  }
+  _upDirty = true;   // 保存と再描画は列の側でまとめて行う（1枚ごとだと重い）
   // アップロード完了後に要対応の自動通知を再評価（temp_ が消えたので送れる状態になる）
   if (fileId && opts.notify) maybeAutoNotifyNg(opts.notify.name, opts.notify.date, opts.notify.key);
 }
@@ -5866,8 +5939,9 @@ async function checkOnSite(name, date) {
     const km = (d >= 1000) ? (d / 1000).toFixed(1) + "km" : Math.round(d) + "m";
     show(`<div class="os-ng">${ic("alert", 16)}
       <div><b>この物件から ${km} 離れています。</b><br>
-      現地に到着してから記録を開いてください。<br>
-      物件の前まで移動して、この画面を開き直すと入力できるようになります。</div></div>`);
+      清掃の記録は、現地に到着してから入力してください。<br>
+      物件の前で開き直すと入力できるようになります。<br>
+      <span style="font-size:12.5px">※ 要対応の編集（期限の変更など）は、この場所でも行えます。</span></div></div>`);
     lockRecord(true);
     recordFarOpen(name, date, pos, d);
     return false;
@@ -5886,12 +5960,13 @@ function lockRecord(on) {
   if (body) {
     Array.from(body.children).forEach((el) => {
       if (el.classList.contains("mbox")) return;   // 物件名と警告は残す
+      if (el.classList.contains("twocol")) return; // 要対応は場所を問わず編集できる
       el.style.pointerEvents = on ? "none" : "";
       el.style.opacity = on ? ".4" : "";
       el.setAttribute("aria-disabled", on ? "true" : "false");
     });
   }
-  m.querySelectorAll(".dropbox,.dropbox-add,[data-pickitem],#ng-add,.ngadd").forEach((el) => {
+  m.querySelectorAll(".dropbox,.dropbox-add,[data-pickitem]").forEach((el) => {
     el.style.pointerEvents = on ? "none" : "";
     el.style.opacity = on ? ".45" : "";
   });
@@ -6124,16 +6199,23 @@ async function sendNgNotifyAll(name, date) {
   const myItems = itemsFor(name);
 
   // 未解決（ng かつ fixed でない）＋期限あり、を集める
-  const targets = [];
+  const targets = []; let waiting = 0;
   myItems.forEach((it) => {
     const c = itemOf(r, it.key);
     if (c.ng && !c.fixed) {
       if (!c.deadline) return; // 期限のないものはスキップ
       if (c.notified) return;  // 既に送ったもの（危険項目の即時通知など）は重ねて送らない
+      // 写真がまだDriveに保存されていないと、通知に写真が付かない。保存を待つ。
+      const pend = [...(c.before || []), ...(c.after || [])]
+        .some((x) => typeof x === "string" && x.startsWith("temp_"));
+      if (pend) { waiting++; return; }
       targets.push({ key: it.key, label: it.label, c });
     }
   });
 
+  if (waiting) {
+    toast(`写真を保存中の要対応が ${waiting}件`, "保存が終わってから、もう一度送ってください");
+  }
   if (!targets.length) {
     toast("通知できる要対応がありません", "期限が入った未解決の要対応がありません");
     return;
