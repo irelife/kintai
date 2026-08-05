@@ -1737,8 +1737,15 @@ input,textarea,select,button{touch-action:manipulation;}
   #side-panel .side-h{position:sticky;top:0;z-index:2;background:var(--bg);
     flex:none;margin:0;padding:.5rem 2.4rem .6rem .1rem;align-items:center;}
   #side-panel .side-h h3{font-size:17px;font-weight:800;}
-  #side-panel .side-list{flex:1;min-height:0;overflow-y:auto;
+  #side-panel .side-list{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
     -webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:.4rem;}
+  /* 横に動かないよう、中身を画面幅に収める */
+  #side-panel{overflow-x:hidden;}
+  #side-panel .side-list > *{max-width:100%;}
+  #side-panel .side-list *{min-width:0;}
+  #side-panel .scard,#side-panel .sideadd,#side-panel .bulkbar,
+  #side-panel .routebtn,#side-panel .offbar{width:100%;max-width:100%;}
+  #side-panel .scard-t,#side-panel .scard-a{overflow:hidden;text-overflow:ellipsis;}
 }
 @media(min-width:769px){ #side-backdrop,#side-grip,#side-close{display:none;} }
 </style>
@@ -3932,7 +3939,12 @@ function renderSide() {
       </div></div>`;
   })();
   if (!list.length) {
-    wrap.innerHTML = offBar + lateH + dueH;
+    wrap.innerHTML = offBar + `<button class="sideadd" id="side-add">${ic("plus", 16)}
+      <b>この日に清掃の予定を入れる</b>
+      <span>物件をえらんで追加します</span>
+    </button>` + lateH + dueH;
+    const sa0 = document.getElementById("side-add");
+    if (sa0) sa0.onclick = () => openSchedAdd(selDate);
     bindOffBar(wrap);
     wrap.querySelectorAll(".scard").forEach((c) => {
       c.onclick = () => { openRep = { name: c.dataset.n, date: c.dataset.d || selDate }; openItem = null; renderModal(); };
