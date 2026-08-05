@@ -1992,6 +1992,18 @@ button,.hm-c,.card,.scard,.tdcard,.tdng,.ng-row,.bcard,.pcard,.pillu{
 .duefield-d.none{font-size:17px;font-weight:700;color:var(--muted);}
 .duefield-i{flex:none;color:var(--muted-2);}
 
+/* iPad・パソコンでは画面の幅を使い切る
+   （右側の「作業場所の記録」欄は常に非表示なので、半分が空いたままだった） */
+.twocol{grid-template-columns:1fr;}
+@media(min-width:900px){
+  .modal.xwide{max-width:min(78rem, 96vw);}
+  .nglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(26rem,1fr));
+    gap:.8rem;align-items:start;}
+  .nglist > .ngitem{margin-bottom:0;}
+  .ngform{max-width:52rem;}
+  .ng-guide{max-width:52rem;}
+}
+
 /* 浮かせて出す日付えらび */
 .duepop-mask{position:fixed;inset:0;z-index:300;background:rgb(15 23 42 / .55);
   display:flex;align-items:center;justify-content:center;padding:1rem;}
@@ -8328,7 +8340,7 @@ function renderNgEntry(name, date) {
   }).join("");
 
   if (!getNgDraft(name, date)) {
-    host.innerHTML = `${listed}
+    host.innerHTML = `${listed ? `<div class="nglist">${listed}</div>` : ""}
       <button class="ngstart" id="ng-start">${ic("alert", 34)}要対応を追加する
         <span>破損・迷惑駐車など、後日の対応が必要なこと</span></button>`;
     hydratePhotos(host);
@@ -8350,7 +8362,7 @@ function renderNgEntry(name, date) {
   const step5 = step4 && (d.before || []).length > 0;   // ビフォー写真がないと期限に進めない
   const places = placesFor(name);
 
-  host.innerHTML = `${listed}
+  host.innerHTML = `${listed ? `<div class="nglist">${listed}</div>` : ""}
     <div class="ngform">
       <div class="ngstep ${d.place ? "done" : "now"}">
         <div class="ngstep-l">1. どこですか</div>
