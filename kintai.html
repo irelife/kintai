@@ -1025,6 +1025,13 @@ img[data-photo]{cursor:pointer;}
 .tdlist li{font-size:12.5px;line-height:1.7;color:var(--fg);}
 .tdlist li.done{color:var(--muted-2);}
 .tdlist li .n{font-size:11px;color:var(--muted-2);}
+/* 今日タブ：空き駐車場（PIVOTの物件管理から取得） */
+.tdpark{margin-top:.4rem;font-size:12.5px;font-weight:700;color:var(--teal-800,#115e59);
+  background:var(--teal-50,#f0fdfa);border:1px solid var(--teal-200,#99f6e4);
+  border-radius:8px;padding:.35rem .55rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;}
+.tdpark b{font-size:14px;}
+.tdpark.full{color:#b45309;background:#fffbeb;border-color:#fcd34d;}
+.tdpark-m{font-weight:600;font-size:11.5px;color:var(--muted-2);}
 /* 今日タブ：やることの折りたたみ */
 .tdhowto{margin-top:1rem;border:1px solid var(--border);border-radius:.7rem;background:#fff;padding:.7rem .9rem;}
 .tdhowto summary{cursor:pointer;font-size:14px;font-weight:800;color:var(--teal-800,#115e59);
@@ -3204,6 +3211,28 @@ function howtoHtml() {
           <div class="howto-no">${ic("x", 20)} <b>糞尿・嘔吐物は写真を撮らなくてよい</b>（その場で片付けるだけ）</div>
 </div>`;
 }
+/* PIVOT（同じサイトの物件管理）から空き駐車場を読む。
+   pivot_blds は同一オリジンなので、そのまま参照できる。
+   返り値: {list:[番号...], full:true/false} ／ 情報が無いときは null */
+function parkInfo(name) {
+  let blds;
+  try { blds = JSON.parse(localStorage.getItem("pivot_blds") || "{}"); } catch (e) { return null; }
+  const norm = (x) => String(x || "").replace(/[\s　]/g, "");
+  const key = norm(name);
+  if (!key) return null;
+  let spots = [];
+  Object.values(blds || {}).forEach((b) => {
+    if (!b || !Array.isArray(b.spots) || !b.spots.length) return;
+    const bn = norm(b.name);
+    // 同名、または「◯◯駐車場」のように物件名で始まるものを対象にする
+    if (bn === key || bn.indexOf(key) === 0) spots = spots.concat(b.spots);
+  });
+  if (!spots.length) return null;
+  const free = spots.filter((x) => x && x.status === "空")
+                    .map((x) => String(x.no || "").trim())
+                    .filter(Boolean);
+  return { list: free.slice(0, 3), more: Math.max(0, free.length - 3), full: free.length === 0 };
+}
 function renderToday() {
   const box = document.getElementById("today-body");
   if (!box) return;
@@ -3248,6 +3277,14 @@ function renderToday() {
       ${miss.length
         ? `<div class="tdcard-miss">${ic("camera", 12)} 写真があと：${miss.slice(0, 4).map(esc).join("・")}</div>`
         : `<div class="tdcard-ok">${ic("check2", 12)} 写真はそろっています</div>`}
+      ${(() => {
+        const pk = parkInfo(n);
+        if (!pk) return "";
+        return pk.full
+          ? `<div class="tdpark full">${ic("alert", 12)} 駐車場：<b>満車</b></div>`
+          : `<div class="tdpark">${ic("check2", 12)} 空き駐車場：<b>${pk.list.map(esc).join("・")}</b> 番`
+            + `${pk.more ? `　<span class="tdpark-m">ほか${pk.more}台</span>` : ""}</div>`;
+      })()}
       ${(() => {
         const list = itemsFor(n);
         if (!list.length) return "";
