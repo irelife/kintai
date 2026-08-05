@@ -477,10 +477,18 @@ main{padding:1.5rem 0 4rem;}
 .fbtn:hover{background:var(--bg);}
 .fbtn.on{background:var(--fg);color:#fff;box-shadow:none;}
 .fcount{margin-left:auto;font-size:14px;color:var(--muted-2);}
-.grid3{display:grid;gap:1rem;grid-template-columns:1fr;}
-@media(min-width:640px){ .grid3{grid-template-columns:repeat(2,1fr);} }
-@media(min-width:1024px){ .grid3{grid-template-columns:repeat(3,1fr);} }
+/* 物件カード：画面幅いっぱいまで詰めて並べ、縦を短くする */
+.grid3{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));align-items:start;}
+@media(max-width:480px){ .grid3{grid-template-columns:repeat(2,1fr);gap:.5rem;} }
 .bcard{display:flex;flex-direction:column;padding:1rem;border:2px solid var(--border);border-radius:.7rem;transition:box-shadow .15s;}
+/* 物件カードを小さくまとめる */
+#p-grid .bcard{padding:.6rem .65rem;gap:.25rem;border-width:1.5px;}
+#p-grid .bcard *{min-width:0;}
+#p-grid .bc-n,#p-grid .bcard b{font-size:14px;line-height:1.4;}
+#p-grid .bcard .addr,#p-grid .bcard .mini,#p-grid .bcard .bc-a{font-size:11.5px;line-height:1.5;}
+#p-grid .chip,#p-grid .badge{font-size:10.5px;padding:.08rem .38rem;}
+#p-grid .bcard .btn,#p-grid .bcard button.btn{font-size:11.5px;padding:.35rem .4rem;}
+#p-grid .bcard .row,#p-grid .bcard .bc-btns{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;}
 .bcard:hover{box-shadow:var(--sh-md);}
 .bcard-h{display:flex;align-items:flex-start;gap:.625rem;margin-bottom:.5rem;}
 .bcard-i{display:flex;height:2rem;width:2rem;flex:none;align-items:center;justify-content:center;
@@ -1041,8 +1049,18 @@ img[data-photo]{cursor:pointer;}
 .tdpark b{font-size:14px;}
 .tdpark.full{color:#b45309;background:#fffbeb;border-color:#fcd34d;}
 .tdpark-m{font-weight:600;font-size:11.5px;color:var(--muted-2);}
+/* 今日タブ：直すもの（要対応）を並べる */
+.tdsec .tdng{display:flex;flex-direction:column;gap:.3rem;height:100%;}
+.tdsec:has(.tdng){display:block;}
+.tdng-wrap{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;}
+.tdng-wrap .tdng{min-height:6.5rem;}
+.tdng-h{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem;}
+.tdng-h b{font-size:14px;}
+.tdng-b{font-size:12.5px;line-height:1.7;color:var(--muted);}
+@media(min-width:769px){ .tdng-wrap{grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));} }
 /* ===== トップページ ===== */
 /* サブタブの TOP ボタン */
+.hd-sub button:not(.tab-top){pointer-events:none;}
 .hd-sub .tab-top{background:var(--teal-700,#0f766e)!important;color:#fff!important;
   border-color:var(--teal-700,#0f766e)!important;font-weight:800;}
 .hd-sub .tab-top.on{background:var(--teal-800,#115e59)!important;}
@@ -1119,6 +1137,18 @@ img[data-photo]{cursor:pointer;}
 .tdhowto .howto-no b{font-size:13.5px;}
 .tdhowto .howto-add{font-size:12px;}
 .tdhowto .howto-card-b,.tdhowto .howto-do,.tdhowto .howto-ng{word-break:normal;overflow-wrap:anywhere;}
+/* スマホでは1列に戻し、区切りの「／」を改行にして読みやすくする */
+@media(max-width:768px){
+  .tdhowto{padding:.8rem .8rem 1rem;}
+  .tdhowto .howto{padding:.75rem .7rem;}
+  .tdhowto .howto-two{grid-template-columns:1fr;gap:.45rem;}
+  .tdhowto .howto-card-b,.tdhowto .howto-do,.tdhowto .howto-ng{font-size:13.5px;line-height:2;}
+  .tdhowto .howto-t{font-size:14.5px;line-height:1.9;}
+  .tdhowto .howto-key{font-size:15px;}
+  .tdhowto .howto-h{font-size:15.5px;}
+  .tdhowto-t{font-size:15px;}
+  .tdhowto .howto-card{padding:.55rem .65rem;}
+}
 /* LINEから開いたときの案内 */
 #ngonly-tip{margin-top:.6rem;background:#f0fdfa;border:1px solid #99f6e4;border-radius:.5rem;
   padding:.55rem .7rem;font-size:12.5px;color:#115e59;line-height:1.6;}
@@ -3484,12 +3514,14 @@ function renderToday() {
       ${carry.length > 10 ? `<div class="tdmore">ほか${carry.length - 10}件</div>` : ""}</div>` : ""}
 
     ${(ngOver.length || ngSoon.length) ? `<div class="tdsec"><h3>${ic("alert", 15)} 直すもの（要対応）</h3>
+      <div class="tdng-wrap">
       ${ngOver.map((x) => `<div class="tdng over" data-open="${esc(x.nm)}|${esc(x.dt)}">
         <div class="tdng-h"><b>${esc(x.nm)}</b><span class="tdcard-tag late">${Math.round((parseYmd(t)-parseYmd(x.dl))/86400000)}日過ぎ</span></div>
         <div class="tdng-b">${esc(x.la)}：${esc(x.tx || "（内容未記入）")}</div></div>`).join("")}
       ${ngSoon.map((x) => `<div class="tdng" data-open="${esc(x.nm)}|${esc(x.dt)}">
         <div class="tdng-h"><b>${esc(x.nm)}</b><span class="tdcard-tag due">${fmtShort(x.dl)}まで</span></div>
         <div class="tdng-b">${esc(x.la)}：${esc(x.tx || "（内容未記入）")}</div></div>`).join("")}
+      </div>
     </div>` : ""}
 
     ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
@@ -8600,13 +8632,17 @@ function go(t) {
   document.querySelectorAll(".page").forEach((p) => p.classList.toggle("on", p.id === "page-" + t));
   // 上段グループのハイライト
   document.querySelectorAll(".hd-nav button").forEach((b) => b.classList.toggle("on", b.dataset.group === group));
+  const nav = document.querySelector(".hd-nav");
+  if (nav) nav.style.visibility = (t === "home") ? "hidden" : "";
   // サブタブ：勤怠のときは隠す。清掃のときは表示＋現在のサブをハイライト
   const sub = document.getElementById("hd-sub");
   if (sub) {
-    sub.classList.toggle("hidden", false);
+    const isHome = (t === "home");
+    sub.classList.toggle("hidden", isHome);          // トップでは帯ごと隠す
     sub.querySelectorAll("button").forEach((b) => {
-      // 勤怠のときは TOP だけ残す
-      b.style.display = (isKt && b.dataset.tab !== "home") ? "none" : "";
+      const k = b.dataset.tab;
+      // 中の画面では「TOP」と、いま開いている画面だけを出す
+      b.style.display = (k === "home" || k === t) ? "" : "none";
     });
     sub.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
   }
