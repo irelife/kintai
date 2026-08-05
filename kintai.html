@@ -1032,6 +1032,29 @@ img[data-photo]{cursor:pointer;}
 .tdpark b{font-size:14px;}
 .tdpark.full{color:#b45309;background:#fffbeb;border-color:#fcd34d;}
 .tdpark-m{font-weight:600;font-size:11.5px;color:var(--muted-2);}
+/* ===== トップページ ===== */
+.hm-head{text-align:center;padding:1.4rem 0 1.2rem;}
+.hm-d{font-size:26px;font-weight:800;letter-spacing:.02em;}
+.hm-sub{font-size:14px;color:var(--muted-2);font-weight:600;margin-top:.2rem;}
+.hm-g{display:grid;grid-template-columns:repeat(2,1fr);gap:.85rem;max-width:44rem;margin:0 auto;padding:0 .2rem 2rem;}
+.hm-c{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.35rem;min-height:9.5rem;border:2px solid var(--border);border-radius:1.1rem;background:#fff;
+  padding:1rem .7rem;cursor:pointer;font-family:inherit;color:var(--fg);
+  box-shadow:0 2px 8px rgb(15 23 42 / .06);transition:transform .1s,box-shadow .1s;}
+.hm-c:active{transform:scale(.97);}
+.hm-c:hover{box-shadow:0 4px 14px rgb(15 23 42 / .12);}
+.hm-i{color:var(--teal-700,#0f766e);display:flex;}
+.hm-t{font-size:17.5px;font-weight:800;}
+.hm-s{font-size:12.5px;font-weight:600;color:var(--muted-2);text-align:center;line-height:1.5;}
+.hm-n{position:absolute;top:.55rem;right:.55rem;min-width:1.9rem;height:1.9rem;border-radius:999px;
+  background:#dc2626;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;
+  justify-content:center;padding:0 .4rem;}
+.hm-c.big{grid-column:1/-1;min-height:8rem;border-color:var(--teal-400,#2dd4bf);
+  background:var(--teal-50,#f0fdfa);}
+.hm-c.big .hm-t{font-size:21px;}
+.hm-c.warn{border-color:#fca5a5;background:#fef2f2;}
+.hm-c.warn .hm-i{color:#dc2626;}
+@media(min-width:769px){ .hm-g{grid-template-columns:repeat(3,1fr);} .hm-c.big{grid-column:1/-1;} }
 /* 右パネル：この日に予定を入れる */
 .sideadd{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;
   border:2px dashed var(--teal-400,#2dd4bf);background:var(--teal-50,#f0fdfa);
@@ -1800,7 +1823,9 @@ input,textarea,select,button{touch-action:manipulation;}
 <main class="wrap">
 
   <!-- カレンダー -->
-  <div class="page on" id="page-today"><div id="today-body"></div></div>
+  <div class="page on" id="page-home"><div id="home-body"></div></div>
+
+  <div class="page" id="page-today"><div id="today-body"></div></div>
 
   <div class="page" id="page-cal">
     <div class="stats">
@@ -3316,6 +3341,43 @@ function parkInfo(name) {
                     .filter(Boolean);
   return { list: free.slice(0, 3), more: Math.max(0, free.length - 3), full: free.length === 0 };
 }
+/* トップページ。まずここで「何をしたいか」を選んでもらう。 */
+function renderHome() {
+  const box = document.getElementById("home-body");
+  if (!box) return;
+  const t = today();
+  const list = (sched[t] || []).slice();
+  const yet = list.filter((n) => getRep(n, t).status !== "done").length;
+  const ngN = collectOpenNg().length;
+  const w = ["日", "月", "火", "水", "木", "金", "土"][parseYmd(t).getDay()];
+
+  const card = (tab, ico, ttl, sub, n, cls) => `
+    <button class="hm-c ${cls || ""}" data-hm="${tab}">
+      <span class="hm-i">${ic(ico, 34)}</span>
+      <span class="hm-t">${ttl}</span>
+      <span class="hm-s">${sub}</span>
+      ${n ? `<span class="hm-n">${n}</span>` : ""}
+    </button>`;
+
+  box.innerHTML = `
+    <div class="hm-head">
+      <div class="hm-d">${Number(t.slice(5, 7))}月${Number(t.slice(8))}日(${w})</div>
+      <div class="hm-sub">したいことを えらんでください</div>
+    </div>
+    <div class="hm-g">
+      ${card("today", "pin", "今日の清掃", yet ? `のこり ${yet}件` : (list.length ? "ぜんぶ おわりました" : "予定はありません"), yet, "big")}
+      ${card("ng", "alert", "要対応", ngN ? `未解決 ${ngN}件` : "ありません", ngN, ngN ? "warn" : "")}
+      ${card("cal", "calendar", "カレンダー", "予定を見る・入れる", 0, "")}
+      ${card("prop", "building", "物件リスト", `${props.length}件の物件`, 0, "")}
+      ${card("kt", "clock", "勤怠", "出勤・退勤の記録", 0, "")}
+      ${card("set", "message", "LINE設定", "通知先・バックアップ", 0, "")}
+    </div>`;
+
+  box.querySelectorAll("[data-hm]").forEach((b) => {
+    b.onclick = () => { const x = b.dataset.hm; if (x === "kt") goGroup("kt"); else go(x); };
+  });
+}
+
 function renderToday() {
   const box = document.getElementById("today-body");
   if (!box) return;
@@ -8533,6 +8595,7 @@ function go(t) {
   const t1el = document.getElementById("hd-t1"), t2el = document.getElementById("hd-t2");
   if (t1el) t1el.textContent = isKt ? "勤怠" : "清掃管理";
   if (t2el) t2el.textContent = isKt ? "Attendance" : "Cleaning Manager";
+  if (t === "home") renderHome();     // トップページ
   if (t === "today") renderToday();   // 現場向けの初期画面
   if (t === "cal") renderCal();
   if (t === "prop") renderProps();
@@ -8583,6 +8646,8 @@ function goGroup(g) {
 })();
 
 function boot() {
+  const logo = document.querySelector(".hd-logo") || document.querySelector(".hd-t");
+  if (logo) { logo.style.cursor = "pointer"; logo.onclick = () => go("home"); }
   document.querySelectorAll(".hd-nav button").forEach((b) => { b.onclick = () => goGroup(b.dataset.group); });
   document.querySelectorAll(".hd-sub button").forEach((b) => { b.onclick = () => go(b.dataset.tab); });
   document.getElementById("cal-prev").onclick = () => {
@@ -8801,7 +8866,7 @@ function boot() {
     if (e.key === "Escape" && document.getElementById("mask")) { openRep = null; renderModal(); renderCal(); return; }
     if (e.key === "Escape") closeSideSheet();
   });
-  { let _lt=null; try{_lt=sessionStorage.getItem("last_tab_v1");}catch(e){} go(_lt || "today"); }
+  go("home");   // 起動はトップページから
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
   setTimeout(() => { try { checkPrevMonthReport(); } catch (e) {} }, 4000);
   setTimeout(() => { try { maybeAutoSchedNextMonth(); } catch (e) {} }, 5000);
