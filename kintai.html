@@ -1032,6 +1032,25 @@ img[data-photo]{cursor:pointer;}
 .tdpark b{font-size:14px;}
 .tdpark.full{color:#b45309;background:#fffbeb;border-color:#fcd34d;}
 .tdpark-m{font-weight:600;font-size:11.5px;color:var(--muted-2);}
+/* 右パネル：この日に予定を入れる */
+.sideadd{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;
+  border:2px dashed var(--teal-400,#2dd4bf);background:var(--teal-50,#f0fdfa);
+  border-radius:.7rem;padding:.7rem .9rem;margin-bottom:.7rem;cursor:pointer;
+  font-family:inherit;color:var(--teal-800,#115e59);text-align:left;}
+.sideadd:hover{background:#fff;}
+.sideadd b{font-size:14.5px;font-weight:800;}
+.sideadd span{font-size:12px;font-weight:600;color:var(--muted-2);}
+/* 予定に入れる物件えらび */
+.sa-n{font-size:13px;color:var(--muted);}
+.sa-n b{color:var(--teal-700,#0f766e);}
+.sa-list{max-height:48vh;overflow-y:auto;border:1px solid var(--border);border-radius:.6rem;}
+.sa-row{display:flex;align-items:center;gap:.6rem;padding:.6rem .7rem;cursor:pointer;
+  border-bottom:1px solid var(--border-soft,#f1f5f9);}
+.sa-row:last-child{border-bottom:0;}
+.sa-row.on{background:var(--teal-50,#f0fdfa);}
+.sa-nm{font-size:14.5px;font-weight:700;flex:0 0 auto;}
+.sa-ad{font-size:12px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sa-empty{padding:1.2rem;text-align:center;color:var(--muted-2);font-size:13px;}
 /* 箇所ごとに撮る案内 */
 .dropbox-done.shootguide{border-color:var(--teal-300,#5eead4);background:var(--teal-50,#f0fdfa);}
 .dropbox-done.shootguide b{font-size:15px;}
@@ -1046,7 +1065,24 @@ img[data-photo]{cursor:pointer;}
 .tdhowto summary::after{content:"▼ ひらく";margin-left:auto;font-size:13px;font-weight:800;color:#b45309;}
 .tdhowto[open] summary::after{content:"▲ とじる";}
 .tdhowto[open]{background:#fff;}
-.tdhowto .howto{margin-top:.9rem;}
+.tdhowto .howto{margin-top:.9rem;border-width:2px;padding:.85rem .9rem;}
+/* 今日タブの中では、画面幅に合わせて小さめに組み直す */
+.tdhowto .howto-h{font-size:17px;margin-bottom:.7rem;}
+.tdhowto .howto-step{gap:.6rem;margin-bottom:.8rem;}
+.tdhowto .howto-no1{width:1.9rem;height:1.9rem;font-size:14px;}
+.tdhowto .howto-t{font-size:15px;line-height:1.75;margin-bottom:.5rem;}
+.tdhowto .howto-key{font-size:16px;line-height:1.6;padding:.02em .15em;box-shadow:none;
+  border-bottom:2px solid currentColor;border-radius:0;background:transparent;}
+.tdhowto .howto-t2{font-size:13px;margin:.6rem 0 .3rem;}
+.tdhowto .howto-two{grid-template-columns:1fr 1fr;gap:.5rem;}
+.tdhowto .howto-card{padding:.5rem .6rem;border-width:1.5px;}
+.tdhowto .howto-card-h{font-size:12.5px;margin-bottom:.25rem;}
+.tdhowto .howto-card-b{font-size:12.5px;line-height:1.85;}
+.tdhowto .howto-do,.tdhowto .howto-ng{font-size:13px;line-height:1.9;padding:.5rem .6rem;}
+.tdhowto .howto-must,.tdhowto .howto-no{font-size:12.5px;padding:.6rem .7rem;gap:.4rem;}
+.tdhowto .howto-no b{font-size:13.5px;}
+.tdhowto .howto-add{font-size:12px;}
+.tdhowto .howto-card-b,.tdhowto .howto-do,.tdhowto .howto-ng{word-break:normal;overflow-wrap:anywhere;}
 /* LINEから開いたときの案内 */
 #ngonly-tip{margin-top:.6rem;background:#f0fdfa;border:1px solid #99f6e4;border-radius:.5rem;
   padding:.55rem .7rem;font-size:12.5px;color:#115e59;line-height:1.6;}
@@ -3910,12 +3946,16 @@ function renderSide() {
         <span>現在地から、カレンダーの並び順で案内します</span>
       </button>`
     : "";
+  const addBar = `<button class="sideadd" id="side-add">${ic("plus", 16)}
+      <b>この日に清掃の予定を入れる</b>
+      <span>物件をえらんで追加します</span>
+    </button>`;
   const bulkBar = `<div class="bulkbar" id="bulk-bar">
       <label class="bulk-all"><input type="checkbox" id="bulk-all"> すべて選ぶ</label>
       <span class="bulk-n" id="bulk-n">0件を選択</span>
       <button class="bulk-del" id="bulk-del" disabled>${ic("x", 14)} 予定から外す</button>
     </div>`;
-  wrap.innerHTML = offBar + routeCard + bulkBar + list.map((n) => {
+  wrap.innerHTML = offBar + routeCard + addBar + bulkBar + list.map((n) => {
     const p = props.find((x) => x.name === n) || { addr: "" };
     const r = getRep(n, selDate);
     const c = cityOf(p.addr), st = CITY_STYLE[c.key];
@@ -3960,6 +4000,9 @@ function renderSide() {
       openItem = null; renderModal();
     };
   });
+  const sideAdd = document.getElementById("side-add");
+  if (sideAdd) sideAdd.onclick = () => openSchedAdd(selDate);
+
   // まとめて予定から外す
   (() => {
     const cks = () => Array.from(wrap.querySelectorAll(".bulk-ck"));
@@ -4845,12 +4888,12 @@ function renderModal() {
           <div class="itemcards">${activeH}</div>
         </div>` : ""}
         ${doneItems.length ? `<div class="field">
-          <button class="donefolder-h ${doneOpen ? "open" : ""}" id="donefolder-toggle">
-            <span class="df-ico">${ic(doneOpen ? "folder-open" : "folder", 18)}</span>
+          <button class="donefolder-h ${(doneOpen || ngOnly) ? "open" : ""}" id="donefolder-toggle">
+            <span class="df-ico">${ic((doneOpen || ngOnly) ? "folder-open" : "folder", 18)}</span>
             <span class="df-l">✅ 完了 ${doneItems.length}件</span>
-            <span class="df-chev ${doneOpen ? "open" : ""}">${ic("chevron", 16)}</span>
+            <span class="df-chev ${(doneOpen || ngOnly) ? "open" : ""}">${ic("chevron", 16)}</span>
           </button>
-          ${doneOpen ? `<div class="itemcards donefolder-body">${doneH}</div>` : ""}
+          ${(doneOpen || ngOnly) ? `<div class="itemcards donefolder-body">${doneH}</div>` : ""}
         </div>` : ""}
         ${todosH}
         ${(() => {
@@ -5713,6 +5756,71 @@ function openCoordCheck() {
   });
 }
 
+/* その日に清掃の予定を入れる（カレンダーの右パネルから）
+   すでに入っている物件は出さない。土日祝・公休日のときは確認を出す。 */
+function openSchedAdd(ds) {
+  if (!ds) return;
+  const host = document.getElementById("modal-host");
+  let q = "", sel = [];
+  const draw = () => {
+    const already = new Set(sched[ds] || []);
+    const cand = props.filter((p) => p && p.name && !already.has(p.name))
+      .filter((p) => !q || (p.name + " " + (p.addr || "")).toLowerCase().includes(q.toLowerCase()));
+    host.innerHTML = `<div class="mask" id="mask-sa">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-h"><h2>${fmtDate(ds)} に予定を入れる</h2>
+          <button class="x" id="sa-x">${ic("x", 18)}</button></div>
+        <div style="display:flex;flex-direction:column;gap:.7rem">
+          <input class="input" id="sa-q" placeholder="物件名や住所でしぼりこむ" value="${esc(q)}">
+          <div class="sa-n">${cand.length}件 ／ <b>${sel.length}件を選択中</b></div>
+          <div class="sa-list">${
+            cand.length
+              ? cand.map((p) => `<label class="sa-row ${sel.includes(p.name) ? "on" : ""}">
+                  <input type="checkbox" data-sa="${esc(p.name)}" ${sel.includes(p.name) ? "checked" : ""}>
+                  <span class="sa-nm">${esc(p.name)}</span>
+                  <span class="sa-ad">${esc(p.addr || "")}</span></label>`).join("")
+              : `<div class="sa-empty">該当する物件がありません</div>`}</div>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem">
+            <button class="btn btn-default" id="sa-cancel">やめる</button>
+            <button class="btn" id="sa-ok" ${sel.length ? "" : "disabled"}
+              style="background:var(--teal-700);color:#fff;border:none">${ic("calendar", 15)} ${sel.length}件を予定に入れる</button>
+          </div>
+        </div>
+      </div></div>`;
+    const qi = host.querySelector("#sa-q");
+    qi.oninput = () => { q = qi.value; const c = qi.selectionStart; draw();
+      const n2 = host.querySelector("#sa-q"); n2.focus(); n2.setSelectionRange(c, c); };
+    host.querySelectorAll("[data-sa]").forEach((cb) => {
+      cb.onchange = () => {
+        const nm = cb.dataset.sa;
+        if (cb.checked) { if (!sel.includes(nm)) sel.push(nm); }
+        else sel = sel.filter((x) => x !== nm);
+        draw();
+      };
+    });
+    const close = () => { host.innerHTML = ""; };
+    host.querySelector("#sa-x").onclick = close;
+    host.querySelector("#sa-cancel").onclick = close;
+    host.querySelector("#mask-sa").onclick = (e) => { if (e.target.id === "mask-sa") close(); };
+    const ok = host.querySelector("#sa-ok");
+    if (ok) ok.onclick = () => {
+      if (!sel.length) return;
+      const _cof = coffName(ds);
+      const _dw = parseYmd(ds).getDay();
+      const _hl = holidayName(ds);
+      const _why = _cof ? `公休日（${_cof}）` : _hl ? `祝日（${_hl}）` : _dw === 0 ? "日曜日" : _dw === 6 ? "土曜日" : "";
+      if (_why && !confirm(`${fmtDate(ds)} は${_why}です。\nこの日に予定を入れますか？`)) return;
+      sched[ds] = sched[ds] || [];
+      sel.forEach((nm) => { if (!sched[ds].includes(nm)) sched[ds].push(nm); });
+      save(K.sched, sched);
+      close();
+      renderCal();
+      toast("予定に入れました", `${fmtDate(ds)}／${sel.length}件`);
+    };
+  };
+  draw();
+}
+
 function openAdd() {
   const host = document.getElementById("modal-host");
   host.innerHTML = `<div class="mask" id="mask3">
@@ -6022,12 +6130,14 @@ function applyNgOnly() {
       el.querySelectorAll(".itemcard").forEach((c) => {
         c.style.display = c.classList.contains("isng") ? "" : "none";
       });
-      el.querySelectorAll(".pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox")
+      el.querySelectorAll(".pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox,.donefolder-h,.todos,.ngsend-btn")
         .forEach((x) => { x.style.display = "none"; });
+      // 中身が要対応だけになった入れ物は、空なら隠す
+      if (!el.querySelector(".itemcard.isng")) el.style.display = "none";
       return;
     }
     if (!on) {
-      el.querySelectorAll(".itemcard,.pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox")
+      el.querySelectorAll(".itemcard,.pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox,.donefolder-h,.todos,.ngsend-btn")
         .forEach((x) => { x.style.display = ""; });
     }
     el.style.display = on ? "none" : "";
