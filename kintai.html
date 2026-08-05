@@ -6013,9 +6013,30 @@ function applyNgOnly() {
   const on = !!ngOnly;
   Array.from(body.children).forEach((el) => {
     if (el.classList.contains("mbox")) return;      // 物件名は残す
-    if (el.classList.contains("twocol")) return;    // 要対応は残す
+    if (el.classList.contains("twocol")) return;    // 要対応の一覧・登録は残す
+    // 箇所に付いた要対応（例：放置自転車／破損）は、箇所カードの中にある。
+    // そのカードだけ残し、清掃だけのカードは隠す。
+    const hasNg = el.querySelector(".itemcard.isng");
+    if (on && hasNg) {
+      el.style.display = "";
+      el.querySelectorAll(".itemcard").forEach((c) => {
+        c.style.display = c.classList.contains("isng") ? "" : "none";
+      });
+      el.querySelectorAll(".pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox")
+        .forEach((x) => { x.style.display = "none"; });
+      return;
+    }
+    if (!on) {
+      el.querySelectorAll(".itemcard,.pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox")
+        .forEach((x) => { x.style.display = ""; });
+    }
     el.style.display = on ? "none" : "";
   });
+  // 要対応の位置まで動かす
+  if (on) setTimeout(() => {
+    const t = m.querySelector(".itemcard.isng") || m.querySelector(".ngitem");
+    if (t && t.scrollIntoView) t.scrollIntoView({ block: "center" });
+  }, 60);
   const h = m.querySelector(".modal-h h2");
   if (h) h.textContent = on ? "要対応" : "清掃記録";
   let tip = m.querySelector("#ngonly-tip");
