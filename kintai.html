@@ -8594,8 +8594,7 @@ function openDuePicker(opt) {
         <button class="duepop-x" aria-label="閉じる">${ic("x", 20)}</button></div>
       <div class="duepop-b"></div>
       <div class="duepop-f">
-        ${opt.value ? `<button class="btn btn-outline btn-sm duepop-clear">期限を消す</button>` : ""}
-        <button class="btn btn-default btn-sm duepop-cancel">やめる</button>
+        <button class="btn btn-default btn-sm duepop-cancel">OK</button>
       </div>
     </div>`;
   document.body.appendChild(wrap);
@@ -8603,8 +8602,6 @@ function openDuePicker(opt) {
   wrap.onclick = (e) => { if (e.target === wrap) close(); };
   wrap.querySelector(".duepop-x").onclick = close;
   wrap.querySelector(".duepop-cancel").onclick = close;
-  const clr = wrap.querySelector(".duepop-clear");
-  if (clr) clr.onclick = () => { close(); opt.onPick(""); };
   drawDuePicker(wrap.querySelector(".duepop-b"), {
     min: opt.min,
     value: opt.value || "",
