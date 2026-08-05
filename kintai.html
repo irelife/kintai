@@ -2047,7 +2047,7 @@ body{background:var(--bg);color:var(--fg);}
 .enface{font-family:"Didot","Hiragino Mincho ProN","Yu Mincho",serif;}
 
 /* ヘッダーを紙面から浮かせる */
-.hd{background:transparent;border-bottom:0;padding:.55rem 0 .1rem;}
+.hd{background:var(--bg);border-bottom:0;padding:.55rem 0 .6rem;}
 .hd-in{background:#fff;border-radius:1.5rem;padding:.6rem 1.1rem;box-shadow:var(--sh-md);}
 .hd-sub-in{border-top:0;}
 .hd-sub{background:#fff;border-radius:1.5rem;padding:.4rem .6rem;margin-top:.5rem;
@@ -2114,6 +2114,40 @@ img,.shot img,.ishot img{border-radius:.8rem;}
 .duefield-l{background:#F4E4DF;color:var(--rose-700);}
 .duefield-d{color:var(--rose-700);}
 
+/* トップページ：下へスクロールするだけで全部見える形 */
+main.homeflow{display:flex;flex-direction:column;}
+main.homeflow > #page-home{order:0;display:block;}
+main.homeflow > #page-today{order:1;display:block;}
+main.homeflow > #page-cal{order:2;display:block;}
+main.homeflow > #page-ng{order:3;display:block;}
+main.homeflow > #page-prop{order:4;display:block;}
+main.homeflow > #page-set,main.homeflow > #page-kt{display:none;}
+/* 行き先は上のタブ1本にまとめたので、清掃／勤怠の段は出さない */
+.hd-nav{display:none;}
+
+/* 物件リストは折りたためる（140件を開きっぱなしにしない） */
+main.homeflow #page-prop.folded > *:not(.flow-h){display:none;}
+.flow-fold{margin-left:auto;border:1px solid var(--border);background:#fff;color:var(--fg);
+  border-radius:9999px;padding:.45rem 1.1rem;font-family:inherit;font-size:14px;font-weight:700;
+  cursor:pointer;letter-spacing:.04em;}
+.flow-fold:hover{background:var(--bg);}
+main.homeflow > .page{scroll-margin-top:5.5rem;}
+.flow-h{display:none;}
+main.homeflow .flow-h{display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap;
+  margin:3rem 0 1.3rem;padding-top:1.7rem;border-top:1px solid var(--border);}
+main.homeflow #page-today .flow-h{margin-top:1.2rem;}
+.flow-en{font-size:32px;font-weight:700;line-height:1;letter-spacing:.03em;
+  text-transform:uppercase;color:var(--fg);}
+.flow-ja{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.14em;}
+@media(max-width:640px){ .flow-en{font-size:26px;} }
+/* 上に戻る */
+#pagetop{position:fixed;right:1rem;bottom:1.1rem;z-index:45;display:none;
+  align-items:center;justify-content:center;flex-direction:column;gap:.05rem;
+  width:3.4rem;height:3.4rem;border-radius:9999px;border:1px solid var(--border);
+  background:#fff;color:var(--fg);box-shadow:var(--sh-md);cursor:pointer;
+  font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.1em;}
+#pagetop.on{display:flex;}
+
 </style>
 </head>
 <body>
@@ -2140,9 +2174,12 @@ img,.shot img,.ishot img{border-radius:.8rem;}
       <button data-tab="ng"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg><span>要対応</span><i class="tabbadge" id="ng-badge"></i></button>
       <button data-tab="prop"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/></svg><span>物件リスト</span></button>
       <button data-tab="set"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg><span>LINE設定</span></button>
+      <button data-tab="kt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>勤怠</span></button>
     </nav>
   </div>
 </header>
+
+<button id="pagetop" title="いちばん上へ">↑<span>TOP</span></button>
 
 <main class="wrap">
 
@@ -3697,35 +3734,12 @@ function renderHome() {
   const ngN = collectOpenNg().length;
   const w = ["日", "月", "火", "水", "木", "金", "土"][parseYmd(t).getDay()];
 
-  const card = (tab, ico, en, ttl, sub, n, cls) => `
-    <button class="hm-c ${cls || ""}" data-hm="${tab}">
-      <span class="hm-i">${ic(ico, 30)}</span>
-      <span class="hm-en">${en}</span>
-      <span class="hm-t">${ttl}</span>
-      <span class="hm-s">${sub}</span>
-      ${n ? `<span class="hm-n">${n}</span>` : ""}
-    </button>`;
-
   box.innerHTML = `
     <div class="hm-head">
       <div class="hm-eyebrow">seisou tuti</div>
       <div class="hm-d enface">${Number(t.slice(5, 7))}月${Number(t.slice(8))}日<span style="font-size:.6em">(${w})</span></div>
-      <div class="hm-sub">したいことを えらんでください</div>
-    </div>
-    <div class="hm-g">
-      ${card("today", "pin", "today", "今日の清掃",
-        yet ? `未実施 ${yet}件` : (list.length ? "ぜんぶ おわりました" : "予定はありません"),
-        yet, yet ? "big warn" : "big")}
-      ${card("ng", "alert", "issues", "要対応", ngN ? `未解決 ${ngN}件` : "ありません", ngN, ngN ? "warn" : "")}
-      ${card("cal", "calendar", "calendar", "カレンダー", "予定を見る・入れる", 0, "")}
-      ${card("prop", "building", "properties", "物件リスト", `${props.length}件の物件`, 0, "")}
-      ${card("set", "message", "line", "LINE設定", "通知先・バックアップ", 0, "")}
-      ${card("kt", "clock", "attendance", "勤怠", "出勤・退勤の記録", 0, "wide")}
+      <div class="hm-sub">${yet ? `清掃 未実施 ${yet}件` : (list.length ? "今日の清掃は終わりました" : "今日の予定はありません")}${ngN ? `　／　要対応 未解決 ${ngN}件` : ""}</div>
     </div>`;
-
-  box.querySelectorAll("[data-hm]").forEach((b) => {
-    b.onclick = () => { const x = b.dataset.hm; if (x === "kt") goGroup("kt"); else go(x); };
-  });
 }
 
 function renderToday() {
@@ -8997,6 +9011,101 @@ function renderNgTab() {
   });
 }
 
+
+/* ===== トップページ：1枚のスクロールで完結させる =====
+   ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
+   ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
+const FLOW = [
+  { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
+  { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
+  { id: "ng",    en: "issues",     ja: "要対応",     render: () => renderNgTab() },
+  { id: "prop",  en: "properties", ja: "物件リスト", render: () => renderProps(), fold: true },
+];
+let _flowIO = null;
+function flowRender(id) {
+  const p = document.getElementById("page-" + id);
+  const f = FLOW.find((x) => x.id === id);
+  if (!p || !f || p.dataset.flowReady === "1") return;
+  if (p.classList.contains("folded")) return;   // たたんでいる間は描かない
+  p.dataset.flowReady = "1";
+  try { f.render(); } catch (e) {}
+}
+// 折りたたみの開け閉め
+function setFold(id, open) {
+  const p = document.getElementById("page-" + id);
+  if (!p) return;
+  p.classList.toggle("folded", !open);
+  const b = p.querySelector("[data-fold]");
+  if (b) b.textContent = open ? "とじる" : "ひらく";
+  if (open) flowRender(id);
+}
+function setupHomeFlow() {
+  const main = document.querySelector("main");
+  if (!main) return;
+  main.classList.add("homeflow");
+  FLOW.forEach((f) => {
+    const p = document.getElementById("page-" + f.id);
+    if (!p) return;
+    if (!p.querySelector(".flow-h")) {
+      const h = document.createElement("div");
+      h.className = "flow-h"; h.id = "flow-" + f.id;
+      h.innerHTML = `<span class="flow-en">${f.en}</span><span class="flow-ja">${f.ja}</span>` +
+        (f.fold ? `<button class="flow-fold" data-fold="${f.id}">ひらく</button>` : "");
+      p.insertBefore(h, p.firstChild);
+      const fb = h.querySelector("[data-fold]");
+      if (fb) fb.onclick = () => setFold(f.id, p.classList.contains("folded"));
+    }
+    if (f.fold && !p.dataset.foldInit) { p.dataset.foldInit = "1"; p.classList.add("folded"); }
+  });
+  flowRender("today");   // 最初の1つだけは先に描いておく
+  if (_flowIO) _flowIO.disconnect();
+  if (window.IntersectionObserver) {
+    _flowIO = new IntersectionObserver((ents) => {
+      ents.forEach((e) => { if (e.isIntersecting) flowRender(e.target.id.replace("page-", "")); });
+    }, { rootMargin: "400px 0px" });
+    FLOW.forEach((f) => { const p = document.getElementById("page-" + f.id); if (p) _flowIO.observe(p); });
+  } else {
+    FLOW.forEach((f) => flowRender(f.id));
+  }
+  updateFlowTab();
+}
+function clearHomeFlow() {
+  const main = document.querySelector("main");
+  if (main) main.classList.remove("homeflow");
+  if (_flowIO) { _flowIO.disconnect(); _flowIO = null; }
+  document.querySelectorAll(".page").forEach((p) => { p.dataset.flowReady = ""; });
+}
+// いま画面に出ているセクションを、上の帯で光らせる
+function markFlowTab(id) {
+  const sub = document.getElementById("hd-sub");
+  if (!sub) return;
+  sub.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id));
+}
+function updateFlowTab() {
+  if (!document.querySelector("main.homeflow")) return;
+  if (window.pageYOffset < 200) { markFlowTab("home"); return; }
+  const line = 140;   // 画面のこのあたりに入っている見出しを「いま見ている場所」とみなす
+  let cur = "today";
+  FLOW.forEach((f) => {
+    const p = document.getElementById("page-" + f.id);
+    if (p && p.getBoundingClientRect().top <= line) cur = f.id;
+  });
+  markFlowTab(cur);
+}
+
+function scrollToFlow(id) {
+  const h = document.getElementById("flow-" + id);
+  if (!h) return false;
+  const p = document.getElementById("page-" + id);
+  if (p && p.classList.contains("folded")) setFold(id, true);   // たたんでいたら開く
+  flowRender(id);
+  const y = h.getBoundingClientRect().top + window.pageYOffset - 84;
+  try { window.scrollTo({ top: y, behavior: "smooth" }); }
+  catch (e) { window.scrollTo(0, y); }
+  markFlowTab(id);
+  return true;
+}
+
 function go(t) {
   closeSideSheet();
   tab = t;
@@ -9014,8 +9123,7 @@ function go(t) {
   // サブタブ：勤怠のときは隠す。清掃のときは表示＋現在のサブをハイライト
   const sub = document.getElementById("hd-sub");
   if (sub) {
-    const isHome = (t === "home");
-    sub.classList.toggle("hidden", isHome);          // トップでは帯ごと隠す
+    sub.classList.remove("hidden");   // トップでも出す（1枚スクロールの行き来に使う）
     sub.querySelectorAll("button").forEach((b) => {
       b.style.display = "";                          // 中の画面ではすべて出す
     });
@@ -9025,7 +9133,8 @@ function go(t) {
   const t1el = document.getElementById("hd-t1"), t2el = document.getElementById("hd-t2");
   if (t1el) t1el.textContent = isKt ? "勤怠" : "清掃管理";
   if (t2el) t2el.textContent = isKt ? "Attendance" : "Cleaning Manager";
-  if (t === "home") renderHome();     // トップページ
+  if (t === "home") { renderHome(); setupHomeFlow(); }   // トップページ（1枚スクロール）
+  else clearHomeFlow();
   if (t === "today") renderToday();   // 現場向けの初期画面
   if (t === "cal") renderCal();
   if (t === "prop") renderProps();
@@ -9079,7 +9188,22 @@ function boot() {
   const logo = document.querySelector(".hd-logo") || document.querySelector(".hd-t");
   if (logo) { logo.style.cursor = "pointer"; logo.onclick = () => go("home"); }
   document.querySelectorAll(".hd-nav button").forEach((b) => { b.onclick = () => goGroup(b.dataset.group); });
-  document.querySelectorAll(".hd-sub button").forEach((b) => { b.onclick = () => go(b.dataset.tab); });
+  document.querySelectorAll(".hd-sub button").forEach((b) => {
+    b.onclick = () => {
+      const t = b.dataset.tab;
+      const inFlow = FLOW.some((f) => f.id === t);
+      const flowing = !!document.querySelector("main.homeflow");
+      if (flowing && t === "home") {
+        try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+        return;
+      }
+      if (inFlow) {
+        if (!flowing) go("home");         // LINE設定や勤怠から戻るときは、まず1枚の画面へ
+        if (scrollToFlow(t)) return;      // そのまま見出しまで動かす
+      }
+      go(t);
+    };
+  });
   document.getElementById("cal-prev").onclick = () => {
     cursor = cursor.m === 0 ? { y: cursor.y - 1, m: 11 } : { y: cursor.y, m: cursor.m - 1 };
     renderCal();
@@ -9297,6 +9421,14 @@ function boot() {
     if (e.key === "Escape") closeSideSheet();
   });
   go("home");   // 起動はトップページから
+  // 上に戻るボタン（長いスクロールの助け）
+  const pt = document.getElementById("pagetop");
+  if (pt) {
+    pt.onclick = () => { try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); } };
+    const upd = () => { pt.classList.toggle("on", window.pageYOffset > 600); updateFlowTab(); };
+    window.addEventListener("scroll", upd, { passive: true });
+    upd();
+  }
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
   setTimeout(() => { try { checkPrevMonthReport(); } catch (e) {} }, 4000);
   setTimeout(() => { try { maybeAutoSchedNextMonth(); } catch (e) {} }, 5000);
