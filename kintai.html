@@ -478,7 +478,8 @@ main{padding:1.5rem 0 4rem;}
 .fbtn.on{background:var(--fg);color:#fff;box-shadow:none;}
 .fcount{margin-left:auto;font-size:14px;color:var(--muted-2);}
 /* 物件カード：画面幅いっぱいまで詰めて並べ、縦を短くする */
-.grid3{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));align-items:start;}
+.grid3{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));align-items:start;
+  max-width:76rem;margin-left:auto;margin-right:auto;}
 /* スマホは1列。2列だと物件名も住所もボタンも入りきらない */
 @media(max-width:640px){ .grid3{grid-template-columns:1fr;gap:.5rem;} }
 .bcard{display:flex;flex-direction:column;padding:1rem;border:2px solid var(--border);border-radius:.7rem;transition:box-shadow .15s;}
@@ -504,6 +505,9 @@ main{padding:1.5rem 0 4rem;}
 #p-grid .bcard-m{overflow:hidden;}
 #p-grid .chip,#p-grid .chip-geo{white-space:nowrap;flex:0 0 auto;}
 #p-grid .btn-sm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* ボタンは半分ずつ。片方が潰れないようにする */
+#p-grid .bcard-btns{display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-top:.15rem;}
+#p-grid .bcard-btns .btn-sm{width:100%;justify-content:center;padding:.4rem .3rem;}
 /* スマホでは横に広く使えるので、余白と文字を少し戻す */
 @media(max-width:640px){
   #p-grid .bcard{padding:.65rem .7rem;}
@@ -3440,8 +3444,8 @@ function renderHome() {
       ${card("ng", "alert", "要対応", ngN ? `未解決 ${ngN}件` : "ありません", ngN, ngN ? "warn" : "")}
       ${card("cal", "calendar", "カレンダー", "予定を見る・入れる", 0, "")}
       ${card("prop", "building", "物件リスト", `${props.length}件の物件`, 0, "")}
-      ${card("kt", "clock", "勤怠", "出勤・退勤の記録", 0, "wide")}
       ${card("set", "message", "LINE設定", "通知先・バックアップ", 0, "")}
+      ${card("kt", "clock", "勤怠", "出勤・退勤の記録", 0, "wide")}
     </div>`;
 
   box.querySelectorAll("[data-hm]").forEach((b) => {
@@ -4726,8 +4730,8 @@ function renderProps() {
                             : `<span class="chip-geo none">${ic("alert", 10)} 座標なし</span>`)}
         ${p.mno ? `<span style="font-size:11px;color:var(--muted-2)">管理番号 ${esc(p.mno)}</span>` : ""}
       </div>
-      <div style="display:flex;gap:.4rem">
-        <button class="btn btn-outline btn-sm" data-sched="${esc(p.name)}" style="flex:1">${ic("calendar", 14)} 清掃を予定する</button>
+      <div class="bcard-btns">
+        <button class="btn btn-outline btn-sm" data-sched="${esc(p.name)}">${ic("calendar", 14)} 予定する</button>
         <button class="btn btn-outline btn-sm" data-pedit="${esc(p.name)}">${ic("pin", 14)} 編集</button>
       </div>
     </div>`;
