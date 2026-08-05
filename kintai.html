@@ -6164,50 +6164,70 @@ function applyNgOnly() {
   const body = m.querySelector("#m-body");
   if (!body) return;
   const on = !!ngOnly;
+
+  // まず元に戻す
+  Array.from(body.children).forEach((el) => {
+    el.style.display = "";
+    el.querySelectorAll("[data-hid-ng]").forEach((x) => {
+      x.style.display = ""; x.removeAttribute("data-hid-ng");
+    });
+  });
+  const oldTip = m.querySelector("#ngonly-tip");
+  if (oldTip) oldTip.remove();
+  const h = m.querySelector(".modal-h h2");
+  if (h) h.textContent = on ? "要対応" : "清掃記録";
+  if (!on) return;
+
+  // 未解決の要対応がある箇所のキーを、記録そのものから拾う
+  const r = getRep(openRep.name, openRep.date);
+  const ngKeys = Object.keys(r.items || {})
+    .filter((k) => r.items[k] && r.items[k].ng && !r.items[k].fixed);
+
+  // その箇所のカードだけを残す（クラス名ではなく data-drop で特定する）
+  const keep = new Set();
+  ngKeys.forEach((k) => {
+    body.querySelectorAll(`[data-drop="item|${k}"]`).forEach((card) => {
+      keep.add(card);
+      let el = card;
+      while (el && el.parentElement !== body) el = el.parentElement;
+      if (el) keep.add(el);
+    });
+  });
+
   Array.from(body.children).forEach((el) => {
     if (el.classList.contains("mbox")) return;      // 物件名は残す
     if (el.classList.contains("twocol")) return;    // 要対応の一覧・登録は残す
-    // 箇所に付いた要対応（例：放置自転車／破損）は、箇所カードの中にある。
-    // そのカードだけ残し、清掃だけのカードは隠す。
-    const hasNg = el.querySelector(".itemcard.isng");
-    if (on && hasNg) {
-      el.style.display = "";
-      el.querySelectorAll(".itemcard").forEach((c) => {
-        c.style.display = c.classList.contains("isng") ? "" : "none";
-      });
-      el.querySelectorAll(".pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox,.donefolder-h,.todos,.ngsend-btn")
-        .forEach((x) => { x.style.display = "none"; });
-      // 中身が要対応だけになった入れ物は、空なら隠す
-      if (!el.querySelector(".itemcard.isng")) el.style.display = "none";
-      return;
-    }
-    if (!on) {
-      el.querySelectorAll(".itemcard,.pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox,.donefolder-h,.todos,.ngsend-btn")
-        .forEach((x) => { x.style.display = ""; });
-    }
-    el.style.display = on ? "none" : "";
+    if (!keep.has(el)) { el.style.display = "none"; el.setAttribute("data-hid-ng", "1"); return; }
+    // 残す入れ物の中では、要対応でないカードと清掃の案内を隠す
+    el.querySelectorAll("[data-drop^='item|']").forEach((c) => {
+      if (!keep.has(c)) { c.style.display = "none"; c.setAttribute("data-hid-ng", "1"); }
+    });
+    el.querySelectorAll(".pending-label,.dropbox-done,.inbox-strip,.inbox-hint,#item-add,#dropbox,.donefolder-h,.ngsend-btn")
+      .forEach((x) => { x.style.display = "none"; x.setAttribute("data-hid-ng", "1"); });
   });
-  // 要対応の位置まで動かす
-  if (on) setTimeout(() => {
-    const t = m.querySelector(".itemcard.isng") || m.querySelector(".ngitem");
-    if (t && t.scrollIntoView) t.scrollIntoView({ block: "center" });
-  }, 60);
-  const h = m.querySelector(".modal-h h2");
-  if (h) h.textContent = on ? "要対応" : "清掃記録";
-  let tip = m.querySelector("#ngonly-tip");
-  if (on && !tip) {
-    tip = document.createElement("div");
-    tip.id = "ngonly-tip";
-    tip.innerHTML = "LINEの通知から開きました。<b>要対応だけを表示しています。</b>"
-      + '<button type="button" id="ngonly-all">清掃の記録も見る</button>';
-    const mb = body.querySelector(".mbox");
-    if (mb) mb.appendChild(tip);
-  }
-  const btn = m.querySelector("#ngonly-all");
-  if (btn) btn.onclick = () => { ngOnly = false; renderModal(); };
-  if (!on && tip) tip.remove();
-}
 
+  // 案内を出す
+  const mb = body.querySelector(".mbox");
+  if (mb) {
+    const tip = document.createElement("div");
+    tip.id = "ngonly-tip";
+    tip.innerHTML = (ngKeys.length || (r.ngs || []).length)
+      ? "LINEの通知から開きました。<b>要対応だけを表示しています。</b>"
+      : "LINEの通知から開きました。<b>この記録に未解決の要対応は見つかりませんでした。</b>";
+    tip.innerHTML += '<button type="button" id="ngonly-all">清掃の記録も見る</button>';
+    mb.appendChild(tip);
+    const btn = tip.querySelector("#ngonly-all");
+    if (btn) btn.onclick = () => { ngOnly = false; renderModal(); };
+  }
+
+  // 要対応の位置まで動かす
+  setTimeout(() => {
+    let t = null;
+    keep.forEach((el) => { if (!t && el.matches && el.matches("[data-drop^='item|']")) t = el; });
+    t = t || m.querySelector(".ngitem");
+    if (t && t.scrollIntoView) t.scrollIntoView({ block: "center" });
+  }, 80);
+}
 // 現地でないときは、記録の入力すべてを止める（閲覧だけできる）
 function lockRecord(on) {
   const m = document.getElementById("modal-host");
