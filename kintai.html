@@ -1032,6 +1032,9 @@ img[data-photo]{cursor:pointer;}
 .tdpark b{font-size:14px;}
 .tdpark.full{color:#b45309;background:#fffbeb;border-color:#fcd34d;}
 .tdpark-m{font-weight:600;font-size:11.5px;color:var(--muted-2);}
+/* 箇所ごとに撮る案内 */
+.dropbox-done.shootguide{border-color:var(--teal-300,#5eead4);background:var(--teal-50,#f0fdfa);}
+.dropbox-done.shootguide b{font-size:15px;}
 /* 今日タブ：やること（一番上に置いて目立たせる） */
 .tdhowto{margin:0 0 1rem;border:2px solid var(--am-400,#fbbf24);border-radius:.8rem;
   background:#fffbeb;padding:.9rem 1rem;box-shadow:0 2px 8px rgb(180 83 9 / .10);}
@@ -3010,9 +3013,12 @@ function openPickForItem(key) {
                 ${on ? `<span class="pickcell-no">${sel.indexOf(i) + 1}</span>` : ""}
               </button><button class="pickdel" data-pkdel="${i}" aria-label="この写真を捨てる" title="この写真を捨てる">${ic("x", 12)}</button></div>`;
             }).join("")}</div>`
-          : `<div class="assign-empty">${ic("alert", 22)}
-              <b>選べる写真がありません</b>
-              <span>閉じて「写真を追加する」から取り込んでください。</span></div>`}
+          : `<div class="assign-empty">${ic("camera", 22)}
+              <b>写真がありません</b>
+              <span>この箇所の写真を、その場で撮って登録します。</span>
+              <button class="btn pick-ok" id="pick-addnew" style="margin-top:.7rem">
+                ${ic("plus", 17)} 「${esc(lbl)}」の写真を撮る／選ぶ
+              </button></div>`}
         <div class="pick-f">
           ${lastAction ? `<button class="btn btn-undo" id="pick-undo">${ic("left", 16)} ひとつ前に戻す</button>` : ""}
           <button class="btn btn-default" id="pick-cancel">閉じる</button>
@@ -3056,6 +3062,9 @@ function openPickForItem(key) {
         draw();
       };
     });
+
+    const addNew = host.querySelector("#pick-addnew");
+    if (addNew) addNew.onclick = () => { host.innerHTML = ""; addShots({ kind: "item", key: cur }); };
 
     const okNext = host.querySelector("#pick-next");
     if (okNext) okNext.onclick = () => commit(true);
@@ -4761,20 +4770,11 @@ function renderModal() {
         })()}
         <div class="field" style="margin-bottom:-.4rem">
           ${(r.status !== "done" && date < today() && !r.lateReason) ? "" : `
-          ${pendingItems.length ? (_cap > 0 ? `
-          <label class="biglabel">① まず写真をここに入れる（ドラッグ＆ドロップ or タップ）</label>
-          <div class="dropbox" id="dropbox">
-            <div class="dropbox-inner" id="dropbox-inner">
-              <div class="dropbox-ico">${ic("camera", 40)}</div>
-              <div class="dropbox-big">ここに写真をドラッグ、またはタップして選ぶ</div>
-              <div class="dropbox-sub">あと <b>${_cap}枚</b> まで追加できます</div>
-              <button class="btn btn-default dropbox-btn" id="inbox-add">${ic("plus", 18)} 写真を追加する</button>
-            </div>
+          ${pendingItems.length ? `
+          <div class="dropbox-done shootguide">${ic("camera", 26)}
+            <b>下の箇所のカードをタップして、その場で写真を撮ってください</b>
+            <span>1箇所ずつ、清掃後の写真を<b>2枚ずつ</b>登録します。</span>
           </div>` : `
-          <div class="dropbox-done">${ic("check2", 26)}
-            <b>必要な写真はすべて取り込み済みです</b>
-            <span>下の<b>箇所のカード</b>をタップして、写真を振り分けてください。</span>
-          </div>`) : `
           <div class="dropbox-done cleandone">${ic("check2", 26)}
             <div class="cleandone-t">清掃完了</div>
             <div class="cleandone-s">所定の場所の清掃はすべて終わっています</div>
@@ -4784,7 +4784,8 @@ function renderModal() {
           ${(r.inbox && r.inbox.length) ? `<div class="inbox-strip">${r.inbox.map((src, i) =>
             `<div class="inbox-shot">${imgTag(src)}<button class="inbox-del" data-inbox-del="${i}" aria-label="削除">${ic("x", 11)}</button></div>`
           ).join("")}</div>
-          <div class="inbox-hint">${ic("alert", 13)}<span>取り込んだ写真 ${r.inbox.length}枚。下の<b>箇所のカード</b>をタップして、その箇所の写真を2枚ずつ選んでください。</span></div>` : ""}
+          <div class="inbox-hint">${ic("alert", 13)}<span>どの箇所にも使われていない写真が ${r.inbox.length}枚あります。
+            以前のやり方で取り込んだものです。×で捨てられます。</span></div>` : ""}
           `}
         </div>
         ${pendingItems.length ? `<div class="field">
@@ -4902,8 +4903,7 @@ function renderModal() {
       e.stopPropagation();
       const k = b.dataset.pickitem;
       const rr = getRep(name, date);
-      // アップ済みの写真があれば、その中から選ばせる。無ければ端末から直接取り込む。
-      if ((rr.inbox || []).length) { openPickForItem(k); return; }
+      // 箇所ごとにその場で撮る／選ぶ（まとめて取り込んで振り分ける方式はやめた）
       pickFiles(async (files) => {
         const r2 = getRep(name, date);
         const it = itemOf(r2, k);
