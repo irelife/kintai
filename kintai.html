@@ -3411,7 +3411,9 @@ function renderHome() {
       <div class="hm-sub">したいことを えらんでください</div>
     </div>
     <div class="hm-g">
-      ${card("today", "pin", "今日の清掃", yet ? `のこり ${yet}件` : (list.length ? "ぜんぶ おわりました" : "予定はありません"), yet, "big")}
+      ${card("today", "pin", "今日の清掃",
+        yet ? `未実施 ${yet}件` : (list.length ? "ぜんぶ おわりました" : "予定はありません"),
+        yet, yet ? "big warn" : "big")}
       ${card("ng", "alert", "要対応", ngN ? `未解決 ${ngN}件` : "ありません", ngN, ngN ? "warn" : "")}
       ${card("cal", "calendar", "カレンダー", "予定を見る・入れる", 0, "")}
       ${card("prop", "building", "物件リスト", `${props.length}件の物件`, 0, "")}
