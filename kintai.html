@@ -2636,10 +2636,29 @@ function shrink(f) {
   });
 }
 function pickFiles(cb) {
+  // iPad/iPhoneのSafariでは、画面に付いていない input は写真をえらぶ間に消されてしまい、
+  // えらび終わっても onchange が動かない（＝「写真アップ失敗」に見える）。
+  // かならず画面に付けてから開き、終わったら片付ける。
   const inp = document.createElement("input");
   // capture は付けない：付けるとスマホでカメラが起動し、複数枚の一括選択ができなくなる
   inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
-  inp.onchange = () => cb(Array.from(inp.files || []));
+  inp.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(inp);
+  let done = false;
+  const cleanup = () => { setTimeout(() => { try { inp.remove(); } catch (e) {} }, 1000); };
+  inp.onchange = () => {
+    if (done) return;
+    done = true;
+    const files = Array.from(inp.files || []);
+    cleanup();
+    if (files.length) cb(files);
+  };
+  // 「キャンセル」で閉じた場合にも片付ける（対応していない端末は下の保険で消える）
+  inp.addEventListener("cancel", () => { if (!done) { done = true; cleanup(); } });
+  window.addEventListener("focus", function onBack() {
+    window.removeEventListener("focus", onBack);
+    setTimeout(() => { if (!done) cleanup(); }, 3000);
+  });
   inp.click();
 }
 const SHOT_MAX = 3;
@@ -7255,6 +7274,8 @@ function doBackup() {
 function doRestore() {
   const inp = document.createElement("input");
   inp.type = "file"; inp.accept = ".json,application/json";
+  inp.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(inp);   // iPadでは画面に付けないと選択後に反応しない
   inp.onchange = () => {
     const f = inp.files[0]; if (!f) return;
     const rd = new FileReader();
@@ -9216,8 +9237,13 @@ function showOpenInSafari(which) {
           いまは<b>${which}の中のブラウザ</b>で開いています。<br>
           ここでは清掃の記録が読み込めません。</p>
         <p style="font-size:15px;color:#78350f;margin:.4rem 0 1.2rem">
-          画面の<b>右下（または右上）のメニュー</b>から
+          下のボタンを押すとSafariに移ります。<br>
+          開かないときは、画面の<b>右下（または右上）のメニュー</b>から
           <b>「Safariで開く」</b>を選んでください。</p>
+        <button id="go-safari" style="width:100%;padding:1rem;border:none;border-radius:.7rem;
+          background:#b45309;color:#fff;font-size:17px;font-weight:800;font-family:inherit;cursor:pointer;
+          margin-bottom:.7rem">
+          Safariで開く</button>
         <button id="cp-url" style="width:100%;padding:.9rem;border:none;border-radius:.7rem;
           background:#0f766e;color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer">
           このページのURLをコピーする</button>
@@ -9226,6 +9252,12 @@ function showOpenInSafari(which) {
       <p style="font-size:13px;color:#6b7280;margin-top:1.2rem">
         コピーしたURLをSafariのアドレス欄に貼っても開けます。</p>
     </div>`;
+  // LINEは openExternalBrowser=1 が付いたURLへ移ると、外のブラウザ（Safari）で開き直す
+  const g = document.getElementById("go-safari");
+  if (g) g.onclick = () => {
+    const u = url + (url.indexOf("?") >= 0 ? "&" : "?") + "openExternalBrowser=1";
+    location.href = u;
+  };
   const b = document.getElementById("cp-url");
   if (b) b.onclick = async () => {
     try { await navigator.clipboard.writeText(url); b.textContent = "コピーしました"; }
