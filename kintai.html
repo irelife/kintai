@@ -6214,10 +6214,7 @@ function applyNgOnly() {
     tip.innerHTML = (ngKeys.length || (r.ngs || []).length)
       ? "LINEの通知から開きました。<b>要対応だけを表示しています。</b>"
       : "LINEの通知から開きました。<b>この記録に未解決の要対応は見つかりませんでした。</b>";
-    tip.innerHTML += '<button type="button" id="ngonly-all">清掃の記録も見る</button>';
     mb.appendChild(tip);
-    const btn = tip.querySelector("#ngonly-all");
-    if (btn) btn.onclick = () => { ngOnly = false; renderModal(); };
   }
 
   // 要対応の位置まで動かす
@@ -8793,7 +8790,48 @@ function openFromUrl() {
     try { sessionStorage.setItem("lastOpen", raw); } catch (e) {}
   } catch (e) {}
 }
-document.addEventListener("DOMContentLoaded", boot);
+/* LINEやInstagramの内蔵ブラウザは、Safariとは別のデータ置き場を使う。
+   そこで開くと記録が空に見え、そのまま操作するとDriveの控えを空で上書きしてしまう。
+   なので、内蔵ブラウザでは何も動かさず、Safariで開くよう案内する。 */
+function inAppBrowser() {
+  const ua = navigator.userAgent || "";
+  if (/Line\//i.test(ua)) return "LINE";
+  if (/FBAN|FBAV|Instagram/i.test(ua)) return "SNSのアプリ";
+  return "";
+}
+function showOpenInSafari(which) {
+  const url = location.href;
+  document.body.innerHTML = `
+    <div style="max-width:560px;margin:0 auto;padding:2rem 1.25rem;
+      font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',system-ui,sans-serif;line-height:1.9">
+      <div style="border:3px solid #f59e0b;background:#fffbeb;border-radius:1rem;padding:1.4rem 1.2rem">
+        <div style="font-size:22px;font-weight:800;color:#92400e;margin-bottom:.6rem">
+          Safariで開いてください</div>
+        <p style="font-size:15px;color:#78350f;margin:.4rem 0 1rem">
+          いまは<b>${which}の中のブラウザ</b>で開いています。<br>
+          ここでは清掃の記録が読み込めません。</p>
+        <p style="font-size:15px;color:#78350f;margin:.4rem 0 1.2rem">
+          画面の<b>右下（または右上）のメニュー</b>から
+          <b>「Safariで開く」</b>を選んでください。</p>
+        <button id="cp-url" style="width:100%;padding:.9rem;border:none;border-radius:.7rem;
+          background:#0f766e;color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer">
+          このページのURLをコピーする</button>
+        <div style="font-size:12.5px;color:#92400e;margin-top:.8rem;word-break:break-all">${url}</div>
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin-top:1.2rem">
+        コピーしたURLをSafariのアドレス欄に貼っても開けます。</p>
+    </div>`;
+  const b = document.getElementById("cp-url");
+  if (b) b.onclick = async () => {
+    try { await navigator.clipboard.writeText(url); b.textContent = "コピーしました"; }
+    catch (e) { b.textContent = "コピーできませんでした。上のURLを長押ししてください"; }
+  };
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const w = inAppBrowser();
+  if (w) { showOpenInSafari(w); return; }   // データには一切触らない
+  boot();
+});
 </script>
 </body>
 </html>
