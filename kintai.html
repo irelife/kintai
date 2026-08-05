@@ -4985,7 +4985,8 @@ function renderModal() {
   // 項目カードから直接その箇所の写真を入れる（項目→写真の順で登録できる）
   host.querySelectorAll("[data-pickitem]").forEach((b) => {
     b.onclick = (e) => {
-      if (e.target.closest("[data-delitem], [data-del], img[data-photo]")) return;  // ×や写真は別処理
+      // ×・写真・「1枚目/2枚目」の枠は、それぞれの処理にまかせる（二重に開かない）
+      if (e.target.closest("[data-delitem], [data-del], img[data-photo], [data-add], .iadd, .add-shot, .pshot-add")) return;
       e.stopPropagation();
       const k = b.dataset.pickitem;
       const rr = getRep(name, date);
@@ -5012,6 +5013,7 @@ function renderModal() {
       renderModal();   // 入力できたら写真欄を開く
     };
   }
+  if (!_upRun && !_upQ.length) window._photoBusy = false;   // 前回の処理中フラグが残らないように
   renderNgEntry(name, date);
   applyNgOnly();             // LINEから開いたときは清掃の部分を隠す
   lockRecord(true);          // 確認が通るまでは入力させない
