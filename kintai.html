@@ -9204,7 +9204,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 f";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 h";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9245,7 +9245,13 @@ function setupHomeFlow() {
       const fb = h.querySelector("[data-fold]");
       if (fb) fb.onclick = () => setFold(f.id, p.classList.contains("folded"));
     }
-    if (f.fold && !p.dataset.foldInit) { p.dataset.foldInit = "1"; p.classList.add("folded"); }
+    // 折りたたむ欄は、トップに来るたび毎回たたんだ状態から始める
+    if (f.fold) {
+      p.classList.add("folded");
+      p.dataset.flowReady = "";
+      const fb2 = p.querySelector("[data-fold]");
+      if (fb2) fb2.textContent = "ひらく";
+    }
   });
   flowRender("today");   // 最初の1つだけは先に描いておく
   if (_flowIO) _flowIO.disconnect();
@@ -9327,13 +9333,23 @@ function go(t) {
   else clearHomeFlow();
   // タブを押したら、まず画面のいちばん上から見せる
   // （このあと見出しへ動かす場合は、そちらの動きが優先される）
-  try { window.scrollTo({ top: 0, behavior: "instant" }); } catch (e) { window.scrollTo(0, 0); }
   if (t === "today") renderToday();   // 現場向けの初期画面
   if (t === "cal") renderCal();
   if (t === "prop") renderProps();
   if (t === "ng") renderNgTab();
   if (t === "kt") { renderKintai(); renderKtTable(); }
   renderNgBadge();
+  // タブを押したら画面のいちばん上から見せる。
+  // 中身を描いたあとに高さが変わるので、描画の前後どちらでも効くよう2度呼ぶ。
+  toTop();
+  requestAnimationFrame(toTop);
+  setTimeout(toTop, 60);
+}
+function toTop() {
+  try { window.scrollTo(0, 0); } catch (e) {}
+  if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
 }
 // 上段グループのクリック：清掃→最後のサブタブ、勤怠→勤怠画面
 function goGroup(g) {
@@ -9413,7 +9429,9 @@ function boot() {
       }
       if (inFlow) {
         if (!flowing) go("home");         // LINE設定や勤怠から戻るときは、まず1枚の画面へ
-        if (scrollToFlow(t)) return;      // そのまま見出しまで動かす
+        // go() の「最上部へ」が終わったあとに、見出しまで動かす
+        setTimeout(() => { scrollToFlow(t); }, 80);
+        return;
       }
       go(t);
     };
