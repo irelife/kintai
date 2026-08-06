@@ -2302,7 +2302,7 @@ main.wrap,.page{max-width:100%;min-width:0;}
       <button data-tab="ng"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg><span>要対応</span><i class="tabbadge" id="ng-badge"></i></button>
       <button data-tab="prop"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/></svg><span>物件リスト</span></button>
       <button data-tab="set"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg><span>LINE設定</span></button>
-      <button data-tab="kt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>勤怠</span></button>
+      <button data-tab="kt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>KINTAI</span></button>
     </nav>
   </div>
 </header>
@@ -9204,7 +9204,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 e";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 f";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9325,6 +9325,9 @@ function go(t) {
   if (t2el) t2el.textContent = isKt ? "勤怠" : "清掃管理";
   if (t === "home") { renderHome(); setupHomeFlow(); }   // トップページ（1枚スクロール）
   else clearHomeFlow();
+  // タブを押したら、まず画面のいちばん上から見せる
+  // （このあと見出しへ動かす場合は、そちらの動きが優先される）
+  try { window.scrollTo({ top: 0, behavior: "instant" }); } catch (e) { window.scrollTo(0, 0); }
   if (t === "today") renderToday();   // 現場向けの初期画面
   if (t === "cal") renderCal();
   if (t === "prop") renderProps();
