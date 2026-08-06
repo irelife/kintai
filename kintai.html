@@ -2276,6 +2276,20 @@ main.wrap,.page{max-width:100%;min-width:0;}
   .kc-nm .nm-1{display:inline;}
 }
 
+/* 今日おわった清掃：消さずにグレーで残す（その日のうちは見返せるように） */
+.tddone-cards .tdcard{border-left-color:var(--muted-2)!important;background:var(--card);
+  filter:grayscale(1);opacity:.72;}
+.tddone-cards .tdcard:hover{opacity:.92;}
+
+/* 箇所カード：カメラで撮る／写真から選ぶ */
+.pcard-btns{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0 .2rem;}
+.pcard-cam,.pcard-lib{flex:1 1 9rem;display:inline-flex;align-items:center;justify-content:center;
+  gap:.4rem;border-radius:9999px;padding:.75rem .9rem;font-family:inherit;font-size:15px;
+  font-weight:800;cursor:pointer;border:2px solid transparent;}
+.pcard-cam{background:var(--am-700);color:#fff;}
+.pcard-cam:active{filter:brightness(.94);}
+.pcard-lib{background:#fff;color:var(--fg);border-color:var(--border);}
+
 </style>
 </head>
 <body>
@@ -2583,6 +2597,7 @@ const IC = {
   plus:'<path d="M5 12h14M12 5v14"/>',
   pin:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
   camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  image:'<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
   mail:'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
   trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
@@ -2926,6 +2941,25 @@ function shrink(f) {
     rd.readAsDataURL(f);
   });
 }
+// その場でカメラを起動して1枚撮る（写真アプリを開かない）
+function pickFromCamera(cb) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*";
+  inp.setAttribute("capture", "environment");   // 背面カメラ
+  inp.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(inp);
+  let done = false;
+  const cleanup = () => { setTimeout(() => { try { inp.remove(); } catch (e) {} }, 1000); };
+  inp.onchange = () => {
+    if (done) return;
+    done = true;
+    const files = Array.from(inp.files || []);
+    cleanup();
+    if (files.length) cb(files);
+  };
+  inp.addEventListener("cancel", () => { if (!done) { done = true; cleanup(); } });
+  inp.click();
+}
 function pickFiles(cb) {
   // iPad/iPhoneのSafariでは、画面に付いていない input は写真をえらぶ間に消されてしまい、
   // えらび終わっても onchange が動かない（＝「写真アップ失敗」に見える）。
@@ -3052,7 +3086,7 @@ function imgTag(id) {
    同時に投げるとGAS側で詰まり、回線も食いつぶすため、2本ずつに絞る。 */
 const _upQ = [];
 let _upRun = 0, _upTotal = 0, _upDone = 0, _upDirty = false, _upTimer = null;
-const UP_PARALLEL = 2;
+const UP_PARALLEL = 4;   // 同時に送る本数（多いほど速いが、多すぎるとGAS側で詰まる）
 
 function uploadPhotoBg(tempId, dataUrl, opts) {
   if (!cfg.gas) return;
@@ -3257,30 +3291,43 @@ function showPhotoBusy(on) {
 }
 async function _addPhotosToArrayRaw(files, arr, persist, opts) {
   opts = opts || {};
-  let added = 0; const jobs = []; const warns = [];
+  let added = 0; const jobs = [];
   const recKey = (opts.name && opts.date) ? (opts.name + "|" + opts.date) : "";
-  for (const f of files) {
-    let dataUrl; try { dataUrl = await shrink(f); } catch (e) { continue; }
-    // ===== 写真の検証（使い回し・撮影日）=====
-    try {
-      const hash = await photoHash(dataUrl);
-      const dup = findDupPhoto(hash, recKey);
-      if (dup) warns.push({ kind: "dup", detail: dup.k });
-      else registerPhoto(hash, recKey, opts.item || "");
-      const ed = await exifDate(f);
-      if (ed && opts.date && ed !== opts.date && ed !== today()) warns.push({ kind: "exif", detail: ed });
-    } catch (e) { /* 検証に失敗しても写真の登録は続ける */ }
+  // 縮小はまとめて並行に。1枚ずつ順番に待つと、枚数のぶんだけ画面が止まる。
+  const shrunk = await Promise.all(files.map((f) =>
+    shrink(f).then((d) => ({ f, d })).catch(() => null)));
+  for (const sh of shrunk) {
+    if (!sh) continue;
     added++;
-    if (!cfg.gas) { arr.push(dataUrl); continue; }        // GAS未設定：従来どおり base64 を保存
+    if (!cfg.gas) { arr.push(sh.d); continue; }           // GAS未設定：従来どおり base64 を保存
     const tempId = "temp_" + Date.now() + "_" + added + "_" + Math.floor(Math.random() * 100000);
-    _imgCache[tempId] = dataUrl; arr.push(tempId); jobs.push({ tempId, dataUrl });
+    _imgCache[tempId] = sh.d; arr.push(tempId); jobs.push({ tempId, dataUrl: sh.d });
   }
   persist();
-  if (warns.length) { recordPhotoWarns(opts.name, opts.date, warns); showPhotoWarn(warns); }
   if (opts && opts.name && opts.date) refreshStatus(opts.name, opts.date);
   renderModal();
   jobs.forEach((j) => uploadPhotoBg(j.tempId, j.dataUrl, opts));
+  // 使い回し・撮影日の確認は、画面を止めずにあとから行う（待たせない）
+  verifyPhotosLater(shrunk, recKey, opts);
   return added;
+}
+// 写真の検証（使い回し・撮影日）。取り込みの裏で走らせる。
+function verifyPhotosLater(shrunk, recKey, opts) {
+  setTimeout(async () => {
+    const warns = [];
+    for (const sh of shrunk) {
+      if (!sh) continue;
+      try {
+        const hash = await photoHash(sh.d);
+        const dup = findDupPhoto(hash, recKey);
+        if (dup) warns.push({ kind: "dup", detail: dup.k });
+        else registerPhoto(hash, recKey, opts.item || "");
+        const ed = await exifDate(sh.f);
+        if (ed && opts.date && ed !== opts.date && ed !== today()) warns.push({ kind: "exif", detail: ed });
+      } catch (e) { /* 検証に失敗しても写真の登録はそのまま */ }
+    }
+    if (warns.length) { recordPhotoWarns(opts.name, opts.date, warns); showPhotoWarn(warns); }
+  }, 0);
 }
 // 印刷/メール報告の前に、その日の全写真を base64 に解決してキャッシュを温める
 async function preloadReportImages(date) {
@@ -3987,7 +4034,7 @@ function renderToday() {
     </div>` : ""}
 
     ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
-      <div class="tddone">${doneToday.map((n) => `<span data-open="${esc(n)}|${esc(t)}" title="完了した内容を見る">${esc(n)}</span>`).join("")}</div></div>` : ""}
+      <div class="tddone-cards">${doneToday.map((n) => jobCard(n, t, false)).join("")}</div></div>` : ""}
 
     `;
 
@@ -5348,7 +5395,10 @@ function renderModal() {
         <button class="item-x" data-delitem="${it.key}" title="この項目を削除" aria-label="項目を削除">${ic("x", 14)}</button>
       </div>
       <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
-      <div class="pcard-tap">${ic("camera", 14)} 下の枠をタップして写真を登録</div>
+      <div class="pcard-btns">
+        <button class="pcard-cam" data-cam="${it.key}">${ic("camera", 16)} カメラで撮る</button>
+        <button class="pcard-lib" data-pickitem="${it.key}">${ic("image", 15)} 写真から選ぶ</button>
+      </div>
       ${(() => {
         const cur = (itemOf(r, it.key).photos || []).length;
         return `<div class="pshots">
@@ -5625,25 +5675,32 @@ function renderModal() {
   q("#m-cancel").onclick = closeM;
   const mn = q("#m-nav"); if (mn) mn.onclick = () => openNav(navUrlOne(name));
   // 項目カードから直接その箇所の写真を入れる（項目→写真の順で登録できる）
+  const takeItemPhotos = async (k, files) => {
+    const r2 = getRep(name, date);
+    const it = itemOf(r2, k);
+    it.photos = it.photos || [];
+    const room = NEED_SHOTS - it.photos.length;
+    if (room <= 0) { toast("この箇所は2枚まで", ""); return; }
+    r2.items[k] = it;
+    const persist = () => setRep(name, date, { items: r2.items });
+    await addPhotosToArray(files.slice(0, room), it.photos, persist, { name, date });
+    persist(); refreshStatus(name, date); renderModal();
+  };
+  // カメラで撮る（その場で起動）
+  host.querySelectorAll("[data-cam]").forEach((b) => {
+    b.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const k = b.dataset.cam;
+      pickFromCamera((files) => takeItemPhotos(k, files));
+    };
+  });
   host.querySelectorAll("[data-pickitem]").forEach((b) => {
     b.onclick = (e) => {
-      // ×・写真・「1枚目/2枚目」の枠は、それぞれの処理にまかせる（二重に開かない）
-      if (e.target.closest("[data-delitem], [data-del], img[data-photo], [data-add], .iadd, .add-shot, .pshot-add")) return;
+      // ×・写真・カメラ・「1枚目/2枚目」の枠は、それぞれの処理にまかせる（二重に開かない）
+      if (e.target.closest("[data-delitem], [data-del], img[data-photo], [data-add], [data-cam], .iadd, .add-shot, .pshot-add")) return;
       e.stopPropagation();
-      const k = b.dataset.pickitem;
-      const rr = getRep(name, date);
       // 箇所ごとにその場で撮る／選ぶ（まとめて取り込んで振り分ける方式はやめた）
-      pickFiles(async (files) => {
-        const r2 = getRep(name, date);
-        const it = itemOf(r2, k);
-        it.photos = it.photos || [];
-        const room = NEED_SHOTS - it.photos.length;
-        if (room <= 0) { toast("この箇所は2枚まで", ""); return; }
-        r2.items[k] = it;
-        const persist = () => setRep(name, date, { items: r2.items });
-        await addPhotosToArray(files.slice(0, room), it.photos, persist, { name, date });
-        persist(); refreshStatus(name, date); renderModal();
-      });
+      pickFiles((files) => takeItemPhotos(b.dataset.pickitem, files));
     };
   });
   // 遅れた理由（入力すると写真の登録に進める）
@@ -7050,6 +7107,7 @@ const NG_PLACES = [
   { key: "equip",       label: "設備" },
   { key: "sign",        label: "看板" },
   { key: "masubuta",    label: "マス蓋" },
+  { key: "planting",    label: "植栽剪定・伐採・抜根" },
 ];
 const NG_KINDS = [
   { key: "broken", label: "破損汚損" },
@@ -7081,6 +7139,12 @@ function ngSendTo(key) { return NG_TO_OWNER[key] ? "both" : "field"; }
 
 /* ===== 要対応が出たときの対処手順（LINE通知に載せる） ===== */
 const NG_ACTION = {
+  planting: [
+    "【植栽の剪定・伐採・抜根】",
+    "1. どの木・どの範囲かがわかるよう、引きと寄りの2枚を撮ってください。",
+    "2. 通行や視界の妨げ、越境の有無を書き添えてください。",
+    "3. 手に負えない量・高さのときは、業者手配になります。そのまま報告してください。",
+  ],
   masubuta: [
     "【マスふたの割れ・破損】",
     "1. 割れているマスふたの直径を測ってください。",
@@ -9225,7 +9289,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 j";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 m";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
