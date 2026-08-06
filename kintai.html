@@ -9314,8 +9314,8 @@ function renderNgTab() {
           <span class="ng-row-mr">${esc(fmtDate(x.date))} の記録</span>
         </span>
         <span class="ng-row-act">
-          <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフターを撮る（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
-          <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 選ぶ</button>
+          <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフター撮影（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
+          <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 写真</button>
           <button class="ngact ngact-fix" data-ngfixrow="${tgt}" ${canFix ? "" : "disabled"}>${ic("check2", 15)} 解決</button>
         </span>
       </span>
@@ -9419,7 +9419,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 t";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 u";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
