@@ -2215,7 +2215,9 @@ main.homeflow{padding-bottom:7rem;}
 
 /* 何かが画面幅からはみ出しても、画面全体が横にずれないようにする
    （ヘッダーやタブが左に消えていくのを防ぐ） */
-html,body{overflow-x:hidden;max-width:100%;}
+/* overflow-x:hidden は position:sticky を殺してしまうので clip を使う
+   （hidden にすると body が新しいスクロール枠になり、上のタブが貼り付かなくなる） */
+body{overflow-x:clip;max-width:100%;}
 main.wrap,.page{max-width:100%;min-width:0;}
 
 /* いま読み込まれている版（更新できているかの確認用） */
@@ -2228,6 +2230,8 @@ main.wrap,.page{max-width:100%;min-width:0;}
 .badge-plum{background:#FBEEF2;color:#8A2743;border:1px solid #9B2C4A;}
 .ngitem-m.over{background:#FBEEF2;}
 .ngitem-m.over .ngitem-m-l,.ngitem-m.over .ngitem-m-d{color:#8A2743;}
+
+.bcard-next.done{color:var(--muted);font-weight:700;}
 
 </style>
 </head>
@@ -2625,6 +2629,23 @@ function hasPendingSched(name) {
     if (getRep(name, ds).status !== "done") return true;
   }
   return false;
+}
+// 今月すでに清掃を終えた日（あれば最後の日付）。清掃は月1回なので、
+// 終わった物件が物件リストへ戻ると、同じ月にもう一度予定を入れてしまう。
+function doneThisMonth(name) {
+  const mon = today().slice(0, 7);
+  let last = "";
+  for (const ds in sched) {
+    if (ds.slice(0, 7) !== mon) continue;
+    if (!(sched[ds] || []).includes(name)) continue;
+    if (getRep(name, ds).status !== "done") continue;
+    if (!last || ds > last) last = ds;
+  }
+  return last;
+}
+// 物件リスト（既定の「予定が入っていない物件」）から隠す条件
+function isCoveredThisMonth(name) {
+  return hasPendingSched(name) || !!doneThisMonth(name);
 }
 // カード枠/背景のトーン（優先：赤＞黄＞グレー＞通常の緑）。地域別の色分けは廃止。
 const TONE = {
@@ -5069,14 +5090,14 @@ function renderProps() {
   const list = props.filter((p) =>
     (filterCity === "all" || cityOf(p.addr).key === filterCity) &&
     (!filterQ || p.name.includes(filterQ) || String(p.addr || "").includes(filterQ)) &&
-    (filterSched !== "none" || !hasPendingSched(p.name)));
+    (filterSched !== "none" || !isCoveredThisMonth(p.name)));
   document.getElementById("p-count").textContent = `${list.length}件`;
   drawPropHead();
   const wrap = document.getElementById("p-grid");
   if (!list.length) {
     wrap.innerHTML = `<div class="card empty" style="grid-column:1/-1">${
       filterSched === "none"
-        ? "予定が入っていない物件はありません。すべて予定に入っています。"
+        ? "予定が入っていない物件はありません。今月ぶんはすべて予定に入っているか、清掃が終わっています。"
         : "該当する物件がありません。"}</div>`;
     return;
   }
@@ -5092,9 +5113,10 @@ function renderProps() {
           <div class="bcard-a">${ic("pin", 11)}<span>${esc(p.addr)}</span></div>
           ${(() => {
             const nx = nextSchedOf(p.name);
-            return nx
-              ? `<div class="bcard-next">${ic("calendar", 11)} 次回 ${fmtShort(nx)}</div>`
-              : `<div class="bcard-next none">${ic("alert", 11)} 予定なし</div>`;
+            if (nx) return `<div class="bcard-next">${ic("calendar", 11)} 次回 ${fmtShort(nx)}</div>`;
+            const dn = doneThisMonth(p.name);
+            if (dn) return `<div class="bcard-next done">${ic("check2", 11)} 今月ずみ（${fmtShort(dn)}）</div>`;
+            return `<div class="bcard-next none">${ic("alert", 11)} 予定なし</div>`;
           })()}
         </div>
       </div>
@@ -5112,7 +5134,14 @@ function renderProps() {
     </div>`;
   }).join("");
   wrap.querySelectorAll("[data-sched]").forEach((b) => {
-    b.onclick = (e) => { e.stopPropagation(); openSched(b.dataset.sched); };
+    b.onclick = (e) => {
+      e.stopPropagation();
+      const nm = b.dataset.sched;
+      const dn = doneThisMonth(nm);
+      // 清掃は月1回。今月すでに終わっている物件を、もう一度入れそうになったら確かめる
+      if (dn && !confirm(`${nm} は今月ぶん（${fmtDate(dn)}）の清掃が終わっています。\nそれでも予定を入れますか？`)) return;
+      openSched(nm);
+    };
   });
   // カードのどこを押しても予定を入れられる（ボタン以外の場所）
   wrap.querySelectorAll(".bcard").forEach((c) => {
