@@ -2243,7 +2243,13 @@ main.wrap,.page{max-width:100%;min-width:0;}
   .wrap{padding:0 3.5rem;}
 }
 /* 物件リストは幅に応じて列を増やす */
-@media(min-width:1500px){ #p-grid{grid-template-columns:repeat(auto-fill,minmax(21rem,1fr));} }
+/* 物件リストが真ん中に寄って左右が余っていたのは、この格子に最大幅（76rem）が
+   かかっていたため。広い画面では外して、画面幅いっぱいに列を増やす。 */
+@media(min-width:1200px){
+  .grid3{max-width:none;margin-left:0;margin-right:0;}
+  #p-grid{grid-template-columns:repeat(auto-fill,minmax(19rem,1fr));gap:.8rem;}
+}
+@media(min-width:1800px){ #p-grid{grid-template-columns:repeat(auto-fill,minmax(21rem,1fr));} }
 
 /* 要対応一覧：広い画面ほど写真を大きく。行が間延びしないよう列も増やす */
 @media(min-width:1100px){
@@ -2314,6 +2320,17 @@ main.wrap,.page{max-width:100%;min-width:0;}
   border:none;background:rgb(51 47 59 / .78);color:#fff;display:inline-flex;align-items:center;
   justify-content:center;cursor:pointer;padding:0;line-height:0;z-index:2;}
 .ng-thx:hover{background:#C4483F;}
+
+/* 今日タブ：パソコンでは760pxの上限を外し、カードを横に並べる */
+@media(min-width:1200px){
+  #page-today{max-width:none;padding:1rem 0;}
+  .tdsec{display:grid;grid-template-columns:repeat(auto-fill,minmax(24rem,1fr));
+    gap:.8rem;align-items:start;}
+  .tdsec > h3{grid-column:1/-1;margin-bottom:0;}
+  .tddone-cards{display:contents;}   /* 完了ぶんも同じ格子に並べる */
+  #td-route{max-width:44rem;}
+  .tdhead,.howto-box{max-width:60rem;}
+}
 
 </style>
 </head>
@@ -9409,7 +9426,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 w";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 y";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
