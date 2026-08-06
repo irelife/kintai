@@ -2290,6 +2290,16 @@ main.wrap,.page{max-width:100%;min-width:0;}
 .pcard-cam:active{filter:brightness(.94);}
 .pcard-lib{background:#fff;color:var(--fg);border-color:var(--border);}
 
+/* 要対応一覧：その場でアフターを入れて解決まで済ませる */
+.ng-row-act{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.6rem;}
+.ngact{display:inline-flex;align-items:center;gap:.35rem;border-radius:9999px;
+  padding:.5rem .9rem;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer;
+  border:1.5px solid var(--border);background:#fff;color:var(--fg);}
+.ngact-cam{background:var(--am-700);border-color:var(--am-700);color:#fff;}
+.ngact-fix{background:var(--teal-700);border-color:var(--teal-700);color:#fff;}
+.ngact-fix:disabled{background:#fff;border-color:var(--border);color:var(--muted-2);cursor:default;}
+.ngact:active{filter:brightness(.94);}
+
 </style>
 </head>
 <body>
@@ -4018,6 +4028,9 @@ function renderToday() {
     ${todayList.length ? `<div class="tdsec"><h3>${ic("calendar", 15)} 今日おこなう清掃</h3>
       ${todayList.map((n) => jobCard(n, t, false)).join("")}</div>` : ""}
 
+    ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
+      <div class="tddone-cards">${doneToday.map((n) => jobCard(n, t, false)).join("")}</div></div>` : ""}
+
     ${carry.length ? `<div class="tdsec"><h3 class="warn">${ic("alert", 15)} 終わっていない清掃（先にこちらを）</h3>
       ${carry.slice(0, 10).map((x) => jobCard(x.n, x.d, true)).join("")}
       ${carry.length > 10 ? `<div class="tdmore">ほか${carry.length - 10}件</div>` : ""}</div>` : ""}
@@ -4032,9 +4045,6 @@ function renderToday() {
         <div class="tdng-b">${esc(x.la)}：${esc(x.tx || "（内容未記入）")}</div></div>`).join("")}
       </div>
     </div>` : ""}
-
-    ${doneToday.length ? `<div class="tdsec"><h3 class="ok">${ic("check2", 15)} 今日おわった清掃 ${doneToday.length}件</h3>
-      <div class="tddone-cards">${doneToday.map((n) => jobCard(n, t, false)).join("")}</div></div>` : ""}
 
     `;
 
@@ -7368,6 +7378,7 @@ function collectOpenNg() {
         item: labelOf(key),
         text: c.text || "",
         thumb: (c.before || [])[0] || (c.photos || [])[0] || "",
+        afterN: (c.after || []).length,
         deadline: c.deadline || "",
         due: ngDueState(c.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -7380,6 +7391,7 @@ function collectOpenNg() {
         item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`,
         text: g.text || "",
         thumb: (g.before || [])[0] || "",
+        afterN: (g.after || []).length,
         deadline: g.deadline || "",
         due: ngDueState(g.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -7391,6 +7403,7 @@ function collectOpenNg() {
         property: name, date, key: "todo:" + t.id,
         item: t.item || "その他", text: t.text || "",
         thumb: (t.before || [])[0] || "",
+        afterN: (t.after || []).length,
         deadline: t.deadline || "",
         due: ngDueState(t.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -9257,7 +9270,9 @@ function renderNgTab() {
       html += `<div class="ng-sec" style="color:${st.fg}">${st.t}（${n}件）</div>`;
       lastKey = x.due.key;
     }
-    html += `<button class="ng-row" data-open="${esc(x.property)}|${esc(x.date)}"
+    const tgt = `${esc(x.property)}|${esc(x.date)}|${esc(x.key)}`;
+    const canFix = (x.afterN || 0) > 0;
+    html += `<div class="ng-row" role="button" tabindex="0" data-open="${esc(x.property)}|${esc(x.date)}"
         style="--rule:${st.bd}">
       <span class="ng-row-th">${x.thumb ? imgTag(x.thumb) : `<span class="ng-row-noth">${ic("camera", 20)}</span>`}</span>
       <span class="ng-row-b">
@@ -9268,13 +9283,19 @@ function renderNgTab() {
           <span class="ng-row-mt">${x.deadline ? `期限 ${esc(fmtDate(x.deadline))}` : "期限なし"}</span>
           <span class="ng-row-mr">${esc(fmtDate(x.date))} の記録</span>
         </span>
+        <span class="ng-row-act">
+          <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフターを撮る（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
+          <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 選ぶ</button>
+          <button class="ngact ngact-fix" data-ngfixrow="${tgt}" ${canFix ? "" : "disabled"}>${ic("check2", 15)} 解決</button>
+        </span>
       </span>
-    </button>`;
+    </div>`;
   });
   host.innerHTML = html;
   hydratePhotos(host);
   host.querySelectorAll("[data-open]").forEach((b) => {
-    b.onclick = () => {
+    b.onclick = (e) => {
+      if (e.target.closest(".ngact")) return;   // 中のボタンは、それぞれの処理にまかせる
       const [nm, dt] = b.dataset.open.split("|");
       openRep = { name: nm, date: dt }; openItem = null;
       selDate = dt;
@@ -9283,13 +9304,65 @@ function renderNgTab() {
       renderModal();
     };
   });
+  // アフター写真を、この一覧のまま登録する
+  const addAfter = (tgt, files) => {
+    const [nm, dt, key] = tgt.split("|");
+    const t = ngTarget(nm, dt, key);
+    if (!t) return;
+    const room = NG_SHOT_MAX - t.after.length;
+    if (room <= 0) { toast("アフターは2枚まで", ""); return; }
+    addPhotosToArray(files.slice(0, room), t.after, t.persist, { name: nm, date: dt })
+      .then(() => { t.persist(); renderNgTab(); renderNgBadge(); });
+  };
+  host.querySelectorAll("[data-ngaft]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); pickFromCamera((f) => addAfter(b.dataset.ngaft, f)); };
+  });
+  host.querySelectorAll("[data-ngaftlib]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); pickFiles((f) => addAfter(b.dataset.ngaftlib, f)); };
+  });
+  // 解決にする
+  host.querySelectorAll("[data-ngfixrow]").forEach((b) => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      const [nm, dt, key] = b.dataset.ngfixrow.split("|");
+      const t = ngTarget(nm, dt, key);
+      if (!t) return;
+      if (!t.after.length) { toast("アフター写真が要ります", "撮ってから解決にしてください"); return; }
+      t.obj.fixed = true; t.obj.fixedAt = today();
+      t.persist();
+      if (key.indexOf("ng:") === 0) { try { notifyNgFixed(nm, dt, +key.slice(3)); } catch (err) {} }
+      toast("解決にしました", `${nm}`);
+      renderNgTab(); renderNgBadge(); renderCal();
+    };
+  });
+}
+/* 要対応の実体（項目／追加した要対応／その他）を、キーから引き当てる */
+function ngTarget(name, date, key) {
+  const r = getRep(name, date);
+  if (key.indexOf("ng:") === 0) {
+    const g = (r.ngs || [])[+key.slice(3)];
+    if (!g) return null;
+    g.after = g.after || [];
+    return { obj: g, after: g.after, persist: () => setRep(name, date, { ngs: r.ngs }) };
+  }
+  if (key.indexOf("todo:") === 0) {
+    const id = key.slice(5);
+    const t = (r.todos || []).find((x) => String(x.id) === id);
+    if (!t) return null;
+    t.after = t.after || [];
+    return { obj: t, after: t.after, persist: () => setRep(name, date, { todos: r.todos }) };
+  }
+  const it = itemOf(r, key);
+  it.after = it.after || [];
+  r.items[key] = it;
+  return { obj: it, after: it.after, persist: () => setRep(name, date, { items: r.items }) };
 }
 
 
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 m";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 o";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
