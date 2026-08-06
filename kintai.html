@@ -2300,6 +2300,14 @@ main.wrap,.page{max-width:100%;min-width:0;}
 .ngact-fix:disabled{background:#fff;border-color:var(--border);color:var(--muted-2);cursor:default;}
 .ngact:active{filter:brightness(.94);}
 
+/* 要対応一覧：入れたアフター写真を、ビフォーの隣に並べる */
+.ng-row-af{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.4rem;}
+.ng-row-aflb{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--teal-700);}
+.ng-row-afth{width:4.4rem;height:4.4rem;border-radius:.6rem;overflow:hidden;flex:none;
+  border:2px solid var(--teal-700);background:var(--border-soft);}
+.ng-row-afth img{width:100%;height:100%;object-fit:cover;border-radius:.5rem;}
+@media(min-width:1100px){ .ng-row-afth{width:5.4rem;height:5.4rem;} }
+
 </style>
 </head>
 <body>
@@ -7379,6 +7387,7 @@ function collectOpenNg() {
         text: c.text || "",
         thumb: (c.before || [])[0] || (c.photos || [])[0] || "",
         afterN: (c.after || []).length,
+        afters: (c.after || []).slice(0, 2),
         deadline: c.deadline || "",
         due: ngDueState(c.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -7392,6 +7401,7 @@ function collectOpenNg() {
         text: g.text || "",
         thumb: (g.before || [])[0] || "",
         afterN: (g.after || []).length,
+        afters: (g.after || []).slice(0, 2),
         deadline: g.deadline || "",
         due: ngDueState(g.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -7404,6 +7414,7 @@ function collectOpenNg() {
         item: t.item || "その他", text: t.text || "",
         thumb: (t.before || [])[0] || "",
         afterN: (t.after || []).length,
+        afters: (t.after || []).slice(0, 2),
         deadline: t.deadline || "",
         due: ngDueState(t.deadline || ""),
         addr: (props.find((x) => x.name === name) || {}).addr || "",
@@ -9278,6 +9289,10 @@ function renderNgTab() {
       <span class="ng-row-b">
         <span class="ng-row-i">${esc(x.item)}</span>
         <span class="ng-row-p">${esc(x.property)}${x.text ? `<span class="ng-row-t">${esc(x.text)}</span>` : ""}</span>
+        ${(x.afters || []).length ? `<span class="ng-row-af">
+          <span class="ng-row-aflb">アフター</span>
+          ${x.afters.map((id) => `<span class="ng-row-afth">${imgTag(id)}</span>`).join("")}
+        </span>` : ""}
         <span class="ng-row-m">
           <span class="ng-row-due" style="background:${st.bd}">${esc(x.due.label)}</span>
           <span class="ng-row-mt">${x.deadline ? `期限 ${esc(fmtDate(x.deadline))}` : "期限なし"}</span>
@@ -9295,7 +9310,9 @@ function renderNgTab() {
   hydratePhotos(host);
   host.querySelectorAll("[data-open]").forEach((b) => {
     b.onclick = (e) => {
-      if (e.target.closest(".ngact")) return;   // 中のボタンは、それぞれの処理にまかせる
+      // 中のボタンと写真は、それぞれの処理にまかせる
+      // （写真は拡大表示にまかせる。ここで記録画面を開くと、閉じたときに戻り先が変わってしまう）
+      if (e.target.closest(".ngact, .ng-row-th, .ng-row-af, img")) return;
       const [nm, dt] = b.dataset.open.split("|");
       openRep = { name: nm, date: dt }; openItem = null;
       selDate = dt;
@@ -9362,7 +9379,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 o";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 q";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
