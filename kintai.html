@@ -2407,20 +2407,6 @@ main.wrap,.page{max-width:100%;min-width:0;}
         <p id="kt-date">—</p>
       </div>
     </div>
-    <div class="card" style="margin-bottom:1.5rem;padding:1.25rem">
-      <div class="kt-h" style="margin-bottom:.6rem">
-        <h2 style="display:flex;align-items:center;gap:.4rem"><span>🔄 同期設定（スマホとPCで共有）</span></h2>
-        <span id="kt-sync-state" style="font-size:12px;color:var(--muted-2)">未設定</span>
-      </div>
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-        <input class="input" id="cfg-ktgas" placeholder="同期サーバーのURLを貼り付け（https://script.google.com/…/exec）" style="flex:1;min-width:220px">
-        <button class="btn btn-default" id="kt-sync-save">保存</button>
-        <button class="btn btn-outline" id="kt-sync-now">今すぐ同期</button>
-      </div>
-      <div style="margin-top:.5rem;font-size:12px;color:var(--rose-600)">※ 勤怠専用の同期サーバー（Google Apps Script）のURLを設定すると、この端末の打刻が他の端末と共有されます。</div>
-      <div style="margin-top:.25rem;font-size:12px;color:var(--muted-2)">※ URLはこの端末にのみ保存されます。打刻・削除のたびに自動で同期し、起動時にも最新を取り込みます。</div>
-    </div>
-
     <div class="card" style="margin-bottom:1.5rem">
       <div class="kt-h"><h2>出勤欠勤簿</h2><span style="font-size:12px;color:var(--muted-2)">この端末に保存されます</span></div>
       <div id="kt-rows"></div>
@@ -2528,15 +2514,26 @@ main.wrap,.page{max-width:100%;min-width:0;}
             登録すると、朝の作業連絡が本人にも届きます。
           </span>
         </div>
-        <div class="field"><label>GAS Webhook URL</label>
+        <div class="field"><label>🧹 清掃の同期URL（GAS Webhook URL）</label>
           <input class="input" id="cfg-gas" placeholder="https://script.google.com/macros/s/.../exec">
           <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
+            物件・予定・清掃記録・項目リストが他の端末とも自動で同期されます。
             未設定のときは、送信ボタンで印刷ダイアログが開きます。そこからPDFとして保存できます。
           </span>
         </div>
+        <div class="field"><label>🕒 勤怠の同期URL<span id="kt-sync-state" style="margin-left:.5rem;font-size:12px;font-weight:600;color:var(--muted-2)">未設定</span></label>
+          <input class="input" id="cfg-ktgas" placeholder="https://script.google.com/macros/s/.../exec">
+          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
+            出勤・欠勤の打刻が他の端末とも共有されます。<b>清掃とは別のURL</b>です（勤怠専用のGAS）。取り違えないでください。
+          </span>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+            <button class="btn btn-outline btn-sm" id="kt-sync-save">勤怠URLを保存</button>
+            <button class="btn btn-outline btn-sm" id="kt-sync-now">今すぐ勤怠を同期</button>
+          </div>
+        </div>
         <div><button class="btn btn-default" id="cfg-save">保存する</button></div>
         <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
-          🔄 GAS Webhook URL を設定すると、物件・予定・清掃記録・項目リストが他の端末とも自動で同期されます（写真はfileIdのみ・軽量／変更のたび自動同期し、起動時にも取り込みます）。専用の設定は不要です。
+          🔄 URLはこの端末にのみ保存されます。変更のたびに自動で同期し、起動時にも最新を取り込みます（写真はfileIdのみ・軽量）。
         </span>
       </div>
       <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border-soft)">
@@ -9206,7 +9203,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 c";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 d";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9626,7 +9623,11 @@ function boot() {
     cfg.mailBoss2 = document.getElementById("cfg-mailboss2").value.trim();
     cfg.seisouLine = document.getElementById("cfg-seisouline").value.trim();
     cfg.start = document.getElementById("cfg-start").value || "09:00";
+    const ktIn = document.getElementById("cfg-ktgas");
+    if (ktIn) cfg.ktGas = (ktIn.value || "").trim();   // 勤怠の同期URLもここで一緒に保存
     save(K.cfg, cfg);
+    const ktSt = document.getElementById("kt-sync-state");
+    if (ktSt) ktSt.textContent = cfg.ktGas ? "同期オン" : "未設定";
     const to = [cfg.mail, cfg.mail2, cfg.mail3].filter(Boolean).length;
     toast("設定を保存しました", `定時 ${cfg.start}${to ? `／送信先 ${to}件` : ""}`);
     if (cfg.gas) pushSeisouLineId();   // GASへ宛先（LINE ID・メール）を伝える
