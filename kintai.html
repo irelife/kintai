@@ -5421,8 +5421,8 @@ function renderModal() {
       </div>
       <div class="pcard-msg" style="color:${cat.fg}">${catHint(it.key)}</div>
       <div class="pcard-btns">
-        <button class="pcard-cam" data-cam="${it.key}">${ic("camera", 16)} カメラで撮る</button>
-        <button class="pcard-lib" data-pickitem="${it.key}">${ic("image", 15)} 写真から選ぶ</button>
+        <button class="pcard-cam" data-cam="${it.key}">${ic("camera", 16)} 撮影</button>
+        <button class="pcard-lib" data-pickitem="${it.key}">${ic("image", 15)} 写真</button>
       </div>
       ${(() => {
         const cur = (itemOf(r, it.key).photos || []).length;
@@ -9419,7 +9419,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 u";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 v";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
