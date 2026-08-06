@@ -2258,8 +2258,14 @@ main.wrap,.page{max-width:100%;min-width:0;}
 }
 
 /* 勤怠：月間の一覧表は隠し、出力ボタンだけを残す */
-.kt-out{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);}
-.kt-out .kt-f{display:flex;justify-content:flex-end;}
+.kt-out{margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--border);}
+.kt-out .kt-f{display:block;}
+.kt-outbtns{display:flex;gap:.7rem;flex-wrap:wrap;}
+.kt-outbtns .btn{flex:1 1 12rem;padding:.85rem 1rem;font-size:15px;}
+
+/* 勤怠の打刻行：未打刻の欄がつぶれても行が伸びないようにする */
+.kt-row .kt-st{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kt-row .kt-st:empty{display:none;}
 
 </style>
 </head>
@@ -2450,9 +2456,9 @@ main.wrap,.page{max-width:100%;min-width:0;}
       <div style="display:none"><table class="tbl" id="kt-tbl"></table></div>
       <div class="kt-out">
         <div class="kt-f">
-          <span style="display:flex;gap:.4rem;flex-wrap:wrap">
-            <button class="btn btn-outline btn-sm" id="kt-csv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6M9 15h6"/></svg> CSV出力</button>
-            <button class="btn btn-outline btn-sm" id="kt-pdf"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> PDFで出す</button>
+          <span class="kt-outbtns">
+            <button class="btn btn-outline" id="kt-csv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6M9 15h6"/></svg> CSV出力</button>
+            <button class="btn btn-outline" id="kt-pdf"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> PDFで出す</button>
           </span>
         </div>
       </div>
@@ -7949,7 +7955,8 @@ function renderKintai() {
 
   document.getElementById("kt-rows").innerHTML = cfg.staff.map((n) => {
     const r = rec[n] || {};
-    const st = r.off ? "欠勤" : r.in ? `出勤 ${r.in}` : "まだ記録がありません";
+    // 未打刻のときは何も出さない（狭い画面で1文字ずつ縦に折り返し、行がとても高くなるため）
+    const st = r.off ? "欠勤" : r.in ? `出勤 ${r.in}` : "";
     const punchedIn = !!r.in;
     return `<div class="kt-row">
       <span class="kt-nm">${esc(n)}</span>
@@ -9189,7 +9196,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 a";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 b";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
