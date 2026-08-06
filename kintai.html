@@ -9242,6 +9242,9 @@ async function notifyNgFixed(name, date, idx) {
   const r = getRep(name, date);
   const g = (r.ngs || [])[idx];
   if (!g) return;
+  if (g.fixNotified) return;      // 二重送信を止める（同じ解決を何度も送らない）
+  g.fixNotified = true;
+  setRep(name, date, { ngs: r.ngs });
   const payload = {
     type: "ngConfirm",
     property: name, address: p.addr || "", date,
@@ -9369,10 +9372,13 @@ function renderNgTab() {
   host.querySelectorAll("[data-ngfixrow]").forEach((b) => {
     b.onclick = (e) => {
       e.stopPropagation();
+      if (b.disabled) return;
       const [nm, dt, key] = b.dataset.ngfixrow.split("|");
       const t = ngTarget(nm, dt, key);
       if (!t) return;
       if (!t.after.length) { toast("アフター写真が要ります", "撮ってから解決にしてください"); return; }
+      if (t.obj.fixed) return;        // すでに解決ずみ
+      b.disabled = true;              // 二度押し防止
       t.obj.fixed = true; t.obj.fixedAt = today();
       t.persist();
       if (key.indexOf("ng:") === 0) { try { notifyNgFixed(nm, dt, +key.slice(3)); } catch (err) {} }
@@ -9413,7 +9419,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 r";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 t";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9928,6 +9934,17 @@ function inAppBrowser() {
 }
 function showOpenInSafari(which) {
   const url = location.href;
+  // まずは黙ってSafariへ移す。移れたら、この案内は目に触れない。
+  // （移れなかったときだけ、下の案内を出す）
+  if (!/openExternalBrowser=1/.test(url)) {
+    document.body.innerHTML = "";
+    location.href = url + (url.indexOf("?") >= 0 ? "&" : "?") + "openExternalBrowser=1";
+    setTimeout(() => showOpenInSafariUI(which, url), 1500);
+    return;
+  }
+  showOpenInSafariUI(which, url);
+}
+function showOpenInSafariUI(which, url) {
   document.body.innerHTML = `
     <div style="max-width:560px;margin:0 auto;padding:2rem 1.25rem;
       font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',system-ui,sans-serif;line-height:1.9">
