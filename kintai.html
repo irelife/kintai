@@ -2315,8 +2315,9 @@ main.wrap,.page{max-width:100%;min-width:0;}
 @media(min-width:1100px){ .ng-row-afth{width:5.4rem;height:5.4rem;} }
 
 /* 一覧のサムネから写真を消す × */
-.ng-row-th,.ng-row-afth{position:relative;}
-.ng-thx{position:absolute;top:-6px;right:-6px;width:1.5rem;height:1.5rem;border-radius:9999px;
+.ng-row-th,.ng-row-afth{position:relative;overflow:visible;}
+.ng-row-th img,.ng-row-afth img{border-radius:.7rem;}
+.ng-thx{position:absolute;top:4px;right:4px;width:1.6rem;height:1.6rem;border-radius:9999px;
   border:none;background:rgb(51 47 59 / .78);color:#fff;display:inline-flex;align-items:center;
   justify-content:center;cursor:pointer;padding:0;line-height:0;z-index:2;}
 .ng-thx:hover{background:#C4483F;}
@@ -9426,7 +9427,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 y";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 z";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
