@@ -2056,7 +2056,8 @@ body{background:var(--bg);color:var(--fg);}
 .hd-nav button.on,.hd-sub button.on{background:var(--ink-deep);color:#fff;}
 .hd-ico{border-radius:9999px;background:var(--ink-deep);}
 .hd-t1{font-size:17px;font-weight:700;letter-spacing:.04em;}
-.hd-t2{letter-spacing:.16em;text-transform:uppercase;font-size:9.5px;color:var(--muted-2);}
+.hd-t1{letter-spacing:.14em;}
+.hd-t2{letter-spacing:.06em;font-size:11px;color:var(--muted-2);}
 
 /* ボタンは丸く。押せるものが丸い、という一貫した合図 */
 .btn{border-radius:9999px;letter-spacing:.04em;}
@@ -2284,8 +2285,8 @@ main.wrap,.page{max-width:100%;min-width:0;}
     <div class="hd-brand" onclick="go('home')" style="cursor:pointer" title="タップでTOPへ戻る">
       <span class="hd-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/></svg></span>
       <span>
-        <span class="hd-t1" id="hd-t1" style="display:block">清掃管理</span>
-        <span class="hd-t2" id="hd-t2" style="display:block">Cleaning Manager</span>
+        <span class="hd-t1" id="hd-t1" style="display:block">SEISOU</span>
+        <span class="hd-t2" id="hd-t2" style="display:block">清掃管理</span>
       </span>
     </div>
     <nav class="hd-nav">
@@ -9203,7 +9204,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 d";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 e";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9320,8 +9321,8 @@ function go(t) {
   }
   // ヘッダーのタイトル
   const t1el = document.getElementById("hd-t1"), t2el = document.getElementById("hd-t2");
-  if (t1el) t1el.textContent = isKt ? "勤怠" : "清掃管理";
-  if (t2el) t2el.textContent = isKt ? "Attendance" : "Cleaning Manager";
+  if (t1el) t1el.textContent = isKt ? "KINTAI" : "SEISOU";
+  if (t2el) t2el.textContent = isKt ? "勤怠" : "清掃管理";
   if (t === "home") { renderHome(); setupHomeFlow(); }   // トップページ（1枚スクロール）
   else clearHomeFlow();
   if (t === "today") renderToday();   // 現場向けの初期画面
