@@ -2333,6 +2333,18 @@ main.wrap,.page{max-width:100%;min-width:0;}
   .tdhead,.howto-box{max-width:60rem;}
 }
 
+/* スマホで入力欄を押すと画面が拡大して揺れ、貼り付けができない問題の対策。
+   iOSのSafariは、文字が16pxより小さい入力欄に触れると自動で拡大する。 */
+@media(max-width:768px){
+  input,textarea,select,.input,.ng-note,.ngedit-t,.late-note,.ktsel,.ngsel{
+    font-size:16px !important;}
+  #page-set .input{height:3rem;padding:.7rem .8rem;}
+  #page-set .field{gap:.5rem;}
+  #page-set .card{padding:1.1rem !important;}
+}
+/* 入力中はヘッダーを貼り付けない（キーボードが出るたびに画面が跳ねるため） */
+body.typing .hd{position:static;}
+
 </style>
 </head>
 <body>
@@ -9427,7 +9439,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 z";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 z2";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9896,6 +9908,16 @@ function boot() {
     window.addEventListener("scroll", upd, { passive: true });
     upd();
   }
+  // 入力中はヘッダーの貼り付けを外す（スマホでキーボードが出ると画面が揺れるため）
+  document.addEventListener("focusin", (e) => {
+    if (e.target.matches("input,textarea,select")) document.body.classList.add("typing");
+  });
+  document.addEventListener("focusout", () => {
+    setTimeout(() => {
+      const a = document.activeElement;
+      if (!a || !a.matches || !a.matches("input,textarea,select")) document.body.classList.remove("typing");
+    }, 80);
+  });
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
   setTimeout(() => { try { checkPrevMonthReport(); } catch (e) {} }, 4000);
   setTimeout(() => { try { maybeAutoSchedNextMonth(); } catch (e) {} }, 5000);
