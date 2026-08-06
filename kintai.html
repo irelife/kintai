@@ -4003,10 +4003,7 @@ function renderToday() {
     b.onclick = (e) => { e.stopPropagation(); openNav(navUrlOne(b.dataset.nav)); };
   });
   const rb = box.querySelector("#td-route");
-  if (rb) rb.onclick = () => {
-    toast("地図を開いています", "現在地を確かめています…");
-    openRoute(todayList, t);
-  };
+  if (rb) rb.onclick = () => openRoute(todayList, t);
 }
 
 /* ===== 描画：カレンダー ===== */
@@ -4806,14 +4803,16 @@ function orderByNear(names, from) {
   return out.concat(noPt);
 }
 /* 巡回ルートを開く。完了ぶんを外し、現在地から近い順に並べてから案内する。 */
-async function openRoute(names, ds) {
+// 待ち時間をはさむと iPhone が新しいタブを止めてしまうので、
+// 現在地は「覚えているもの」を使い、その場では待たない。
+function openRoute(names, ds) {
   const left = routeTargets(names, ds);
   if (!left.length) { toast("回る先がありません", "この日の清掃はすべて終わっています"); return; }
   let order = left;
   if (left.length > 1) {
-    const pos = await getPos();
+    const pos = freshPos();
     if (pos) order = orderByNear(left, pos);
-    else toast("現在地が取れませんでした", "並び順のまま案内します");
+    else getPos();   // 次に開くときのために、裏で取っておく
   }
   const skipped = (names || []).length - left.length;
   if (skipped > 0) toast(`完了した${skipped}件はルートから外しました`, `残り${left.length}件を案内します`);
@@ -6691,16 +6690,26 @@ function cleanupRemovedItems() {
 }
 
 /* ===== 位置情報（記録を開いた時と完了時の2点を残す） ===== */
+let _lastPos = null;      // 最後に取れた現在地（次に地図を開くとき、待たずに使う）
 function getPos() {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null);
     navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude,
-                       acc: Math.round(p.coords.accuracy), at: new Date().toISOString() }),
+      (p) => {
+        _lastPos = { lat: p.coords.latitude, lng: p.coords.longitude,
+                     acc: Math.round(p.coords.accuracy), at: new Date().toISOString(),
+                     ms: Date.now() };
+        resolve(_lastPos);
+      },
       () => resolve(null),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
   });
+}
+// 覚えている現在地（10分以内のものだけ使う）
+function freshPos() {
+  if (!_lastPos || !_lastPos.ms) return null;
+  return (Date.now() - _lastPos.ms < 10 * 60 * 1000) ? _lastPos : null;
 }
 // 2点間の距離（m）。物件の座標と照合して「現地にいたか」を見る。
 function distM(a, b) {
@@ -9216,7 +9225,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 i";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 j";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9345,7 +9354,7 @@ function go(t) {
   else clearHomeFlow();
   // タブを押したら、まず画面のいちばん上から見せる
   // （このあと見出しへ動かす場合は、そちらの動きが優先される）
-  if (t === "today") renderToday();   // 現場向けの初期画面
+  if (t === "today") { renderToday(); if (!freshPos()) getPos(); }   // 現場向けの初期画面（地図用に現在地を先に取っておく）
   if (t === "cal") renderCal();
   if (t === "prop") renderProps();
   if (t === "ng") renderNgTab();
