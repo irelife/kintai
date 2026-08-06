@@ -2192,17 +2192,18 @@ main.homeflow{padding-bottom:7rem;}
   .kt-cal-scroll{overflow-x:visible;margin:0;padding:0;}
   .kt-cal{grid-template-columns:repeat(7,1fr);min-width:0;gap:3px;}
   .kt-cal .kc-dow{font-size:11px;padding:.2rem 0;}
-  .kt-cal .kc-cell{min-height:3.6rem;padding:.25rem .1rem;border-radius:.5rem;gap:.1rem;}
+  .kt-cal .kc-cell{min-height:5.2rem;padding:.25rem .12rem;border-radius:.5rem;gap:.1rem;}
   .kt-cal .kc-d{font-size:14px;text-align:center;}
   .kt-cal .kc-top{justify-content:center;}
   .kt-cal .kc-off-lbl{font-size:9px;text-align:center;line-height:1.2;}
-  .kt-cal .kc-marks{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:auto;}
-  .kt-cal .kc-mk{width:8px;height:8px;min-width:8px;padding:0;border-radius:9999px;
-    font-size:0;line-height:0;overflow:hidden;gap:0;}
-  .kt-cal .kc-mk .kc-nm,.kt-cal .kc-mk .kc-tm,.kt-cal .kc-mkx{display:none;}
-  .kt-cal .kc-mk.kc-in{background:#2563eb;}
-  .kt-cal .kc-mk.kc-late{background:#f59e0b;}
-  .kt-cal .kc-mk.kc-off{background:#e11d48;}
+  /* 名前は1文字に縮め、時刻と並べる（マスからはみ出さない大きさに） */
+  .kt-cal .kc-marks{flex-direction:column;gap:2px;margin-top:auto;}
+  .kt-cal .kc-mk{display:flex;align-items:center;justify-content:center;gap:1px;
+    padding:1px 1px;border-radius:3px;font-size:9.5px;font-weight:800;line-height:1.25;
+    letter-spacing:-.02em;overflow:hidden;white-space:nowrap;}
+  .kt-cal .kc-mk .kc-nm{flex:none;opacity:1;font-size:9px;}
+  .kt-cal .kc-mk .kc-tm{margin-left:0;font-size:9.5px;font-variant-numeric:tabular-nums;}
+  .kt-cal .kc-mkx{display:none;}
 }
 
 /* LINEの通知から開いたのに要対応が見つからないときの案内 */
@@ -2266,6 +2267,13 @@ main.wrap,.page{max-width:100%;min-width:0;}
 /* 勤怠の打刻行：未打刻の欄がつぶれても行が伸びないようにする */
 .kt-row .kt-st{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .kt-row .kt-st:empty{display:none;}
+
+/* 勤怠カレンダー：名前は広い画面ではそのまま、狭い画面では先頭1文字 */
+.kc-nm .nm-1{display:none;}
+@media(max-width:768px){
+  .kc-nm .nm-full{display:none;}
+  .kc-nm .nm-1{display:inline;}
+}
 
 </style>
 </head>
@@ -8139,10 +8147,12 @@ function renderKtCal() {
       const r = rec[n];
       if (!r) return "";
       const xBtn = `<button class="kc-mkx" data-ktreset1="${ds}|${esc(n)}" title="${esc(n)}の記録を消す" aria-label="削除">×</button>`;
-      if (r.off) return `<span class="kc-mk kc-off"><span class="kc-nm">${esc(n)}</span><span class="kc-tm">欠勤</span>${xBtn}</span>`;
+      // 狭い画面ではマスに収まらないので、名前は先頭1文字だけにする
+      const nm1 = `<span class="kc-nm"><span class="nm-full">${esc(n)}</span><span class="nm-1">${esc(n.slice(0, 1))}</span></span>`;
+      if (r.off) return `<span class="kc-mk kc-off">${nm1}<span class="kc-tm">欠勤</span>${xBtn}</span>`;
       if (r.in) {
         const late = hm2min(r.in) > startMin;
-        return `<span class="kc-mk ${late ? "kc-late" : "kc-in"}"><span class="kc-nm">${esc(n)}</span><span class="kc-tm">${esc(r.in)}</span>${xBtn}</span>`;
+        return `<span class="kc-mk ${late ? "kc-late" : "kc-in"}">${nm1}<span class="kc-tm">${esc(r.in)}</span>${xBtn}</span>`;
       }
       return "";
     }).join("");
@@ -9196,7 +9206,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 b";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 c";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9366,6 +9376,27 @@ function goGroup(g) {
   }, true);
 })();
 
+/* カレンダーを左右になぞって月を変える（スマホ用）
+   縦のスクロールを邪魔しないよう、横の動きが縦より大きいときだけ効かせる */
+function addMonthSwipe(el, onPrev, onNext) {
+  if (!el || el.dataset.swipeOn === "1") return;
+  el.dataset.swipeOn = "1";
+  let x0 = 0, y0 = 0, on = false;
+  el.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { on = false; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; on = true;
+  }, { passive: true });
+  el.addEventListener("touchend", (e) => {
+    if (!on) return;
+    on = false;
+    const t = e.changedTouches && e.changedTouches[0];
+    if (!t) return;
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;   // 縦スクロールとみなす
+    if (dx < 0) onNext(); else onPrev();
+  }, { passive: true });
+}
+
 function boot() {
   const logo = document.querySelector(".hd-logo") || document.querySelector(".hd-t");
   if (logo) { logo.style.cursor = "pointer"; logo.onclick = () => go("home"); }
@@ -9514,6 +9545,14 @@ function boot() {
     ktMonth = ktMonth.m === 11 ? { y: ktMonth.y + 1, m: 0 } : { y: ktMonth.y, m: ktMonth.m + 1 };
     renderKtTable();
   };
+  // 勤怠カレンダー：左右になぞって月を変える
+  addMonthSwipe(document.getElementById("kt-cal"),
+    () => { const b = document.getElementById("kt-cal-prev"); if (b) b.click(); },
+    () => { const b = document.getElementById("kt-cal-next"); if (b) b.click(); });
+  // 清掃カレンダーも同じように
+  addMonthSwipe(document.getElementById("cal-grid"),
+    () => { const b = document.getElementById("cal-prev"); if (b) b.click(); },
+    () => { const b = document.getElementById("cal-next"); if (b) b.click(); });
   const calPrev = document.getElementById("kt-cal-prev");
   if (calPrev) calPrev.onclick = () => {
     ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 };
