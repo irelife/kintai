@@ -2308,6 +2308,13 @@ main.wrap,.page{max-width:100%;min-width:0;}
 .ng-row-afth img{width:100%;height:100%;object-fit:cover;border-radius:.5rem;}
 @media(min-width:1100px){ .ng-row-afth{width:5.4rem;height:5.4rem;} }
 
+/* 一覧のサムネから写真を消す × */
+.ng-row-th,.ng-row-afth{position:relative;}
+.ng-thx{position:absolute;top:-6px;right:-6px;width:1.5rem;height:1.5rem;border-radius:9999px;
+  border:none;background:rgb(51 47 59 / .78);color:#fff;display:inline-flex;align-items:center;
+  justify-content:center;cursor:pointer;padding:0;line-height:0;z-index:2;}
+.ng-thx:hover{background:#C4483F;}
+
 </style>
 </head>
 <body>
@@ -7386,6 +7393,7 @@ function collectOpenNg() {
         item: labelOf(key),
         text: c.text || "",
         thumb: (c.before || [])[0] || (c.photos || [])[0] || "",
+        thumbFrom: (c.before || []).length ? "before" : "photos",
         afterN: (c.after || []).length,
         afters: (c.after || []).slice(0, 2),
         deadline: c.deadline || "",
@@ -7400,6 +7408,7 @@ function collectOpenNg() {
         item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`,
         text: g.text || "",
         thumb: (g.before || [])[0] || "",
+        thumbFrom: "before",
         afterN: (g.after || []).length,
         afters: (g.after || []).slice(0, 2),
         deadline: g.deadline || "",
@@ -7413,6 +7422,7 @@ function collectOpenNg() {
         property: name, date, key: "todo:" + t.id,
         item: t.item || "その他", text: t.text || "",
         thumb: (t.before || [])[0] || "",
+        thumbFrom: "before",
         afterN: (t.after || []).length,
         afters: (t.after || []).slice(0, 2),
         deadline: t.deadline || "",
@@ -9285,13 +9295,15 @@ function renderNgTab() {
     const canFix = (x.afterN || 0) > 0;
     html += `<div class="ng-row" role="button" tabindex="0" data-open="${esc(x.property)}|${esc(x.date)}"
         style="--rule:${st.bd}">
-      <span class="ng-row-th">${x.thumb ? imgTag(x.thumb) : `<span class="ng-row-noth">${ic("camera", 20)}</span>`}</span>
+      <span class="ng-row-th">${x.thumb
+        ? `${imgTag(x.thumb)}<button class="ng-thx" data-ngdel="${tgt}|${x.thumbFrom}|0" aria-label="この写真を消す">${ic("x", 12)}</button>`
+        : `<span class="ng-row-noth">${ic("camera", 20)}</span>`}</span>
       <span class="ng-row-b">
         <span class="ng-row-i">${esc(x.item)}</span>
         <span class="ng-row-p">${esc(x.property)}${x.text ? `<span class="ng-row-t">${esc(x.text)}</span>` : ""}</span>
         ${(x.afters || []).length ? `<span class="ng-row-af">
           <span class="ng-row-aflb">アフター</span>
-          ${x.afters.map((id) => `<span class="ng-row-afth">${imgTag(id)}</span>`).join("")}
+          ${x.afters.map((id, i) => `<span class="ng-row-afth">${imgTag(id)}<button class="ng-thx" data-ngdel="${tgt}|after|${i}" aria-label="この写真を消す">${ic("x", 12)}</button></span>`).join("")}
         </span>` : ""}
         <span class="ng-row-m">
           <span class="ng-row-due" style="background:${st.bd}">${esc(x.due.label)}</span>
@@ -9338,6 +9350,22 @@ function renderNgTab() {
     b.onclick = (e) => { e.stopPropagation(); pickFiles((f) => addAfter(b.dataset.ngaftlib, f)); };
   });
   // 解決にする
+  // 写真を消す（×）
+  host.querySelectorAll("[data-ngdel]").forEach((b) => {
+    b.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const p = b.dataset.ngdel.split("|");
+      const nm = p[0], dt = p[1], key = p[2], which = p[3], idx = +p[4];
+      const t = ngTarget(nm, dt, key);
+      if (!t) return;
+      const arr = t.arrays[which];
+      if (!arr || !arr[idx]) return;
+      if (!confirm("この写真を消しますか？")) return;
+      arr.splice(idx, 1);
+      t.persist();
+      renderNgTab(); renderNgBadge();
+    };
+  });
   host.querySelectorAll("[data-ngfixrow]").forEach((b) => {
     b.onclick = (e) => {
       e.stopPropagation();
@@ -9359,27 +9387,33 @@ function ngTarget(name, date, key) {
   if (key.indexOf("ng:") === 0) {
     const g = (r.ngs || [])[+key.slice(3)];
     if (!g) return null;
-    g.after = g.after || [];
-    return { obj: g, after: g.after, persist: () => setRep(name, date, { ngs: r.ngs }) };
+    g.after = g.after || []; g.before = g.before || [];
+    return { obj: g, after: g.after,
+             arrays: { before: g.before, after: g.after, photos: g.before },
+             persist: () => setRep(name, date, { ngs: r.ngs }) };
   }
   if (key.indexOf("todo:") === 0) {
     const id = key.slice(5);
     const t = (r.todos || []).find((x) => String(x.id) === id);
     if (!t) return null;
-    t.after = t.after || [];
-    return { obj: t, after: t.after, persist: () => setRep(name, date, { todos: r.todos }) };
+    t.after = t.after || []; t.before = t.before || [];
+    return { obj: t, after: t.after,
+             arrays: { before: t.before, after: t.after, photos: t.before },
+             persist: () => setRep(name, date, { todos: r.todos }) };
   }
   const it = itemOf(r, key);
-  it.after = it.after || [];
+  it.after = it.after || []; it.before = it.before || []; it.photos = it.photos || [];
   r.items[key] = it;
-  return { obj: it, after: it.after, persist: () => setRep(name, date, { items: r.items }) };
+  return { obj: it, after: it.after,
+           arrays: { before: it.before, after: it.after, photos: it.photos },
+           persist: () => setRep(name, date, { items: r.items }) };
 }
 
 
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 q";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 r";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
