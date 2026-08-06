@@ -2166,11 +2166,13 @@ main.homeflow #page-today .flow-h{margin-top:1.2rem;}
 .ng-row-b{display:flex;flex-direction:column;gap:.25rem;min-width:0;flex:1;}
 .ng-row-i{font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--teal-700);
   margin:0;text-transform:none;}
-.ng-row-p{font-size:17px;font-weight:700;color:var(--fg);line-height:1.45;}
-.ng-row-t{font-size:14.5px;color:var(--fg);line-height:1.6;margin:0;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.ng-row-m{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
-  font-size:12px;color:var(--muted-2);margin-top:.15rem;}
+.ng-row-p{font-size:18px;font-weight:700;color:var(--fg);line-height:1.5;}
+/* 内容は物件名と同じ行に続けて流す（縦に積むと右側が空いてしまうため） */
+.ng-row-t{font-size:16px;font-weight:500;color:var(--fg);margin-left:.7rem;}
+.ng-row-t::before{content:"／";color:var(--muted-3);margin-right:.7rem;font-weight:400;}
+.ng-row-m{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
+  font-size:12.5px;color:var(--muted-2);margin-top:.3rem;}
+.ng-row-mr{margin-left:auto;}   /* 記録日は右端へ寄せて、行を端まで使う */
 .ng-row-due{flex:none;color:#fff;font-size:11.5px;font-weight:700;
   border-radius:9999px;padding:.15rem .6rem;letter-spacing:.04em;}
 @media(max-width:640px){
@@ -2218,6 +2220,14 @@ main.wrap,.page{max-width:100%;min-width:0;}
 
 /* いま読み込まれている版（更新できているかの確認用） */
 .buildtag{margin:1rem 0 0;text-align:center;font-size:11px;letter-spacing:.12em;color:var(--muted-2);}
+
+/* 「本日が期限」は橙。清掃予定の緑と見分けがつくよう、要対応は黄→橙→赤の1本の流れに揃えた */
+.badge-orange{background:#FFEAD8;color:#9A3412;border:1px solid #EA7A2C;}
+
+/* 要対応の「期限切れ」＝濃い赤紫。清掃の遅れ（赤）と区別する */
+.badge-plum{background:#FBEEF2;color:#8A2743;border:1px solid #9B2C4A;}
+.ngitem-m.over{background:#FBEEF2;}
+.ngitem-m.over .ngitem-m-l,.ngitem-m.over .ngitem-m-d{color:#8A2743;}
 
 </style>
 </head>
@@ -2296,11 +2306,13 @@ main.wrap,.page{max-width:100%;min-width:0;}
         <div class="cal-g" id="cal-grid"></div>
         </div>
         <div class="cal-legend">
-          <span class="cll"><i class="cll-dot" style="background:#fffbeb;border-color:#f59e0b"></i>要対応期限（まだ期限前）</span>
-          <span class="cll"><i class="cll-dot" style="background:#ecfdf5;border-color:#10b981"></i>本日が期限</span>
-          <span class="cll"><i class="cll-dot" style="background:#dc2626;border-color:#b91c1c"></i>清掃期限切れ／要対応期限切れ</span>
-          <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
+          <span class="cll"><i class="cll-dot" style="background:#f0fdf9;border-color:#6ee7b7"></i>清掃前</span>
           <span class="cll"><i class="cll-dot" style="background:#f1f5f9;border-color:#64748b"></i>清掃 完了</span>
+          <span class="cll"><i class="cll-dot" style="background:#f5f3ff;border-color:#7c3aed"></i>入力途中</span>
+          <span class="cll"><i class="cll-dot" style="background:#fef2f2;border-color:#dc2626"></i>清掃が遅れている</span>
+          <span class="cll"><i class="cll-dot" style="background:#FBF3E6;border-color:#E0B44C"></i>要対応期限（まだ先）</span>
+          <span class="cll"><i class="cll-dot" style="background:#FFEAD8;border-color:#EA7A2C"></i>本日が期限</span>
+          <span class="cll"><i class="cll-dot" style="background:#FBEEF2;border-color:#9B2C4A"></i>要対応 期限切れ</span>
         </div>
       </div>
 
@@ -4172,9 +4184,9 @@ function renderCal() {
     const t0 = today();
     const dueTone = (ds < t0) ? "over" : (ds === t0 ? "today" : "soon");
     const TONE_DUE = {
-      soon:  { bg: "#fffbeb", fg: "#b45309", bd: "#f59e0b", bc: "#d97706", label: "要対応期限" },
-      today: { bg: "#ecfdf5", fg: "#047857", bd: "#10b981", bc: "#059669", label: "本日が期限" },
-      over:  { bg: "#dc2626", fg: "#fff",    bd: "#b91c1c", bc: "#b91c1c", label: "要対応期限切れ" },
+      soon:  { bg: "#FBF3E6", fg: "#A9762A", bd: "#E0B44C", bc: "#C08C1E", label: "要対応期限" },
+      today: { bg: "#FFEAD8", fg: "#9A3412", bd: "#EA7A2C", bc: "#C2410C", label: "本日が期限" },
+      over:  { bg: "#9B2C4A", fg: "#fff",    bd: "#8A2743", bc: "#8A2743", label: "要対応期限切れ" },
     };
     const dt = TONE_DUE[dueTone];
     const overdueDay = (dueTone === "over");
@@ -4416,9 +4428,9 @@ function renderSide() {
     const t0 = today();
     const tone = (selDate < t0) ? "over" : (selDate === t0 ? "today" : "soon");
     const TN = {
-      soon:  { bd: "#f59e0b", bg: "#fffbeb", cls: "badge-amber2", label: "要対応期限" },
-      today: { bd: "#10b981", bg: "#ecfdf5", cls: "badge-green",  label: "本日が期限" },
-      over:  { bd: "#dc2626", bg: "#fef2f2", cls: "badge-red",    label: "期限切れ" },
+      soon:  { bd: "#E0B44C", bg: "#FBF3E6", cls: "badge-amber2", label: "要対応期限" },
+      today: { bd: "#EA7A2C", bg: "#FFEAD8", cls: "badge-orange", label: "本日が期限" },
+      over:  { bd: "#9B2C4A", bg: "#FBEEF2", cls: "badge-plum",   label: "期限切れ" },
     }[tone];
     return `<div class="card scard duecard" data-n="${esc(x.name)}" data-d="${esc(x.planned)}"
         style="border-color:${TN.bd};background:${TN.bg}">
@@ -9058,11 +9070,11 @@ async function notifyNgFixed(name, date, idx) {
 
 /* ===== 要対応タブ：未解決を期限順に一覧表示 ===== */
 const NG_DUE_STYLE = {
-  over:  { bd: "#dc2626", bg: "#fef2f2", fg: "#b91c1c", t: "期限切れ" },
-  today: { bd: "#f59e0b", bg: "#fffbeb", fg: "#b45309", t: "今日まで" },
-  soon:  { bd: "#f59e0b", bg: "#fffbeb", fg: "#b45309", t: "まもなく" },
-  later: { bd: "#fcd34d", bg: "#fffbeb", fg: "#b45309", t: "対応中" },
-  none:  { bd: "#fcd34d", bg: "#fffbeb", fg: "#b45309", t: "期限未設定" },
+  over:  { bd: "#9B2C4A", bg: "#FBEEF2", fg: "#8A2743", t: "期限切れ" },
+  today: { bd: "#EA7A2C", bg: "#FFEAD8", fg: "#9A3412", t: "今日まで" },
+  soon:  { bd: "#E0B44C", bg: "#FBF3E6", fg: "#A9762A", t: "まもなく" },
+  later: { bd: "#EBD08A", bg: "#FBF3E6", fg: "#A9762A", t: "対応中" },
+  none:  { bd: "#EBD08A", bg: "#FBF3E6", fg: "#A9762A", t: "期限未設定" },
 };
 function renderNgBadge() {
   const el = document.getElementById("ng-badge");
@@ -9095,11 +9107,11 @@ function renderNgTab() {
       <span class="ng-row-th">${x.thumb ? imgTag(x.thumb) : `<span class="ng-row-noth">${ic("camera", 20)}</span>`}</span>
       <span class="ng-row-b">
         <span class="ng-row-i">${esc(x.item)}</span>
-        <span class="ng-row-p">${esc(x.property)}</span>
-        ${x.text ? `<span class="ng-row-t">${esc(x.text)}</span>` : ""}
+        <span class="ng-row-p">${esc(x.property)}${x.text ? `<span class="ng-row-t">${esc(x.text)}</span>` : ""}</span>
         <span class="ng-row-m">
           <span class="ng-row-due" style="background:${st.bd}">${esc(x.due.label)}</span>
-          ${x.deadline ? `期限 ${esc(fmtDate(x.deadline))}` : "期限なし"}　/　${esc(fmtDate(x.date))} の記録
+          <span class="ng-row-mt">${x.deadline ? `期限 ${esc(fmtDate(x.deadline))}` : "期限なし"}</span>
+          <span class="ng-row-mr">${esc(fmtDate(x.date))} の記録</span>
         </span>
       </span>
     </button>`;
