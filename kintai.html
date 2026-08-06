@@ -1430,11 +1430,11 @@ img[data-photo]{cursor:pointer;}
 .kt-legend .kl-dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
 .kt-legend .kl-hint{margin-left:auto;font-size:12px;color:var(--muted-2);}
 .kt-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
-/* スマホは画面が狭く7列が収まりきらないので、横スクロールにする（セルは読みやすい大きさを保つ） */
-.kt-cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+/* スマホ・タブレットでは7列を画面に収める（横スクロールはやめた） */
+.kt-cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}
 @media(max-width:768px){
-  .kt-cal{grid-template-columns:repeat(7,minmax(96px,1fr));min-width:720px;gap:6px;}
-  .kt-cal-scroll{margin:0 -.25rem;padding:0 .25rem .3rem;}
+  .kt-cal{grid-template-columns:repeat(7,1fr);min-width:0;gap:4px;}
+  .kt-cal-scroll{overflow-x:visible;margin:0;padding:0;}
 }
 .kt-cal .kc-dow{text-align:center;font-size:14px;font-weight:700;color:var(--muted);padding:.4rem 0;}
 .kt-cal .kc-dow.sun{color:var(--rose-500);} .kt-cal .kc-dow.sat{color:#2563eb;}
@@ -2180,6 +2180,44 @@ main.homeflow #page-today .flow-h{margin-top:1.2rem;}
 
 /* いちばん下：「ひらく」ボタンと ↑TOP が重ならないよう、下に余白を置く */
 main.homeflow{padding-bottom:7rem;}
+
+/* 勤怠カレンダー：スマホでは横スクロールをやめ、7列を画面に収める
+   （横スクロールは指が引っかかって動かないという声があったため）
+   名前と時刻は点にまとめ、日をタップすると打刻の画面で中身を見る */
+.kt-cal-scroll{max-width:100%;touch-action:pan-x pan-y;overscroll-behavior-x:contain;}
+#page-kt,#page-kt .card{min-width:0;max-width:100%;}
+@media(max-width:768px){
+  .kt-cal-scroll{overflow-x:visible;margin:0;padding:0;}
+  .kt-cal{grid-template-columns:repeat(7,1fr);min-width:0;gap:3px;}
+  .kt-cal .kc-dow{font-size:11px;padding:.2rem 0;}
+  .kt-cal .kc-cell{min-height:3.6rem;padding:.25rem .1rem;border-radius:.5rem;gap:.1rem;}
+  .kt-cal .kc-d{font-size:14px;text-align:center;}
+  .kt-cal .kc-top{justify-content:center;}
+  .kt-cal .kc-off-lbl{font-size:9px;text-align:center;line-height:1.2;}
+  .kt-cal .kc-marks{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:auto;}
+  .kt-cal .kc-mk{width:8px;height:8px;min-width:8px;padding:0;border-radius:9999px;
+    font-size:0;line-height:0;overflow:hidden;gap:0;}
+  .kt-cal .kc-mk .kc-nm,.kt-cal .kc-mk .kc-tm,.kt-cal .kc-mkx{display:none;}
+  .kt-cal .kc-mk.kc-in{background:#2563eb;}
+  .kt-cal .kc-mk.kc-late{background:#f59e0b;}
+  .kt-cal .kc-mk.kc-off{background:#e11d48;}
+}
+
+/* LINEの通知から開いたのに要対応が見つからないときの案内 */
+.ngonly-sub{margin-top:.4rem;font-size:13px;font-weight:600;color:var(--muted);}
+.ngonly-acts{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem;}
+.ngonly-sync,.ngonly-jump{border:1px solid var(--teal-700);background:var(--teal-700);color:#fff;
+  border-radius:9999px;padding:.55rem 1.1rem;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;}
+.ngonly-jump{background:#fff;color:var(--teal-800);}
+.ngonly-sync:disabled{opacity:.6;cursor:default;}
+
+/* 何かが画面幅からはみ出しても、画面全体が横にずれないようにする
+   （ヘッダーやタブが左に消えていくのを防ぐ） */
+html,body{overflow-x:hidden;max-width:100%;}
+main.wrap,.page{max-width:100%;min-width:0;}
+
+/* いま読み込まれている版（更新できているかの確認用） */
+.buildtag{margin:1rem 0 0;text-align:center;font-size:11px;letter-spacing:.12em;color:var(--muted-2);}
 
 </style>
 </head>
@@ -3772,6 +3810,7 @@ function renderHome() {
       <div class="hm-eyebrow">seisou tuti</div>
       <div class="hm-d enface">${Number(t.slice(5, 7))}月${Number(t.slice(8))}日<span style="font-size:.6em">(${w})</span></div>
       <div class="hm-sub">${yet ? `清掃 未実施 ${yet}件` : (list.length ? "今日の清掃は終わりました" : "今日の予定はありません")}${ngN ? `　／　要対応 未解決 ${ngN}件` : ""}</div>
+      <div class="buildtag">${APP_BUILD}</div>
     </div>`;
 }
 
@@ -6741,10 +6780,38 @@ function applyNgOnly() {
     const tip = document.createElement("div");
     tip.id = "ngonly-tip";
     const nNg = ngKeys.length + (r.ngs || []).filter((g) => g && !g.fixed).length;
-    tip.innerHTML = nNg
-      ? `LINEの通知から開きました。<b>未解決の要対応 ${nNg}件</b>を表示しています。`
-      : "LINEの通知から開きました。<b>この記録に未解決の要対応は見つかりませんでした。</b>";
+    if (nNg) {
+      tip.innerHTML = `LINEの通知から開きました。<b>未解決の要対応 ${nNg}件</b>を表示しています。`;
+    } else {
+      // この端末がまだ最新を取り込んでいないだけのことがある。
+      // 同じ物件の他の日に未解決が残っていれば、その行き先も出す。
+      const others = collectOpenNg().filter((x) => x.property === name && x.date !== date);
+      const seen = {};
+      const links = others.filter((x) => (seen[x.date] ? false : (seen[x.date] = 1)))
+        .map((x) => `<button class="ngonly-jump" data-ngjump="${esc(x.property)}|${esc(x.date)}">${esc(fmtDate(x.date))}の記録を見る</button>`).join("");
+      tip.innerHTML = `LINEの通知から開きました。<b>この記録に未解決の要対応は見つかりませんでした。</b>
+        <div class="ngonly-sub">この端末がまだ最新を取り込んでいない可能性があります。</div>
+        <div class="ngonly-acts">
+          <button class="ngonly-sync" id="ngonly-sync">最新を取り込んで、もう一度さがす</button>
+          ${links}
+        </div>`;
+    }
     mb.appendChild(tip);
+    const sy = tip.querySelector("#ngonly-sync");
+    if (sy) sy.onclick = async () => {
+      sy.disabled = true; sy.textContent = "取り込んでいます…";
+      try { await cleanPull(false); } catch (e) {}
+      renderModal();
+    };
+    tip.querySelectorAll("[data-ngjump]").forEach((b) => {
+      b.onclick = () => {
+        const [nm, dt] = b.dataset.ngjump.split("|");
+        openRep = { name: nm, date: dt }; openItem = null; selDate = dt;
+        const dd = parseYmd(dt);
+        if (dd && !isNaN(dd)) cursor = { y: dd.getFullYear(), m: dd.getMonth() };
+        renderModal();
+      };
+    });
   }
 
   // 要対応の位置まで動かす
@@ -9055,6 +9122,7 @@ function renderNgTab() {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
+const APP_BUILD = "build 2026-08-06 a";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
