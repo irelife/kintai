@@ -4050,16 +4050,6 @@ function renderToday() {
       ${carry.slice(0, 10).map((x) => jobCard(x.n, x.d, true)).join("")}
       ${carry.length > 10 ? `<div class="tdmore">ほか${carry.length - 10}件</div>` : ""}</div>` : ""}
 
-    ${(ngOver.length || ngSoon.length) ? `<div class="tdsec"><h3>${ic("alert", 15)} 直すもの（要対応）</h3>
-      <div class="tdng-wrap">
-      ${ngOver.map((x) => `<div class="tdng over" data-open="${esc(x.nm)}|${esc(x.dt)}">
-        <div class="tdng-h"><b>${esc(x.nm)}</b><span class="tdcard-tag late">${Math.round((parseYmd(t)-parseYmd(x.dl))/86400000)}日過ぎ</span></div>
-        <div class="tdng-b">${esc(x.la)}：${esc(x.tx || "（内容未記入）")}</div></div>`).join("")}
-      ${ngSoon.map((x) => `<div class="tdng" data-open="${esc(x.nm)}|${esc(x.dt)}">
-        <div class="tdng-h"><b>${esc(x.nm)}</b><span class="tdcard-tag due">${fmtShort(x.dl)}まで</span></div>
-        <div class="tdng-b">${esc(x.la)}：${esc(x.tx || "（内容未記入）")}</div></div>`).join("")}
-      </div>
-    </div>` : ""}
 
     `;
 
@@ -9419,7 +9409,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 v";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-06 w";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
