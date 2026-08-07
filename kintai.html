@@ -2341,9 +2341,10 @@ main.wrap,.page{max-width:100%;min-width:0;}
   #page-set .input{height:3rem;padding:.7rem .8rem;}
   #page-set .field{gap:.5rem;}
   #page-set .card{padding:1.1rem !important;}
+  /* 入力中はヘッダーを貼り付けない（スマホはキーボードが出るたびに画面が跳ねるため）。
+     画面の広い端末では跳ねないうえ、切り替えのたびにカクつくので、ここだけに効かせる */
+  body.typing .hd{position:static;}
 }
-/* 入力中はヘッダーを貼り付けない（キーボードが出るたびに画面が跳ねるため） */
-body.typing .hd{position:static;}
 
 </style>
 </head>
@@ -9265,13 +9266,29 @@ async function notifyNgFixed(name, date, idx) {
   if (g.fixNotified) return;      // 二重送信を止める（同じ解決を何度も送らない）
   g.fixNotified = true;
   setRep(name, date, { ngs: r.ngs });
+
+  /* 写真がまだアップロード中（temp_）のまま送ると、LINEには文字だけ届いて
+     ビフォー・アフターが付かない。確定するまで最大60秒待つ。 */
+  const hasTemp = (x) => [...(x.before || []), ...(x.after || [])]
+    .some((s) => typeof s === "string" && s.startsWith("temp_"));
+  if (hasTemp(g)) {
+    toast("写真の保存を待っています", "終わり次第LINEへ送ります");
+    for (let i = 0; i < 120 && hasTemp(g); i++) {
+      await new Promise((ok) => setTimeout(ok, 500));
+      const r2 = getRep(name, date);
+      const g2 = (r2.ngs || [])[idx];
+      if (g2) g = g2;
+    }
+  }
+  const clean = (a) => (a || []).filter(
+    (s) => typeof s === "string" && !s.startsWith("temp_") && !s.startsWith("data:"));
   const payload = {
     type: "ngConfirm",
     property: name, address: p.addr || "", date,
     reporter: g.reporter || "",
     items: [{ item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`, text: g.text || "",
               deadline: g.deadline || "", fixedAt: g.fixedAt || today(),
-              before: g.before || [], after: g.after || [] }],
+              before: clean(g.before), after: clean(g.after) }],
   };
   try {
     await fetch(cfg.gas, { method: "POST", mode: "no-cors",
@@ -9441,7 +9458,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-07 a1";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-07 a3";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9912,13 +9929,18 @@ function boot() {
     upd();
   }
   // 入力中はヘッダーの貼り付けを外す（スマホでキーボードが出ると画面が揺れるため）
+  //   写真の選択・チェックボックスなど、キーボードが出ないものは対象外。
+  //   これらまで拾うと、押すたびにヘッダーが動いてカクついてしまう。
+  const KEYIN = "input:not([type=file]):not([type=checkbox]):not([type=radio])"
+              + ":not([type=button]):not([type=submit]):not([type=reset])"
+              + ":not([type=image]):not([type=range]):not([type=color]),textarea";
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches("input,textarea,select")) document.body.classList.add("typing");
+    if (e.target.matches(KEYIN)) document.body.classList.add("typing");
   });
   document.addEventListener("focusout", () => {
     setTimeout(() => {
       const a = document.activeElement;
-      if (!a || !a.matches || !a.matches("input,textarea,select")) document.body.classList.remove("typing");
+      if (!a || !a.matches || !a.matches(KEYIN)) document.body.classList.remove("typing");
     }, 80);
   });
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
