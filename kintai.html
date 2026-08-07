@@ -2351,6 +2351,10 @@ button:active,.hm-c:active,.card:active,.scard:active,.tdcard:active,.tdng:activ
   transform:none !important;
 }
 
+/* 案内（トースト）が画面下の帯に隠れていた。帯より前に出し、帯が出ている間は上へ逃がす。 */
+.toast{z-index:10000;}
+body.hasbar .toast{bottom:4.6rem;}
+
 </style>
 </head>
 <body>
@@ -3206,10 +3210,13 @@ function showUpProgress() {
   el.innerHTML = `<span class="up-sp"></span>写真を保存中　<b>${_upDone}/${_upTotal}</b>　残り${left}枚`
     + `<span class="up-note">この画面は閉じないでください</span>`;
   el.style.display = "flex";
+  document.body.classList.add("hasbar");
 }
 function hideUpProgress() {
   const el = document.getElementById("up-prog");
   if (el) el.style.display = "none";
+  const sb = document.getElementById("send-bar");
+  if (!sb || sb.style.display === "none") document.body.classList.remove("hasbar");
 }
 async function uploadPhotoNow(tempId, dataUrl, opts) {
   if (!cfg.gas) return;
@@ -9301,10 +9308,13 @@ function showSendBar(text) {
   }
   el.textContent = text;
   el.style.display = "flex";
+  document.body.classList.add("hasbar");
 }
 function hideSendBar() {
   const el = document.getElementById("send-bar");
   if (el) el.style.display = "none";
+  const up = document.getElementById("up-prog");
+  if (!up || up.style.display === "none") document.body.classList.remove("hasbar");
 }
 
 async function notifyNgFixed(name, date, idx) {
@@ -9538,7 +9548,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-08 a";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-08 b";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
