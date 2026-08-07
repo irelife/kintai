@@ -2341,10 +2341,9 @@ main.wrap,.page{max-width:100%;min-width:0;}
   #page-set .input{height:3rem;padding:.7rem .8rem;}
   #page-set .field{gap:.5rem;}
   #page-set .card{padding:1.1rem !important;}
-  /* 入力中はヘッダーを貼り付けない（スマホはキーボードが出るたびに画面が跳ねるため）。
-     画面の広い端末では跳ねないうえ、切り替えのたびにカクつくので、ここだけに効かせる */
-  body.typing .hd{position:static;}
 }
+/* 入力中はヘッダーを貼り付けない（キーボードが出るたびに画面が跳ねるため） */
+body.typing .hd{position:static;}
 
 </style>
 </head>
@@ -9153,6 +9152,7 @@ function bindNgListed(host, name, date) {
       const rr = getRep(name, date);
       const g = (rr.ngs || [])[+b.dataset.ngunfix]; if (!g) return;
       g.fixed = false; g.fixedAt = "";
+      g.fixNotified = false; g.fixNotifiedN = 0;   // 次に解決したときは、また通知する
       setRep(name, date, { ngs: rr.ngs });
       renderNgEntry(name, date); renderModal(); renderNgBadge();
     };
@@ -9236,16 +9236,24 @@ function bindNgListed(host, name, date) {
 async function notifyNgDraft(name, date, idx) {
   if (!cfg.gas) return;
   const p = props.find((x) => x.name === name) || {};
-  const r = getRep(name, date);
-  const g = (r.ngs || [])[idx];
+  let r = getRep(name, date);
+  let g = (r.ngs || [])[idx];
   if (!g) return;
+  // 写真の保存が終わってから送る（終わる前だとLINEに写真が付かない）
+  if (hasPendingPhotos(g.before) || hasPendingPhotos(g.after)) {
+    await waitUploads(40000);
+    r = getRep(name, date);
+    g = (r.ngs || [])[idx];
+    if (!g) return;
+  }
   const payload = {
     type: "ngAlert", urgent: true,
     sendTo: ngSendTo(g.place),   // マス蓋は管理者、ほかは現場へ
     property: name, address: p.addr || "", date,
     items: [{ item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`, text: g.text || "",
               deadline: g.deadline, action: ngActionText(g.place),
-              before: g.before || [], after: g.after || [] }],
+              before: (g.before || []).filter((x) => !String(x).startsWith("temp_")),
+              after: (g.after || []).filter((x) => !String(x).startsWith("temp_")) }],
   };
   try {
     await fetch(cfg.gas, { method: "POST", mode: "no-cors",
@@ -9257,43 +9265,65 @@ async function notifyNgDraft(name, date, idx) {
 }
 
 /* 要対応が解決したことをLINEへ知らせる（アフター写真つき） */
+/* 写真がDriveに保存され終わるまで待つ。
+   保存前の写真は「temp_」という仮の名前で、GAS側からは読めない。
+   これを待たずに通知を送ると、LINEに写真が付かない。 */
+function hasPendingPhotos(arr) {
+  return (arr || []).some((x) => typeof x === "string" && x.startsWith("temp_"));
+}
+function waitUploads(maxMs) {
+  const limit = Date.now() + (maxMs || 40000);
+  return new Promise((resolve) => {
+    const tick = () => {
+      if ((!_upQ.length && !_upRun) || Date.now() > limit) { resolve(); return; }
+      setTimeout(tick, 300);
+    };
+    tick();
+  });
+}
+
 async function notifyNgFixed(name, date, idx) {
   if (!cfg.gas) return;
   const p = props.find((x) => x.name === name) || {};
   const r = getRep(name, date);
-  const g = (r.ngs || [])[idx];
+  let g = (r.ngs || [])[idx];
   if (!g) return;
-  if (g.fixNotified) return;      // 二重送信を止める（同じ解決を何度も送らない）
-  g.fixNotified = true;
-  setRep(name, date, { ngs: r.ngs });
-
-  /* 写真がまだアップロード中（temp_）のまま送ると、LINEには文字だけ届いて
-     ビフォー・アフターが付かない。確定するまで最大60秒待つ。 */
-  const hasTemp = (x) => [...(x.before || []), ...(x.after || [])]
-    .some((s) => typeof s === "string" && s.startsWith("temp_"));
-  if (hasTemp(g)) {
-    toast("写真の保存を待っています", "終わり次第LINEへ送ります");
-    for (let i = 0; i < 120 && hasTemp(g); i++) {
-      await new Promise((ok) => setTimeout(ok, 500));
-      const r2 = getRep(name, date);
-      const g2 = (r2.ngs || [])[idx];
-      if (g2) g = g2;
-    }
+  // 同じ内容を二度送らない。ただし写真が増えていれば送り直す。
+  // 黙って止めると「通知が来ない」原因が分からなくなるので、必ず知らせる。
+  const nowAfter = (g.after || []).filter((x) => typeof x === "string" && !x.startsWith("temp_")).length;
+  if (g.fixNotified && nowAfter <= (g.fixNotifiedN || 0)) {
+    toast("この解決はすでに送信済みです", "写真を足すと、もう一度送れます");
+    return;
   }
-  const clean = (a) => (a || []).filter(
-    (s) => typeof s === "string" && !s.startsWith("temp_") && !s.startsWith("data:"));
+  // 写真の保存が終わっていないと、LINEに写真が付かない。終わるまで待つ。
+  if (hasPendingPhotos(g.after) || hasPendingPhotos(g.before)) {
+    toast("写真の保存を待っています", "終わり次第、解決をLINEへ送ります");
+    await waitUploads(40000);
+    g = (getRep(name, date).ngs || [])[idx];   // 保存後の写真の名前を読み直す
+    if (!g) return;
+  }
+  const after = (g.after || []).filter((x) => typeof x === "string" && !x.startsWith("temp_"));
+  const before = (g.before || []).filter((x) => typeof x === "string" && !x.startsWith("temp_"));
+  if (!after.length) {
+    toast("写真がまだ保存できていません", "電波の良い場所で、もう一度「解決」を押してください");
+    return;   // fixNotified は立てない（あとでもう一度送れるように）
+  }
+  const rr2 = getRep(name, date);
+  const g2 = (rr2.ngs || [])[idx];
+  if (g2) { g2.fixNotified = true; g2.fixNotifiedN = after.length; setRep(name, date, { ngs: rr2.ngs }); }
   const payload = {
     type: "ngConfirm",
     property: name, address: p.addr || "", date,
     reporter: g.reporter || "",
     items: [{ item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`, text: g.text || "",
               deadline: g.deadline || "", fixedAt: g.fixedAt || today(),
-              before: clean(g.before), after: clean(g.after) }],
+              before: before, after: after }],
   };
   try {
     await fetch(cfg.gas, { method: "POST", mode: "no-cors",
       body: new URLSearchParams({ payload: JSON.stringify(payload) }) });
-    toast("解決をLINEへ送りました", placeLabel(g.place));
+    toast("解決をLINEへ送りました",
+      `${placeLabel(g.place)}／ビフォー${before.length}枚・アフター${after.length}枚を送信`);
   } catch (e) {}
 }
 
@@ -9353,7 +9383,7 @@ function renderNgTab() {
         <span class="ng-row-act">
           <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフター撮影（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
           <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 写真</button>
-          <button class="ngact ngact-fix" data-ngfixrow="${tgt}" data-ngfixlabel="${esc(x.item)}" ${canFix ? "" : "disabled"}>${ic("check2", 15)} 解決</button>
+          <button class="ngact ngact-fix" data-ngfixrow="${tgt}" ${canFix ? "" : "disabled"}>${ic("check2", 15)} 解決</button>
         </span>
       </span>
     </div>`;
@@ -9415,8 +9445,6 @@ function renderNgTab() {
       if (!t) return;
       if (!t.after.length) { toast("アフター写真が要ります", "撮ってから解決にしてください"); return; }
       if (t.obj.fixed) return;        // すでに解決ずみ
-      const lbl = b.dataset.ngfixlabel || "この要対応";
-      if (!confirm(`「${lbl}」を解決済みにします。\n対応完了でよろしいですか？`)) return;
       b.disabled = true;              // 二度押し防止
       t.obj.fixed = true; t.obj.fixedAt = today();
       t.persist();
@@ -9458,7 +9486,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-07 a3";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-07 c";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9819,14 +9847,13 @@ function boot() {
     renderKtTable();
   };
   // 勤怠カレンダー：左右になぞって月を変える
-  //   ※ボタンの click() を呼ぶと「誤タップ対策」に打ち消されるため、月を直接動かす
   addMonthSwipe(document.getElementById("kt-cal"),
-    () => { ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 }; renderKtTable(); },
-    () => { ktMonth = ktMonth.m === 11 ? { y: ktMonth.y + 1, m: 0 } : { y: ktMonth.y, m: ktMonth.m + 1 }; renderKtTable(); });
+    () => { const b = document.getElementById("kt-cal-prev"); if (b) b.click(); },
+    () => { const b = document.getElementById("kt-cal-next"); if (b) b.click(); });
   // 清掃カレンダーも同じように
   addMonthSwipe(document.getElementById("cal-grid"),
-    () => { cursor = cursor.m === 0 ? { y: cursor.y - 1, m: 11 } : { y: cursor.y, m: cursor.m - 1 }; renderCal(); },
-    () => { cursor = cursor.m === 11 ? { y: cursor.y + 1, m: 0 } : { y: cursor.y, m: cursor.m + 1 }; renderCal(); });
+    () => { const b = document.getElementById("cal-prev"); if (b) b.click(); },
+    () => { const b = document.getElementById("cal-next"); if (b) b.click(); });
   const calPrev = document.getElementById("kt-cal-prev");
   if (calPrev) calPrev.onclick = () => {
     ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 };
@@ -9929,18 +9956,13 @@ function boot() {
     upd();
   }
   // 入力中はヘッダーの貼り付けを外す（スマホでキーボードが出ると画面が揺れるため）
-  //   写真の選択・チェックボックスなど、キーボードが出ないものは対象外。
-  //   これらまで拾うと、押すたびにヘッダーが動いてカクついてしまう。
-  const KEYIN = "input:not([type=file]):not([type=checkbox]):not([type=radio])"
-              + ":not([type=button]):not([type=submit]):not([type=reset])"
-              + ":not([type=image]):not([type=range]):not([type=color]),textarea";
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches(KEYIN)) document.body.classList.add("typing");
+    if (e.target.matches("input,textarea,select")) document.body.classList.add("typing");
   });
   document.addEventListener("focusout", () => {
     setTimeout(() => {
       const a = document.activeElement;
-      if (!a || !a.matches || !a.matches(KEYIN)) document.body.classList.remove("typing");
+      if (!a || !a.matches || !a.matches("input,textarea,select")) document.body.classList.remove("typing");
     }, 80);
   });
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
