@@ -1098,7 +1098,7 @@ img[data-photo]{cursor:pointer;}
   gap:.35rem;min-height:9.5rem;border:2px solid var(--border);border-radius:1.1rem;background:#fff;
   padding:1rem .7rem;cursor:pointer;font-family:inherit;color:var(--fg);
   box-shadow:0 2px 8px rgb(15 23 42 / .06);transition:transform .1s,box-shadow .1s;}
-.hm-c:active{transform:scale(.97);}
+
 .hm-c:hover{box-shadow:0 4px 14px rgb(15 23 42 / .12);}
 .hm-i{color:var(--teal-700,#0f766e);display:flex;}
 .hm-t{font-size:17.5px;font-weight:800;}
@@ -1539,14 +1539,13 @@ button,[data-open],[data-hm],[data-tab],[data-n],[data-pname],
   -webkit-tap-highlight-color:transparent;
   -webkit-touch-callout:none;
 }
-/* 押した瞬間に見た目を変える（処理の完了を待たない） */
+/* 押した瞬間の手応え。縮む動き（凹み）はやめ、明るさだけを一段落とす。 */
 button:active,.hm-c:active,.card:active,.scard:active,.tdcard:active,
 .tdng:active,.ng-row:active,.bcard:active,.pcard:active,.pillu:active{
-  transform:scale(.975);
-  filter:brightness(.96);
+  filter:brightness(.94);
 }
 button,.hm-c,.card,.scard,.tdcard,.tdng,.ng-row,.bcard,.pcard,.pillu{
-  transition:transform .06s ease-out,filter .06s ease-out,box-shadow .1s;
+  transition:filter .06s ease-out,box-shadow .1s;
 }
 /* 指が触れる面積を確保する（小さいボタンでも押しやすく） */
 @media(max-width:768px){
@@ -2344,6 +2343,13 @@ main.wrap,.page{max-width:100%;min-width:0;}
 }
 /* 入力中はヘッダーを貼り付けない（キーボードが出るたびに画面が跳ねるため） */
 body.typing .hd{position:static;}
+
+/* 縮む動き（凹み）はどこでも使わない */
+button:active,.hm-c:active,.card:active,.scard:active,.tdcard:active,.tdng:active,
+.ng-row:active,.bcard:active,.pcard:active,.pillu:active,.ngact:active,
+.pcard-cam:active,.pcard-lib:active,.cell:active,.dpd:active,.dpm:active{
+  transform:none !important;
+}
 
 </style>
 </head>
@@ -9532,7 +9538,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-07 e";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-08 a";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
