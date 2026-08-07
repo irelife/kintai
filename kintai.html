@@ -9282,6 +9282,25 @@ function waitUploads(maxMs) {
   });
 }
 
+/* 送信中を画面下の帯で知らせる。操作は止めない。 */
+function showSendBar(text) {
+  let el = document.getElementById("send-bar");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "send-bar";
+    el.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:9997;display:flex;"
+      + "align-items:center;gap:.5rem;background:rgba(78,111,108,.96);color:#fff;font-size:13px;"
+      + "font-weight:700;padding:.6rem .9rem;box-shadow:0 -2px 12px rgb(0 0 0 / .18);";
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.display = "flex";
+}
+function hideSendBar() {
+  const el = document.getElementById("send-bar");
+  if (el) el.style.display = "none";
+}
+
 async function notifyNgFixed(name, date, idx) {
   if (!cfg.gas) return;
   const p = props.find((x) => x.name === name) || {};
@@ -9297,14 +9316,16 @@ async function notifyNgFixed(name, date, idx) {
   }
   // 写真の保存が終わっていないと、LINEに写真が付かない。終わるまで待つ。
   if (hasPendingPhotos(g.after) || hasPendingPhotos(g.before)) {
-    toast("写真の保存を待っています", "終わり次第、解決をLINEへ送ります");
-    await waitUploads(40000);
+    showSendBar("写真の保存を待っています。終わり次第、解決をLINEへ送ります（そのまま操作できます）");
+    await waitUploads(25000);
+    hideSendBar();
     g = (getRep(name, date).ngs || [])[idx];   // 保存後の写真の名前を読み直す
     if (!g) return;
   }
   const after = (g.after || []).filter((x) => typeof x === "string" && !x.startsWith("temp_"));
   const before = (g.before || []).filter((x) => typeof x === "string" && !x.startsWith("temp_"));
   if (!after.length) {
+    hideSendBar();
     toast("写真がまだ保存できていません", "電波の良い場所で、もう一度「解決」を押してください");
     return;   // fixNotified は立てない（あとでもう一度送れるように）
   }
@@ -9319,12 +9340,21 @@ async function notifyNgFixed(name, date, idx) {
               deadline: g.deadline || "", fixedAt: g.fixedAt || today(),
               before: before, after: after }],
   };
+  showSendBar(`解決をLINEへ送っています（アフター${after.length}枚）…`);
   try {
     await fetch(cfg.gas, { method: "POST", mode: "no-cors",
       body: new URLSearchParams({ payload: JSON.stringify(payload) }) });
+    hideSendBar();
     toast("解決をLINEへ送りました",
       `${placeLabel(g.place)}／ビフォー${before.length}枚・アフター${after.length}枚を送信`);
-  } catch (e) {}
+  } catch (e) {
+    hideSendBar();
+    // 送れなかったときは印を外し、もう一度「解決」で送り直せるようにする
+    const rr3 = getRep(name, date);
+    const g3 = (rr3.ngs || [])[idx];
+    if (g3) { g3.fixNotified = false; setRep(name, date, { ngs: rr3.ngs }); }
+    toast("LINEへ送れませんでした", "電波の良い場所で、もう一度「解決」を押してください");
+  }
 }
 
 /* ===== 要対応タブ：未解決を期限順に一覧表示 ===== */
@@ -9502,7 +9532,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-07 d";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-07 e";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
