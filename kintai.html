@@ -9336,7 +9336,7 @@ function renderNgTab() {
         <span class="ng-row-act">
           <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフター撮影（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
           <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 写真</button>
-          <button class="ngact ngact-fix" data-ngfixrow="${tgt}" ${canFix ? "" : "disabled"}>${ic("check2", 15)} 解決</button>
+          <button class="ngact ngact-fix" data-ngfixrow="${tgt}" data-ngfixlabel="${esc(x.item)}" ${canFix ? "" : "disabled"}>${ic("check2", 15)} 解決</button>
         </span>
       </span>
     </div>`;
@@ -9398,6 +9398,8 @@ function renderNgTab() {
       if (!t) return;
       if (!t.after.length) { toast("アフター写真が要ります", "撮ってから解決にしてください"); return; }
       if (t.obj.fixed) return;        // すでに解決ずみ
+      const lbl = b.dataset.ngfixlabel || "この要対応";
+      if (!confirm(`「${lbl}」を解決済みにします。\n対応完了でよろしいですか？`)) return;
       b.disabled = true;              // 二度押し防止
       t.obj.fixed = true; t.obj.fixedAt = today();
       t.persist();
@@ -9439,7 +9441,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-06 z2";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-07 a1";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9800,13 +9802,14 @@ function boot() {
     renderKtTable();
   };
   // 勤怠カレンダー：左右になぞって月を変える
+  //   ※ボタンの click() を呼ぶと「誤タップ対策」に打ち消されるため、月を直接動かす
   addMonthSwipe(document.getElementById("kt-cal"),
-    () => { const b = document.getElementById("kt-cal-prev"); if (b) b.click(); },
-    () => { const b = document.getElementById("kt-cal-next"); if (b) b.click(); });
+    () => { ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 }; renderKtTable(); },
+    () => { ktMonth = ktMonth.m === 11 ? { y: ktMonth.y + 1, m: 0 } : { y: ktMonth.y, m: ktMonth.m + 1 }; renderKtTable(); });
   // 清掃カレンダーも同じように
   addMonthSwipe(document.getElementById("cal-grid"),
-    () => { const b = document.getElementById("cal-prev"); if (b) b.click(); },
-    () => { const b = document.getElementById("cal-next"); if (b) b.click(); });
+    () => { cursor = cursor.m === 0 ? { y: cursor.y - 1, m: 11 } : { y: cursor.y, m: cursor.m - 1 }; renderCal(); },
+    () => { cursor = cursor.m === 11 ? { y: cursor.y + 1, m: 0 } : { y: cursor.y, m: cursor.m + 1 }; renderCal(); });
   const calPrev = document.getElementById("kt-cal-prev");
   if (calPrev) calPrev.onclick = () => {
     ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 };
