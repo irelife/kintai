@@ -9404,14 +9404,29 @@ function renderNgTab() {
     };
   });
   // アフター写真を、この一覧のまま登録する
-  const addAfter = (tgt, files) => {
-    const [nm, dt, key] = tgt.split("|");
+  const addAfter = async (tgt, files) => {
+    const p0 = tgt.split("|");
+    const nm = p0[0], dt = p0[1], key = p0.slice(2).join("|");
     const t = ngTarget(nm, dt, key);
-    if (!t) return;
+    if (!t) { toast("この要対応が見つかりません", "画面を開き直してください"); return; }
+    // 壊れた記録（空の値）が混ざっていると枚数が合わなくなるので、数える前に取り除く
+    for (let i = t.after.length - 1; i >= 0; i--) {
+      if (typeof t.after[i] !== "string" || !t.after[i]) t.after.splice(i, 1);
+    }
     const room = NG_SHOT_MAX - t.after.length;
-    if (room <= 0) { toast("アフターは2枚まで", ""); return; }
-    addPhotosToArray(files.slice(0, room), t.after, t.persist, { name: nm, date: dt })
-      .then(() => { t.persist(); renderNgTab(); renderNgBadge(); });
+    if (room <= 0) {
+      toast(`アフターはすでに${t.after.length}枚入っています`, "入れ替えるときは写真の×で消してください");
+      renderNgTab();   // 画面に出ていなかっただけの場合に備えて描き直す
+      return;
+    }
+    try {
+      await addPhotosToArray(files.slice(0, room), t.after, t.persist, { name: nm, date: dt });
+    } catch (e) {
+      toast("写真の取り込みで問題が起きました", String(e && e.message ? e.message : e));
+    }
+    // 成否にかかわらず、必ず保存して画面を描き直す（入ったのに出ない、を防ぐ）
+    try { t.persist(); } catch (e) {}
+    renderNgTab(); renderNgBadge();
   };
   host.querySelectorAll("[data-ngaft]").forEach((b) => {
     b.onclick = (e) => { e.stopPropagation(); pickFromCamera((f) => addAfter(b.dataset.ngaft, f)); };
@@ -9460,7 +9475,8 @@ function ngTarget(name, date, key) {
   if (key.indexOf("ng:") === 0) {
     const g = (r.ngs || [])[+key.slice(3)];
     if (!g) return null;
-    g.after = g.after || []; g.before = g.before || [];
+    g.after = (g.after || []).filter((x) => typeof x === "string" && x);
+    g.before = (g.before || []).filter((x) => typeof x === "string" && x);
     return { obj: g, after: g.after,
              arrays: { before: g.before, after: g.after, photos: g.before },
              persist: () => setRep(name, date, { ngs: r.ngs }) };
@@ -9486,7 +9502,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-07 c";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-07 d";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
