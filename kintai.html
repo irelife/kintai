@@ -2340,9 +2340,10 @@ main.wrap,.page{max-width:100%;min-width:0;}
   #page-set .input{height:3rem;padding:.7rem .8rem;}
   #page-set .field{gap:.5rem;}
   #page-set .card{padding:1.1rem !important;}
+  /* 入力中はヘッダーを貼り付けない（スマホはキーボードで画面が跳ねるため）。
+     画面の広い端末では跳ねないうえ、切り替えでカクつくので、ここだけに効かせる */
+  body.typing .hd{position:static;}
 }
-/* 入力中はヘッダーを貼り付けない（キーボードが出るたびに画面が跳ねるため） */
-body.typing .hd{position:static;}
 
 /* 縮む動き（凹み）はどこでも使わない */
 button:active,.hm-c:active,.card:active,.scard:active,.tdcard:active,.tdng:active,
@@ -2368,6 +2369,21 @@ body.hasbar .toast{bottom:4.6rem;}
 .ngview-b b{font-size:15px;}
 .ngview-b.on{background:var(--ink-deep);border-color:var(--ink-deep);color:#fff;}
 .ng-row.ngfixed{opacity:.9;}
+/* 写真の確認（使い回し・撮影日ちがいの判定） */
+.pf-row{grid-column:1/-1;border:1.5px solid var(--border);border-radius:14px;
+  background:#fff;padding:.9rem 1rem;margin:0 0 .6rem;}
+.pf-why{font-weight:800;color:#8A2743;font-size:15px;line-height:1.5;}
+.pf-meta{color:var(--muted);font-size:13px;margin:.3rem 0 .7rem;line-height:1.6;}
+.pf-act{display:flex;gap:.5rem;flex-wrap:wrap;}
+.pf-b{flex:1;min-width:9rem;border:1.5px solid var(--border);background:#fff;
+  border-radius:9999px;padding:.6rem 1rem;font-family:inherit;font-size:14.5px;
+  font-weight:800;cursor:pointer;}
+.pf-b.ok{border-color:#9B2C4A;color:#8A2743;}
+.pf-b.ng{border-color:var(--border);color:var(--muted);}
+.pf-all{grid-column:1/-1;margin:0 0 .8rem;border:1.5px solid var(--border);background:#fff;
+  border-radius:9999px;padding:.6rem 1.1rem;font-family:inherit;font-size:14px;
+  font-weight:800;color:var(--muted);cursor:pointer;}
+.pf-done{grid-column:1/-1;color:var(--muted);font-size:13px;margin:.2rem 0 .6rem;}
 .ng-row.ngfixed .ng-row-p{color:var(--muted);}
 .ng-row-noaf{display:inline-flex;align-items:center;gap:.3rem;font-size:12px;font-weight:700;
   color:var(--rose-600);margin-top:.3rem;}
@@ -9451,6 +9467,79 @@ function collectFixedNg() {
 
 let ngView = "open";   // open＝未解決 / fixed＝解決済み
 
+/* ===== 写真の確認 =====
+   同じ写真の使い回し・撮影日ちがいを見つけたときの記録を、ここで判定する。
+   判定は記録そのもの（photoFlags の state）に持たせるので、同期すればGASにも伝わる。
+     未判定 = ""／問題なし = "ng"（誤検知・減点しない）／不正として記録 = "ok"（減点する） */
+function collectPhotoFlags() {
+  const out = [];
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|");
+    if (sep < 0) return;
+    const name = rk.slice(0, sep), date = rk.slice(sep + 1);
+    ((reps[rk] || {}).photoFlags || []).forEach((f, i) => {
+      if (!f || f.state) return;                       // 判定ずみは出さない
+      const why = f.kind === "dup" ? "同じ写真が別の記録でも使われています"
+                : f.kind === "exif" ? "撮影日が清掃日と違います" : "";
+      if (!why) return;
+      out.push({ property: name, date, idx: i, kind: f.kind,
+                 why, detail: f.detail || "", at: f.at || "" });
+    });
+  });
+  out.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return out;
+}
+function setPhotoFlagState(name, date, idx, state) {
+  const r = getRep(name, date);
+  const list = (r.photoFlags || []).slice();
+  if (!list[idx]) return;
+  list[idx] = Object.assign({}, list[idx], { state, decidedAt: new Date().toISOString() });
+  setRep(name, date, { photoFlags: list });
+}
+function renderPhotoFlags(host, tabs) {
+  const list = collectPhotoFlags();
+  if (!list.length) {
+    host.innerHTML = tabs + `<div class="ng-empty2">${ic("check2", 20)}
+      <div>確認待ちの写真はありません</div></div>`;
+    return;
+  }
+  let html = tabs;
+  html += `<div class="pf-done">写真の中身を見比べてから決めてください。
+    「問題なし」にしたものは減点されません。</div>`;
+  html += `<button class="pf-all" data-pfall="1">残り ${list.length} 件すべてを「問題なし」にする</button>`;
+  list.forEach((f) => {
+    const tag = `${esc(f.property)}|${esc(f.date)}|${f.idx}`;
+    html += `<div class="pf-row">
+      <div class="pf-why">${esc(f.why)}</div>
+      <div class="pf-meta">${esc(f.property)}　${esc(fmtDate(f.date))} の記録
+        ${f.detail ? `<br>${f.kind === "dup" ? "重なった相手" : "写真の撮影日"}：${esc(f.detail)}` : ""}</div>
+      <div class="pf-act">
+        <button class="pf-b ng" data-pfng="${tag}">問題なし</button>
+        <button class="pf-b ok" data-pfok="${tag}">不正として記録</button>
+      </div>
+    </div>`;
+  });
+  host.innerHTML = html;
+  const bind = (attr, state, msg) => {
+    host.querySelectorAll(`[data-${attr}]`).forEach((b) => {
+      b.onclick = () => {
+        const [nm, dt, ix] = b.dataset[attr === "pfok" ? "pfok" : "pfng"].split("|");
+        setPhotoFlagState(nm, dt, +ix, state);
+        toast(msg, nm);
+        renderNgTab();
+      };
+    });
+  };
+  bind("pfng", "ng", "問題なしにしました");
+  bind("pfok", "ok", "不正として記録しました");
+  const all = host.querySelector("[data-pfall]");
+  if (all) all.onclick = () => {
+    if (!confirm(`確認待ちの ${list.length} 件すべてを「問題なし」にします。よろしいですか？`)) return;
+    list.forEach((f) => setPhotoFlagState(f.property, f.date, f.idx, "ng"));
+    toast("まとめて問題なしにしました", `${list.length}件`);
+    renderNgTab();
+  };
+}
 function renderNgTab() {
   const host = document.getElementById("ng-list");
   if (!host) return;
@@ -9461,6 +9550,8 @@ function renderNgTab() {
         ${ic("alert", 15)} 未解決 <b>${openList.length}</b></button>
       <button class="ngview-b ${ngView === "fixed" ? "on" : ""}" data-ngview="fixed">
         ${ic("check2", 15)} 解決済み <b>${fixedList.length}</b></button>
+      <button class="ngview-b ${ngView === "photo" ? "on" : ""}" data-ngview="photo">
+        ${ic("camera", 15)} 写真の確認 <b>${collectPhotoFlags().length}</b></button>
     </div>`;
   const bindTabs = () => {
     host.querySelectorAll("[data-ngview]").forEach((b) => {
@@ -9469,6 +9560,11 @@ function renderNgTab() {
   };
   if (ngView === "fixed") {
     renderNgFixedList(host, tabs, fixedList);
+    bindTabs();
+    return;
+  }
+  if (ngView === "photo") {
+    renderPhotoFlags(host, tabs);
     bindTabs();
     return;
   }
@@ -9513,7 +9609,7 @@ function renderNgTab() {
         <span class="ng-row-act">
           <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフター撮影（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
           <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 写真</button>
-          <button class="ngact ngact-fix ${canFix ? "" : "off"}" data-ngfixrow="${tgt}">${ic("check2", 15)} 解決</button>
+          <button class="ngact ngact-fix ${canFix ? "" : "off"}" data-ngfixrow="${tgt}" data-ngfixlabel="${esc(x.item)}">${ic("check2", 15)} 解決</button>
         </span>
       </span>
     </div>`;
@@ -9595,6 +9691,8 @@ function renderNgTab() {
         return;
       }
       if (t.obj.fixed) return;        // すでに解決ずみ
+      const lbl = b.dataset.ngfixlabel || "この要対応";
+      if (!confirm(`「${lbl}」を解決済みにします。\n対応完了でよろしいですか？`)) return;
       b.disabled = true;              // 二度押し防止
       t.obj.fixed = true; t.obj.fixedAt = today();
       t.persist();
@@ -9705,7 +9803,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-08 e";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-08 f";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -10066,13 +10164,14 @@ function boot() {
     renderKtTable();
   };
   // 勤怠カレンダー：左右になぞって月を変える
+  //   ※ボタンの click() を呼ぶと「誤タップ対策」に打ち消されるため、月を直接動かす
   addMonthSwipe(document.getElementById("kt-cal"),
-    () => { const b = document.getElementById("kt-cal-prev"); if (b) b.click(); },
-    () => { const b = document.getElementById("kt-cal-next"); if (b) b.click(); });
+    () => { ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 }; renderKtTable(); },
+    () => { ktMonth = ktMonth.m === 11 ? { y: ktMonth.y + 1, m: 0 } : { y: ktMonth.y, m: ktMonth.m + 1 }; renderKtTable(); });
   // 清掃カレンダーも同じように
   addMonthSwipe(document.getElementById("cal-grid"),
-    () => { const b = document.getElementById("cal-prev"); if (b) b.click(); },
-    () => { const b = document.getElementById("cal-next"); if (b) b.click(); });
+    () => { cursor = cursor.m === 0 ? { y: cursor.y - 1, m: 11 } : { y: cursor.y, m: cursor.m - 1 }; renderCal(); },
+    () => { cursor = cursor.m === 11 ? { y: cursor.y + 1, m: 0 } : { y: cursor.y, m: cursor.m + 1 }; renderCal(); });
   const calPrev = document.getElementById("kt-cal-prev");
   if (calPrev) calPrev.onclick = () => {
     ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 };
@@ -10175,13 +10274,18 @@ function boot() {
     upd();
   }
   // 入力中はヘッダーの貼り付けを外す（スマホでキーボードが出ると画面が揺れるため）
+  //   写真の選択やチェックボックスなど、キーボードが出ないものは対象外。
+  //   これらまで拾うと、押すたびにヘッダーが動いてカクついてしまう。
+  const KEYIN = "input:not([type=file]):not([type=checkbox]):not([type=radio])"
+              + ":not([type=button]):not([type=submit]):not([type=reset])"
+              + ":not([type=image]):not([type=range]):not([type=color]),textarea";
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches("input,textarea,select")) document.body.classList.add("typing");
+    if (e.target.matches(KEYIN)) document.body.classList.add("typing");
   });
   document.addEventListener("focusout", () => {
     setTimeout(() => {
       const a = document.activeElement;
-      if (!a || !a.matches || !a.matches("input,textarea,select")) document.body.classList.remove("typing");
+      if (!a || !a.matches || !a.matches(KEYIN)) document.body.classList.remove("typing");
     }, 80);
   });
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
