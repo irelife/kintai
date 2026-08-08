@@ -2355,6 +2355,23 @@ button:active,.hm-c:active,.card:active,.scard:active,.tdcard:active,.tdng:activ
 .toast{z-index:10000;}
 body.hasbar .toast{bottom:4.6rem;}
 
+/* 「解決」はいつでも押せる。条件が足りないときは押したときに理由を出す。
+   無効（disabled）にすると押しても何も起きず、原因が分からなくなるため。 */
+.ngact-fix.off{background:#fff;border-color:var(--border);color:var(--muted-2);}
+.ngfix-btn.off{background:#E3CFCB;color:#fff;font-size:14px;}
+
+/* 要対応タブ：未解決／解決済みの切り替え */
+.ngview{grid-column:1/-1;display:flex;gap:.5rem;margin:0 0 .4rem;flex-wrap:wrap;}
+.ngview-b{display:inline-flex;align-items:center;gap:.4rem;border:1.5px solid var(--border);
+  background:#fff;color:var(--muted);border-radius:9999px;padding:.55rem 1.1rem;
+  font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;}
+.ngview-b b{font-size:15px;}
+.ngview-b.on{background:var(--ink-deep);border-color:var(--ink-deep);color:#fff;}
+.ng-row.ngfixed{opacity:.9;}
+.ng-row.ngfixed .ng-row-p{color:var(--muted);}
+.ng-row-noaf{display:inline-flex;align-items:center;gap:.3rem;font-size:12px;font-weight:700;
+  color:var(--rose-600);margin-top:.3rem;}
+
 </style>
 </head>
 <body>
@@ -8788,7 +8805,7 @@ function renderNgEntry(name, date) {
       ${g.fixed
         ? `<div class="ngitem-done">${ic("check2", 16)} 解決済み${g.fixedAt ? `（${esc(fmtDate(g.fixedAt))}）` : ""}
              <button class="btn btn-outline btn-sm" data-ngunfix="${i}">未解決に戻す</button></div>`
-        : `<button class="btn ngfix-btn" data-ngfix="${i}" ${(g.after || []).length ? "" : "disabled"}>
+        : `<button class="btn ngfix-btn ${(g.after || []).length ? "" : "off"}" data-ngfix="${i}">
              ${ic("check2", 17)} ${(g.after || []).length ? "解決済みにする" : "アフター写真を入れると解決できます"}
            </button>`}
     </div>`;
@@ -9153,6 +9170,11 @@ function bindNgListed(host, name, date) {
     b.onclick = () => {
       const rr = getRep(name, date);
       const g = (rr.ngs || [])[+b.dataset.ngfix]; if (!g) return;
+      if (!(g.after || []).length) {
+        toast("アフター写真が要ります", "アフターの欄に写真を入れてから解決にしてください");
+        showSendBar("⚠️ アフター写真がありません。アフターの欄に写真を入れてください", 5000);
+        return;
+      }
       g.fixed = true; g.fixedAt = today();
       setRep(name, date, { ngs: rr.ngs });
       renderNgEntry(name, date); renderModal(); renderNgBadge();
@@ -9395,16 +9417,73 @@ function renderNgBadge() {
   el.classList.toggle("hidden", !list.length);
   el.classList.toggle("urgent", urgent > 0);
 }
+/* 解決した要対応を集める（解決日の新しい順） */
+function collectFixedNg() {
+  const out = [];
+  Object.keys(reps || {}).forEach((rk) => {
+    const sep = rk.lastIndexOf("|");
+    if (sep < 0) return;
+    const name = rk.slice(0, sep), date = rk.slice(sep + 1);
+    const r = reps[rk] || {};
+    const addr = (props.find((x) => x.name === name) || {}).addr || "";
+    (r.ngs || []).forEach((g, i) => {
+      if (!g || !g.fixed) return;
+      out.push({ property: name, date, addr, key: "ng:" + i,
+        item: `${placeLabel(g.place)}／${kindLabel(g.kind)}`,
+        text: g.text || "", deadline: g.deadline || "", fixedAt: g.fixedAt || "",
+        thumb: (g.before || [])[0] || "", afters: (g.after || []).slice(0, 2),
+        sent: !!g.fixNotified });
+    });
+    Object.keys(r.items || {}).forEach((key) => {
+      const c = r.items[key] || {};
+      if (!c.ng || !c.fixed) return;
+      const f = itemsFor(name).find((x) => x.key === key);
+      out.push({ property: name, date, addr, key,
+        item: f ? itemShort(key, f.label) : key,
+        text: c.text || "", deadline: c.deadline || "", fixedAt: c.fixedAt || "",
+        thumb: (c.before || [])[0] || (c.photos || [])[0] || "",
+        afters: (c.after || []).slice(0, 2), sent: !!c.notified });
+    });
+  });
+  out.sort((a, b) => ((b.fixedAt || "") < (a.fixedAt || "") ? -1 : 1));
+  return out;
+}
+
+let ngView = "open";   // open＝未解決 / fixed＝解決済み
+
 function renderNgTab() {
   const host = document.getElementById("ng-list");
   if (!host) return;
-  const list = collectOpenNg();
+  const openList = collectOpenNg();
+  const fixedList = collectFixedNg();
+  const tabs = `<div class="ngview">
+      <button class="ngview-b ${ngView === "open" ? "on" : ""}" data-ngview="open">
+        ${ic("alert", 15)} 未解決 <b>${openList.length}</b></button>
+      <button class="ngview-b ${ngView === "fixed" ? "on" : ""}" data-ngview="fixed">
+        ${ic("check2", 15)} 解決済み <b>${fixedList.length}</b></button>
+    </div>`;
+  const bindTabs = () => {
+    host.querySelectorAll("[data-ngview]").forEach((b) => {
+      b.onclick = () => { ngView = b.dataset.ngview; renderNgTab(); };
+    });
+  };
+  if (ngView === "fixed") {
+    renderNgFixedList(host, tabs, fixedList);
+    bindTabs();
+    return;
+  }
+  const list = openList;
+  if (!list.length) {
+    host.innerHTML = tabs + `<div class="ng-empty2">${ic("check2", 20)}<div>未解決の要対応はありません</div></div>`;
+    bindTabs();
+    return;
+  }
   if (!list.length) {
     host.innerHTML = `<div class="ng-empty2">${ic("check2", 20)}<div>未解決の要対応はありません</div></div>`;
     return;
   }
   // 期限の状態ごとにまとめて見出しを出す
-  let html = "", lastKey = "";
+  let html = tabs, lastKey = "";
   list.forEach((x) => {
     const st = NG_DUE_STYLE[x.due.key];
     if (x.due.key !== lastKey) {
@@ -9434,12 +9513,13 @@ function renderNgTab() {
         <span class="ng-row-act">
           <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフター撮影（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
           <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 写真</button>
-          <button class="ngact ngact-fix" data-ngfixrow="${tgt}" ${canFix ? "" : "disabled"}>${ic("check2", 15)} 解決</button>
+          <button class="ngact ngact-fix ${canFix ? "" : "off"}" data-ngfixrow="${tgt}">${ic("check2", 15)} 解決</button>
         </span>
       </span>
     </div>`;
   });
   host.innerHTML = html;
+  bindTabs();
   hydratePhotos(host);
   host.querySelectorAll("[data-open]").forEach((b) => {
     b.onclick = (e) => {
@@ -9509,7 +9589,11 @@ function renderNgTab() {
       const [nm, dt, key] = b.dataset.ngfixrow.split("|");
       const t = ngTarget(nm, dt, key);
       if (!t) return;
-      if (!t.after.length) { toast("アフター写真が要ります", "撮ってから解決にしてください"); return; }
+      if (!t.after.length) {
+        toast("アフター写真が要ります", "「アフター撮影」で撮ってから解決にしてください");
+        showSendBar("⚠️ アフター写真がありません。「アフター撮影」で撮ってから「解決」を押してください", 5000);
+        return;
+      }
       if (t.obj.fixed) return;        // すでに解決ずみ
       b.disabled = true;              // 二度押し防止
       t.obj.fixed = true; t.obj.fixedAt = today();
@@ -9521,6 +9605,73 @@ function renderNgTab() {
     };
   });
 }
+/* 解決済みの一覧。いつ・どこを・どう直したかを見返す場所。 */
+function renderNgFixedList(host, tabs, list) {
+  if (!list.length) {
+    host.innerHTML = tabs + `<div class="ng-empty2">${ic("folder", 20)}<div>解決済みの要対応はまだありません</div></div>`;
+    return;
+  }
+  let html = tabs, lastMon = "";
+  list.forEach((x) => {
+    const mon = (x.fixedAt || "").slice(0, 7);
+    if (mon !== lastMon) {
+      const n = list.filter((y) => (y.fixedAt || "").slice(0, 7) === mon).length;
+      html += `<div class="ng-sec" style="color:var(--em-700)">${
+        mon ? `${Number(mon.slice(0, 4))}年${Number(mon.slice(5))}月に解決（${n}件）` : `解決日の記録なし（${n}件）`}</div>`;
+      lastMon = mon;
+    }
+    html += `<div class="ng-row ngfixed" role="button" tabindex="0"
+        data-open="${esc(x.property)}|${esc(x.date)}" style="--rule:var(--em-500)">
+      <span class="ng-row-th">${x.thumb ? imgTag(x.thumb) : `<span class="ng-row-noth">${ic("camera", 20)}</span>`}</span>
+      <span class="ng-row-b">
+        <span class="ng-row-i">${esc(x.item)}</span>
+        <span class="ng-row-p">${esc(x.property)}${x.text ? `<span class="ng-row-t">${esc(x.text)}</span>` : ""}</span>
+        ${(x.afters || []).length ? `<span class="ng-row-af">
+          <span class="ng-row-aflb">アフター</span>
+          ${x.afters.map((id) => `<span class="ng-row-afth">${imgTag(id)}</span>`).join("")}
+        </span>` : `<span class="ng-row-noaf">${ic("alert", 13)} アフター写真なし</span>`}
+        <span class="ng-row-m">
+          <span class="ng-row-due" style="background:var(--em-700)">解決</span>
+          <span class="ng-row-mt">${x.fixedAt ? esc(fmtDate(x.fixedAt)) + " に解決" : "解決日の記録なし"}</span>
+          ${x.deadline ? `<span class="ng-row-mt">期限 ${esc(fmtDate(x.deadline))}${
+            x.fixedAt && x.fixedAt > x.deadline ? "（超過）" : ""}</span>` : ""}
+          <span class="ng-row-mr">${esc(fmtDate(x.date))} の記録</span>
+        </span>
+        <span class="ng-row-act">
+          <button class="ngact" data-ngreopen="${esc(x.property)}|${esc(x.date)}|${esc(x.key)}">未解決に戻す</button>
+        </span>
+      </span>
+    </div>`;
+  });
+  host.innerHTML = html;
+  hydratePhotos(host);
+  host.querySelectorAll("[data-open]").forEach((b) => {
+    b.onclick = (e) => {
+      if (e.target.closest(".ngact, .ng-row-th, .ng-row-af, img, [data-ngview]")) return;
+      const [nm, dt] = b.dataset.open.split("|");
+      openRep = { name: nm, date: dt }; openItem = null; selDate = dt;
+      const dd = parseYmd(dt);
+      if (dd && !isNaN(dd)) cursor = { y: dd.getFullYear(), m: dd.getMonth() };
+      renderModal();
+    };
+  });
+  host.querySelectorAll("[data-ngreopen]").forEach((b) => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      const p = b.dataset.ngreopen.split("|");
+      const nm = p[0], dt = p[1], key = p.slice(2).join("|");
+      if (!confirm(`${nm} のこの要対応を、未解決に戻しますか？`)) return;
+      const t = ngTarget(nm, dt, key);
+      if (!t) return;
+      t.obj.fixed = false; t.obj.fixedAt = "";
+      t.obj.fixNotified = false; t.obj.fixNotifiedN = 0;
+      t.persist();
+      toast("未解決に戻しました", nm);
+      renderNgTab(); renderNgBadge(); renderCal();
+    };
+  });
+}
+
 /* 要対応の実体（項目／追加した要対応／その他）を、キーから引き当てる */
 function ngTarget(name, date, key) {
   const r = getRep(name, date);
@@ -9554,7 +9705,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-08 c";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-08 e";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
