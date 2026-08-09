@@ -2340,10 +2340,9 @@ main.wrap,.page{max-width:100%;min-width:0;}
   #page-set .input{height:3rem;padding:.7rem .8rem;}
   #page-set .field{gap:.5rem;}
   #page-set .card{padding:1.1rem !important;}
-  /* 入力中はヘッダーを貼り付けない（スマホはキーボードで画面が跳ねるため）。
-     画面の広い端末では跳ねないうえ、切り替えでカクつくので、ここだけに効かせる */
-  body.typing .hd{position:static;}
 }
+/* 入力中はヘッダーを貼り付けない（キーボードが出るたびに画面が跳ねるため） */
+body.typing .hd{position:static;}
 
 /* 縮む動き（凹み）はどこでも使わない */
 button:active,.hm-c:active,.card:active,.scard:active,.tdcard:active,.tdng:active,
@@ -2369,24 +2368,19 @@ body.hasbar .toast{bottom:4.6rem;}
 .ngview-b b{font-size:15px;}
 .ngview-b.on{background:var(--ink-deep);border-color:var(--ink-deep);color:#fff;}
 .ng-row.ngfixed{opacity:.9;}
-/* 写真の確認（使い回し・撮影日ちがいの判定） */
-.pf-row{grid-column:1/-1;border:1.5px solid var(--border);border-radius:14px;
-  background:#fff;padding:.9rem 1rem;margin:0 0 .6rem;}
-.pf-why{font-weight:800;color:#8A2743;font-size:15px;line-height:1.5;}
-.pf-meta{color:var(--muted);font-size:13px;margin:.3rem 0 .7rem;line-height:1.6;}
-.pf-act{display:flex;gap:.5rem;flex-wrap:wrap;}
-.pf-b{flex:1;min-width:9rem;border:1.5px solid var(--border);background:#fff;
-  border-radius:9999px;padding:.6rem 1rem;font-family:inherit;font-size:14.5px;
-  font-weight:800;cursor:pointer;}
-.pf-b.ok{border-color:#9B2C4A;color:#8A2743;}
-.pf-b.ng{border-color:var(--border);color:var(--muted);}
-.pf-all{grid-column:1/-1;margin:0 0 .8rem;border:1.5px solid var(--border);background:#fff;
-  border-radius:9999px;padding:.6rem 1.1rem;font-family:inherit;font-size:14px;
-  font-weight:800;color:var(--muted);cursor:pointer;}
-.pf-done{grid-column:1/-1;color:var(--muted);font-size:13px;margin:.2rem 0 .6rem;}
 .ng-row.ngfixed .ng-row-p{color:var(--muted);}
 .ng-row-noaf{display:inline-flex;align-items:center;gap:.3rem;font-size:12px;font-weight:700;
   color:var(--rose-600);margin-top:.3rem;}
+
+/* 予定を入れる画面：その月に済んでいる物件の印と、表示の切り替え */
+.sa-toggle{width:100%;text-align:left;border:1px dashed var(--border);background:#fff;
+  color:var(--muted);border-radius:.6rem;padding:.5rem .7rem;font-family:inherit;
+  font-size:12.5px;font-weight:700;cursor:pointer;}
+.sa-toggle:hover{background:var(--bg);color:var(--fg);}
+.sa-row.covered{background:var(--bg);}
+.sa-mk{margin-left:auto;flex:none;font-size:11px;font-weight:800;border-radius:9999px;padding:.1rem .5rem;}
+.sa-mk.done{background:var(--border-soft);color:var(--muted);}
+.sa-mk.plan{background:#EDF3F1;color:var(--teal-700);}
 
 </style>
 </head>
@@ -2793,6 +2787,17 @@ function doneThisMonth(name) {
     if (!last || ds > last) last = ds;
   }
   return last;
+}
+// 指定した月に、その物件が片付いているか（予定済み／清掃済み）
+function monthCoverage(name, ym) {
+  let doneAt = "", planAt = "";
+  for (const ds in sched) {
+    if (ds.slice(0, 7) !== ym) continue;
+    if (!(sched[ds] || []).includes(name)) continue;
+    if (getRep(name, ds).status === "done") { if (!doneAt || ds > doneAt) doneAt = ds; }
+    else { if (!planAt || ds < planAt) planAt = ds; }
+  }
+  return { done: doneAt, plan: planAt };
 }
 // 物件リスト（既定の「予定が入っていない物件」）から隠す条件
 function isCoveredThisMonth(name) {
@@ -6604,11 +6609,17 @@ function openCoordCheck() {
 function openSchedAdd(ds) {
   if (!ds) return;
   const host = document.getElementById("modal-host");
-  let q = "", sel = [];
+  let q = "", sel = [], showAll = false;
+  const ym = ds.slice(0, 7);
   const draw = () => {
     const already = new Set(sched[ds] || []);
-    const cand = props.filter((p) => p && p.name && !already.has(p.name))
+    const base = props.filter((p) => p && p.name && !already.has(p.name))
       .filter((p) => !q || (p.name + " " + (p.addr || "")).toLowerCase().includes(q.toLowerCase()));
+    // 清掃は月1回。その月にもう済んでいる／予定が入っている物件は出さない。
+    const cov = {};
+    base.forEach((p) => { cov[p.name] = monthCoverage(p.name, ym); });
+    const hidden = base.filter((p) => cov[p.name].done || cov[p.name].plan);
+    const cand = showAll ? base : base.filter((p) => !cov[p.name].done && !cov[p.name].plan);
     host.innerHTML = `<div class="mask" id="mask-sa">
       <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-h"><h2>${fmtDate(ds)} に予定を入れる</h2>
@@ -6616,12 +6627,22 @@ function openSchedAdd(ds) {
         <div style="display:flex;flex-direction:column;gap:.7rem">
           <input class="input" id="sa-q" placeholder="物件名や住所でしぼりこむ" value="${esc(q)}">
           <div class="sa-n">${cand.length}件 ／ <b>${sel.length}件を選択中</b></div>
+          ${hidden.length ? `<button class="sa-toggle" id="sa-toggle">${
+            showAll
+              ? `${Number(ym.slice(5))}月ぶんが済んでいる物件も出しています（${hidden.length}件）／ 隠す`
+              : `${Number(ym.slice(5))}月ぶんが済んでいる ${hidden.length}件 は出していません ／ 出す`
+          }</button>` : ""}
           <div class="sa-list">${
             cand.length
-              ? cand.map((p) => `<label class="sa-row ${sel.includes(p.name) ? "on" : ""}">
+              ? cand.map((p) => {
+                  const c = cov[p.name] || {};
+                  const mark = c.done ? `<span class="sa-mk done">${fmtShort(c.done)} 清掃済み</span>`
+                    : c.plan ? `<span class="sa-mk plan">${fmtShort(c.plan)} 予定あり</span>` : "";
+                  return `<label class="sa-row ${sel.includes(p.name) ? "on" : ""} ${(c.done || c.plan) ? "covered" : ""}">
                   <input type="checkbox" data-sa="${esc(p.name)}" ${sel.includes(p.name) ? "checked" : ""}>
                   <span class="sa-nm">${esc(p.name)}</span>
-                  <span class="sa-ad">${esc(p.addr || "")}</span></label>`).join("")
+                  <span class="sa-ad">${esc(p.addr || "")}</span>${mark}</label>`;
+                }).join("")
               : `<div class="sa-empty">該当する物件がありません</div>`}</div>
           <div style="display:flex;justify-content:flex-end;gap:.5rem">
             <button class="btn btn-default" id="sa-cancel">やめる</button>
@@ -6641,6 +6662,8 @@ function openSchedAdd(ds) {
         draw();
       };
     });
+    const tg = host.querySelector("#sa-toggle");
+    if (tg) tg.onclick = () => { showAll = !showAll; draw(); };
     const close = () => { host.innerHTML = ""; };
     host.querySelector("#sa-x").onclick = close;
     host.querySelector("#sa-cancel").onclick = close;
@@ -6653,6 +6676,8 @@ function openSchedAdd(ds) {
       const _hl = holidayName(ds);
       const _why = _cof ? `公休日（${_cof}）` : _hl ? `祝日（${_hl}）` : _dw === 0 ? "日曜日" : _dw === 6 ? "土曜日" : "";
       if (_why && !confirm(`${fmtDate(ds)} は${_why}です。\nこの日に予定を入れますか？`)) return;
+      const dup = sel.filter((nm) => { const c = monthCoverage(nm, ym); return c.done || c.plan; });
+      if (dup.length && !confirm(`${dup.join("、")} は${Number(ym.slice(5))}月ぶんが済んでいるか、すでに予定に入っています。\nそれでも追加しますか？`)) return;
       sched[ds] = sched[ds] || [];
       sel.forEach((nm) => { if (!sched[ds].includes(nm)) sched[ds].push(nm); });
       save(K.sched, sched);
@@ -9467,79 +9492,6 @@ function collectFixedNg() {
 
 let ngView = "open";   // open＝未解決 / fixed＝解決済み
 
-/* ===== 写真の確認 =====
-   同じ写真の使い回し・撮影日ちがいを見つけたときの記録を、ここで判定する。
-   判定は記録そのもの（photoFlags の state）に持たせるので、同期すればGASにも伝わる。
-     未判定 = ""／問題なし = "ng"（誤検知・減点しない）／不正として記録 = "ok"（減点する） */
-function collectPhotoFlags() {
-  const out = [];
-  Object.keys(reps || {}).forEach((rk) => {
-    const sep = rk.lastIndexOf("|");
-    if (sep < 0) return;
-    const name = rk.slice(0, sep), date = rk.slice(sep + 1);
-    ((reps[rk] || {}).photoFlags || []).forEach((f, i) => {
-      if (!f || f.state) return;                       // 判定ずみは出さない
-      const why = f.kind === "dup" ? "同じ写真が別の記録でも使われています"
-                : f.kind === "exif" ? "撮影日が清掃日と違います" : "";
-      if (!why) return;
-      out.push({ property: name, date, idx: i, kind: f.kind,
-                 why, detail: f.detail || "", at: f.at || "" });
-    });
-  });
-  out.sort((a, b) => (a.date < b.date ? 1 : -1));
-  return out;
-}
-function setPhotoFlagState(name, date, idx, state) {
-  const r = getRep(name, date);
-  const list = (r.photoFlags || []).slice();
-  if (!list[idx]) return;
-  list[idx] = Object.assign({}, list[idx], { state, decidedAt: new Date().toISOString() });
-  setRep(name, date, { photoFlags: list });
-}
-function renderPhotoFlags(host, tabs) {
-  const list = collectPhotoFlags();
-  if (!list.length) {
-    host.innerHTML = tabs + `<div class="ng-empty2">${ic("check2", 20)}
-      <div>確認待ちの写真はありません</div></div>`;
-    return;
-  }
-  let html = tabs;
-  html += `<div class="pf-done">写真の中身を見比べてから決めてください。
-    「問題なし」にしたものは減点されません。</div>`;
-  html += `<button class="pf-all" data-pfall="1">残り ${list.length} 件すべてを「問題なし」にする</button>`;
-  list.forEach((f) => {
-    const tag = `${esc(f.property)}|${esc(f.date)}|${f.idx}`;
-    html += `<div class="pf-row">
-      <div class="pf-why">${esc(f.why)}</div>
-      <div class="pf-meta">${esc(f.property)}　${esc(fmtDate(f.date))} の記録
-        ${f.detail ? `<br>${f.kind === "dup" ? "重なった相手" : "写真の撮影日"}：${esc(f.detail)}` : ""}</div>
-      <div class="pf-act">
-        <button class="pf-b ng" data-pfng="${tag}">問題なし</button>
-        <button class="pf-b ok" data-pfok="${tag}">不正として記録</button>
-      </div>
-    </div>`;
-  });
-  host.innerHTML = html;
-  const bind = (attr, state, msg) => {
-    host.querySelectorAll(`[data-${attr}]`).forEach((b) => {
-      b.onclick = () => {
-        const [nm, dt, ix] = b.dataset[attr === "pfok" ? "pfok" : "pfng"].split("|");
-        setPhotoFlagState(nm, dt, +ix, state);
-        toast(msg, nm);
-        renderNgTab();
-      };
-    });
-  };
-  bind("pfng", "ng", "問題なしにしました");
-  bind("pfok", "ok", "不正として記録しました");
-  const all = host.querySelector("[data-pfall]");
-  if (all) all.onclick = () => {
-    if (!confirm(`確認待ちの ${list.length} 件すべてを「問題なし」にします。よろしいですか？`)) return;
-    list.forEach((f) => setPhotoFlagState(f.property, f.date, f.idx, "ng"));
-    toast("まとめて問題なしにしました", `${list.length}件`);
-    renderNgTab();
-  };
-}
 function renderNgTab() {
   const host = document.getElementById("ng-list");
   if (!host) return;
@@ -9550,8 +9502,6 @@ function renderNgTab() {
         ${ic("alert", 15)} 未解決 <b>${openList.length}</b></button>
       <button class="ngview-b ${ngView === "fixed" ? "on" : ""}" data-ngview="fixed">
         ${ic("check2", 15)} 解決済み <b>${fixedList.length}</b></button>
-      <button class="ngview-b ${ngView === "photo" ? "on" : ""}" data-ngview="photo">
-        ${ic("camera", 15)} 写真の確認 <b>${collectPhotoFlags().length}</b></button>
     </div>`;
   const bindTabs = () => {
     host.querySelectorAll("[data-ngview]").forEach((b) => {
@@ -9560,11 +9510,6 @@ function renderNgTab() {
   };
   if (ngView === "fixed") {
     renderNgFixedList(host, tabs, fixedList);
-    bindTabs();
-    return;
-  }
-  if (ngView === "photo") {
-    renderPhotoFlags(host, tabs);
     bindTabs();
     return;
   }
@@ -9609,7 +9554,7 @@ function renderNgTab() {
         <span class="ng-row-act">
           <button class="ngact ngact-cam" data-ngaft="${tgt}">${ic("camera", 15)} アフター撮影（${x.afterN || 0}/${NG_SHOT_MAX}）</button>
           <button class="ngact ngact-lib" data-ngaftlib="${tgt}">${ic("image", 14)} 写真</button>
-          <button class="ngact ngact-fix ${canFix ? "" : "off"}" data-ngfixrow="${tgt}" data-ngfixlabel="${esc(x.item)}">${ic("check2", 15)} 解決</button>
+          <button class="ngact ngact-fix ${canFix ? "" : "off"}" data-ngfixrow="${tgt}">${ic("check2", 15)} 解決</button>
         </span>
       </span>
     </div>`;
@@ -9691,8 +9636,6 @@ function renderNgTab() {
         return;
       }
       if (t.obj.fixed) return;        // すでに解決ずみ
-      const lbl = b.dataset.ngfixlabel || "この要対応";
-      if (!confirm(`「${lbl}」を解決済みにします。\n対応完了でよろしいですか？`)) return;
       b.disabled = true;              // 二度押し防止
       t.obj.fixed = true; t.obj.fixedAt = today();
       t.persist();
@@ -10164,14 +10107,13 @@ function boot() {
     renderKtTable();
   };
   // 勤怠カレンダー：左右になぞって月を変える
-  //   ※ボタンの click() を呼ぶと「誤タップ対策」に打ち消されるため、月を直接動かす
   addMonthSwipe(document.getElementById("kt-cal"),
-    () => { ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 }; renderKtTable(); },
-    () => { ktMonth = ktMonth.m === 11 ? { y: ktMonth.y + 1, m: 0 } : { y: ktMonth.y, m: ktMonth.m + 1 }; renderKtTable(); });
+    () => { const b = document.getElementById("kt-cal-prev"); if (b) b.click(); },
+    () => { const b = document.getElementById("kt-cal-next"); if (b) b.click(); });
   // 清掃カレンダーも同じように
   addMonthSwipe(document.getElementById("cal-grid"),
-    () => { cursor = cursor.m === 0 ? { y: cursor.y - 1, m: 11 } : { y: cursor.y, m: cursor.m - 1 }; renderCal(); },
-    () => { cursor = cursor.m === 11 ? { y: cursor.y + 1, m: 0 } : { y: cursor.y, m: cursor.m + 1 }; renderCal(); });
+    () => { const b = document.getElementById("cal-prev"); if (b) b.click(); },
+    () => { const b = document.getElementById("cal-next"); if (b) b.click(); });
   const calPrev = document.getElementById("kt-cal-prev");
   if (calPrev) calPrev.onclick = () => {
     ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 };
@@ -10274,18 +10216,13 @@ function boot() {
     upd();
   }
   // 入力中はヘッダーの貼り付けを外す（スマホでキーボードが出ると画面が揺れるため）
-  //   写真の選択やチェックボックスなど、キーボードが出ないものは対象外。
-  //   これらまで拾うと、押すたびにヘッダーが動いてカクついてしまう。
-  const KEYIN = "input:not([type=file]):not([type=checkbox]):not([type=radio])"
-              + ":not([type=button]):not([type=submit]):not([type=reset])"
-              + ":not([type=image]):not([type=range]):not([type=color]),textarea";
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches(KEYIN)) document.body.classList.add("typing");
+    if (e.target.matches("input,textarea,select")) document.body.classList.add("typing");
   });
   document.addEventListener("focusout", () => {
     setTimeout(() => {
       const a = document.activeElement;
-      if (!a || !a.matches || !a.matches(KEYIN)) document.body.classList.remove("typing");
+      if (!a || !a.matches || !a.matches("input,textarea,select")) document.body.classList.remove("typing");
     }, 80);
   });
   drawGasStale();   // GASのデプロイが古い旨の案内（該当時のみ）
