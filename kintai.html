@@ -6951,9 +6951,16 @@ async function propCoord(name, force) {
  * ======================================================= */
 const ONSITE_M = 300;   // この距離までは現地とみなす（m）
 
+/* 一度でも現地で開けば、その後どこでも入力できてしまっていた。
+   持ち越しの記録を後日に自宅から触れてしまうため、開くたびに現在地を確かめる。
+   同じ記録を続けて開くときだけ、30分は確認を省く（現場での連続作業を邪魔しないため）。 */
+const _onSiteOk = {};
 async function checkOnSite(name, date) {
+  const okKey = name + "|" + date;
+  if (_onSiteOk[okKey] && (Date.now() - _onSiteOk[okKey]) < 30 * 60 * 1000) {
+    lockRecord(false); return true;
+  }
   const r = getRep(name, date);
-  if (r.geo && r.geo.open) { lockRecord(false); return true; }   // すでに到着を記録済み
   const box = document.getElementById("onsite-warn");
   const show = (html) => { if (box) box.innerHTML = html; };
 
@@ -6970,6 +6977,7 @@ async function checkOnSite(name, date) {
   if (!pc) {                                     // 物件の座標が無いときは通す
     show("");
     lockRecord(false);
+    _onSiteOk[okKey] = Date.now();
     stampPos(name, date, "open");
     return true;
   }
@@ -6980,6 +6988,7 @@ async function checkOnSite(name, date) {
       <div><b>この物件から ${km} 離れています。</b><br>
       清掃の記録は、現地に到着してから入力してください。<br>
       物件の前で開き直すと入力できるようになります。<br>
+      <span style="font-size:12.5px">※ 前に途中まで入力した記録も、続きは現地でのみ入力できます。</span><br>
       <span style="font-size:12.5px">※ 要対応の編集（期限の変更など）は、この場所でも行えます。</span></div></div>`);
     lockRecord(true);
     recordFarOpen(name, date, pos, d);
@@ -6987,6 +6996,7 @@ async function checkOnSite(name, date) {
   }
   show("");
   lockRecord(false);
+  _onSiteOk[okKey] = Date.now();
   stampPos(name, date, "open");
   return true;
 }
@@ -9746,7 +9756,7 @@ function ngTarget(name, date, key) {
 /* ===== トップページ：1枚のスクロールで完結させる =====
    ・タイルを押すと、その見出しまで画面が動く（別画面へは飛ばない）
    ・重い一覧は、近づいてから描く（140件を最初から描くと遅いため） */
-const APP_BUILD = "build 2026-08-08 g";   // 更新できているかの目印
+const APP_BUILD = "build 2026-08-11 a";   // 更新できているかの目印
 const FLOW = [
   { id: "today", en: "today",      ja: "今日の清掃", render: () => renderToday() },
   { id: "cal",   en: "calendar",   ja: "カレンダー", render: () => renderCal() },
@@ -9954,34 +9964,6 @@ function addMonthSwipe(el, onPrev, onNext) {
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;   // 縦スクロールとみなす
     if (dx < 0) onNext(); else onPrev();
   }, { passive: true });
-}
-
-/* GASのURLをアプリに持たせておく。
-   LINEの中のブラウザなど、設定が空の場所で開いても使えるようにするため。
-   どちらが清掃でどちらが勤怠かは、実際に問い合わせて自動で振り分ける。 */
-const DEFAULT_GAS_URLS = [
-  "https://script.google.com/macros/s/AKfycbyvSMy6SRYgdnMAEOY0gSa1OlP2zkvFYwh_vKZIp63W1CiXfQY2KikfltNfDBDGsgzK5w/exec",
-  "https://script.google.com/macros/s/AKfycbwSpvdG8B0dPPDjulRPYwIqzrzHS-V7HIcSW6V3G6k6f_y7g9GbAjXBdd0ucBkosyIK/exec",
-];
-async function autoFillGas() {
-  if (cfg.gas && cfg.ktGas) return;
-  const rest = [];
-  for (const u of DEFAULT_GAS_URLS) {
-    if (u === cfg.gas || u === cfg.ktGas) continue;
-    if (cfg.gas) { rest.push(u); continue; }
-    let isClean = false;
-    try {
-      const r = await postToGas(u, { action: "loadClean" }, 15000);
-      isClean = !!(r && r.ok);
-    } catch (e) {}
-    if (isClean) { cfg.gas = u; save(K.cfg, cfg); }
-    else rest.push(u);
-  }
-  if (!cfg.ktGas && rest.length) { cfg.ktGas = rest[0]; save(K.cfg, cfg); }
-  // 画面の入力欄にも反映する
-  const g = document.getElementById("cfg-gas"); if (g && !g.value) g.value = cfg.gas || "";
-  const k = document.getElementById("cfg-ktgas"); if (k && !k.value) k.value = cfg.ktGas || "";
-  const st = document.getElementById("kt-sync-state"); if (st) st.textContent = cfg.ktGas ? "同期オン" : "未設定";
 }
 
 function boot() {
@@ -10258,13 +10240,11 @@ function boot() {
   setTimeout(() => { try { maybeAutoSchedNextMonth(); } catch (e) {} }, 5000);
   cleanupRemovedItems();   // 要対応へ移した旧項目の過去データを掃除（初回のみ）
   fixAllStatus();          // 写真枚数とステータスの食い違いを直す（2枚ルールに揃える）
-  // 起動時：URLが空なら、アプリが持っているURLを自動で割り当ててから取り込む
-  (async () => {
-    try { await autoFillGas(); } catch (e) {}
-    if (cfg.ktGas) { ktPull(true); }
-    if (cfg.gas) { try { await cleanPull(true); } catch (e) {} }
-    openFromUrl();
-  })();
+  // 起動時：勤怠同期URLが設定済みなら最新を取り込む
+  if (cfg.ktGas) { ktPull(true); }
+  // 起動時：GAS Webhook URL があれば清掃データも最新を取り込む（空ガードで潰さない）
+  if (cfg.gas) { cleanPull(true).then(() => openFromUrl()); }
+  else { openFromUrl(); }
 }
 
 // LINE通知などのURL（?open=物件名|YYYY-MM-DD）から、該当の清掃記録を自動で開く
