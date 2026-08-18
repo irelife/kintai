@@ -4118,9 +4118,10 @@ function renderToday() {
     </div>
 
     <button class="sd-open" id="td-soudan">
-      <span style="font-size:19px">💬</span>
-      <span style="flex:1"><b>相談する</b>
-      <span>わからないこと・迷ったことを、そのまま聞いてください</span></span>
+      <span class="ico">💬</span>
+      <span class="tx"><b>相談する</b>
+      <small>わからないこと・迷ったことを、そのまま聞いてください</small></span>
+      <span class="go">タップ ›</span>
     </button>
 
     ${todayList.length > 1 ? `<button class="routebtn" id="td-route">
@@ -10336,9 +10337,6 @@ function showOpenInSafariUI(which, url) {
     catch (e) { b.textContent = "コピーできませんでした。上のURLを長押ししてください"; }
   };
 }
-document.addEventListener("DOMContentLoaded", () => {
-  const w = inAppBrowser();
-  if (w) { showOpenInSafari(w); return; }   // データには一切触らない
 /* ===================================================================
  *  AI相談ボックス（2026-08-18）
  *  現場でわからないことを、その場で聞ける窓口。
@@ -10387,13 +10385,23 @@ function soudanCss() {
     padding:.6rem .75rem;font-size:15px;font-family:inherit;cursor:pointer;flex:none;}
   .sd-send{background:#2f6f4f;color:#fff;border-color:#2f6f4f;font-weight:700;}
   .sd-send:disabled{opacity:.45;}
-  .sd-open{display:flex;align-items:center;gap:.7rem;width:100%;text-align:left;
-    padding:.85rem 1rem;margin:0 0 1rem;border:1px solid var(--border,#e3ded5);
-    border-radius:11px;background:#fff;font-family:inherit;cursor:pointer;}
-  .sd-open b{font-size:15px;display:block;}
-  .sd-open span{font-size:12.5px;color:#8a8377;display:block;margin-top:.15rem;}
-  .sd-open .bdg{margin-left:auto;background:#c0392b;color:#fff;border-radius:10px;
-    padding:.1rem .5rem;font-size:12px;font-weight:700;flex:none;}
+  .sd-open{display:flex;align-items:center;gap:.75rem;width:100%;text-align:left;
+    padding:.9rem 1rem;margin:0 0 1rem;border:none;border-radius:12px;
+    background:linear-gradient(135deg,#2f6f4f,#3d8a63);color:#fff;
+    font-family:inherit;cursor:pointer;box-shadow:0 2px 8px rgba(47,111,79,.28);
+    -webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;}
+  .sd-open:active{transform:scale(.985);box-shadow:0 1px 4px rgba(47,111,79,.28);}
+  .sd-open .ico{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);
+    display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;}
+  .sd-open .tx{flex:1;min-width:0;}
+  .sd-open b{font-size:15.5px;display:block;letter-spacing:.02em;}
+  .sd-open small{font-size:12.5px;color:rgba(255,255,255,.85);display:block;
+    margin-top:.15rem;font-weight:400;}
+  .sd-open .go{flex:none;display:flex;align-items:center;gap:.25rem;
+    background:rgba(255,255,255,.22);border-radius:14px;padding:.28rem .6rem;
+    font-size:12px;font-weight:700;animation:sdPulse 2.4s ease-in-out infinite;}
+  @keyframes sdPulse{0%,100%{opacity:.85;}50%{opacity:1;}}
+  @media(prefers-reduced-motion:reduce){.sd-open .go{animation:none;}}
   .sd-card{border:1px solid var(--border,#e3ded5);border-radius:10px;background:#fff;
     padding:.8rem .9rem;margin-bottom:.7rem;}
   .sd-card .t{font-size:12px;color:#8a8377;margin-bottom:.35rem;}
@@ -10554,6 +10562,11 @@ async function soudanDrawList() {
     };
   });
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const w = inAppBrowser();
+  if (w) { showOpenInSafari(w); return; }   // データには一切触らない
 
   boot();
 });
