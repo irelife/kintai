@@ -2614,6 +2614,16 @@ body.hasbar .toast{bottom:4.6rem;}
           <div class="field"><label>宛先②</label>
             <input class="input" id="cfg-mailboss2" placeholder="空欄でも構いません"></div>
         </div>
+        <div class="field"><label>この端末を使う人</label>
+          <select class="input" id="cfg-who">
+            <option value="owner">滝口（管理会社）</option>
+            <option value="field">西澤くん（現場）</option>
+          </select>
+          <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
+            相談ボックスの未読の印が、使う人に合わせて変わります。
+            滝口には「未回答の相談」、西澤くんには「届いた回答」の件数が出ます。
+          </span>
+        </div>
         <div class="field"><label>西澤くんのLINE ID</label>
           <input class="input" id="cfg-seisouline" placeholder="U から始まる文字列">
           <span style="font-size:12px;color:var(--muted-2);line-height:1.6">
@@ -4155,7 +4165,12 @@ function renderToday() {
   const rb = box.querySelector("#td-route");
   if (rb) rb.onclick = () => openRoute(todayList, t);
   const sb = box.querySelector("#td-soudan");
-  if (sb) { soudanCss(); sb.onclick = () => openSoudan("chat"); }
+  if (sb) {
+    soudanCss();
+    sb.onclick = () => openSoudan("chat");
+    soudanDrawBadge();          // 前回の件数をすぐ出す
+    soudanCheckUnread();        // 最新を調べ直す（少し遅れて反映）
+  }
 }
 
 /* ===== 描画：カレンダー ===== */
@@ -10231,6 +10246,7 @@ function boot() {
   document.getElementById("cfg-mailboss").value = cfg.mailBoss || "";
   document.getElementById("cfg-mailboss2").value = cfg.mailBoss2 || "";
   document.getElementById("cfg-seisouline").value = cfg.seisouLine || "";
+  document.getElementById("cfg-who").value = cfg.who || "owner";
   document.getElementById("cfg-gas").value = cfg.gas;
   document.getElementById("cfg-start").value = cfg.start || "09:00";
   document.getElementById("cfg-save").onclick = () => {
@@ -10240,6 +10256,7 @@ function boot() {
     cfg.mailBoss = document.getElementById("cfg-mailboss").value.trim();
     cfg.mailBoss2 = document.getElementById("cfg-mailboss2").value.trim();
     cfg.seisouLine = document.getElementById("cfg-seisouline").value.trim();
+    cfg.who = document.getElementById("cfg-who").value || "owner";
     cfg.start = document.getElementById("cfg-start").value || "09:00";
     const ktIn = document.getElementById("cfg-ktgas");
     if (ktIn) cfg.ktGas = (ktIn.value || "").trim();   // 勤怠の同期URLもここで一緒に保存
@@ -10387,8 +10404,61 @@ function showOpenInSafariUI(which, url) {
  *  AIがまず聞き返して要点を整理し、判断が要るものは肉太郎さんへ回します。
  * =================================================================== */
 let soudanChat = [];        // [{role:"user"/"assistant", text}]
+let soudanUnread = 0;       // 未読の件数（滝口＝未回答／西澤くん＝届いた回答）
 let soudanShots = [];       // dataURL（最大2枚）
 let soudanBusy = false;
+
+/* ===== 未読の件数を調べて、ボタンに印を出す =====
+ *  滝口 … まだ回答していない相談の件数
+ *  西澤くん … 回答が届いていて、まだ見ていない件数
+ *  「見た」かどうかは、この端末に相談IDを控えて判断します。 */
+const SD_SEEN = "soudanSeen";
+
+function soudanSeenIds() {
+  try { return JSON.parse(localStorage.getItem(SD_SEEN) || "[]") || []; }
+  catch (e) { return []; }
+}
+function soudanMarkSeen(ids) {
+  try {
+    const set = {};
+    soudanSeenIds().concat(ids || []).forEach(function (x) { set[x] = 1; });
+    localStorage.setItem(SD_SEEN, JSON.stringify(Object.keys(set).slice(-300)));
+  } catch (e) {}
+}
+
+function soudanDrawBadge() {
+  const b = document.getElementById("td-soudan");
+  if (!b) return;
+  const old = b.querySelector(".badge");
+  if (old) old.remove();
+  if (!soudanUnread) return;
+  const go = b.querySelector(".go");
+  const el = document.createElement("span");
+  el.className = "badge";
+  el.textContent = soudanUnread > 99 ? "99+" : String(soudanUnread);
+  b.insertBefore(el, go || null);
+}
+
+async function soudanCheckUnread() {
+  if (!cfg.gas) return;
+  let rows = [];
+  try {
+    const r = await postToGas(cfg.gas, { action: "soudanList" }, 25000);
+    rows = (r && r.rows) || [];
+  } catch (e) { return; }
+
+  if ((cfg.who || "owner") === "field") {
+    // 西澤くん：回答が来ていて、まだ見ていないもの
+    const seen = soudanSeenIds();
+    soudanUnread = rows.filter(function (r) {
+      return r.state === "回答済" && seen.indexOf(r.id) < 0;
+    }).length;
+  } else {
+    // 滝口：まだ回答していないもの
+    soudanUnread = rows.filter(function (r) { return r.state !== "回答済"; }).length;
+  }
+  soudanDrawBadge();
+}
 
 function soudanCss() {
   if (document.getElementById("soudan-css")) return;
@@ -10444,6 +10514,12 @@ function soudanCss() {
   .sd-open .go{flex:none;display:flex;align-items:center;gap:.25rem;
     background:rgba(255,255,255,.22);border-radius:14px;padding:.28rem .6rem;
     font-size:12px;font-weight:700;animation:sdPulse 2.4s ease-in-out infinite;}
+  .sd-open .badge{flex:none;min-width:22px;height:22px;border-radius:11px;
+    background:#e04a3a;color:#fff;font-size:12px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;padding:0 6px;
+    box-shadow:0 0 0 2px rgba(255,255,255,.35);}
+  .sd-card .nw{display:inline-block;background:#e04a3a;color:#fff;font-size:11px;
+    font-weight:700;border-radius:8px;padding:.05rem .4rem;margin-right:.35rem;}
   @keyframes sdPulse{0%,100%{opacity:.85;}50%{opacity:1;}}
   @media(prefers-reduced-motion:reduce){.sd-open .go{animation:none;}}
   .sd-card{border:1px solid var(--border,#e3ded5);border-radius:10px;background:#fff;
@@ -10558,7 +10634,10 @@ async function soudanSend() {
       history: soudanChat.slice(0, -1).slice(-8)
     }, 90000);
     soudanChat.push({ role: "assistant", text: (r && r.reply) || "うまく通信できませんでした。もう一度お試しください。" });
-    if (r && r.escalated) toast("担当者へ連絡しました", "回答をお待ちください");
+    if (r && r.escalated) {
+      toast("担当者へ連絡しました", "回答をお待ちください");
+      soudanCheckUnread();
+    }
   } catch (e) {
     soudanChat.push({ role: "assistant", text: "通信できませんでした。電波の良いところでもう一度お試しください。" });
   }
@@ -10580,15 +10659,27 @@ async function soudanDrawList() {
   } catch (e) { box.innerHTML = `<div class="sd-note">読み込めませんでした</div>`; return; }
   if (!rows.length) { box.innerHTML = `<div class="sd-note">相談はまだありません。</div>`; return; }
 
-  box.innerHTML = rows.map((r) => `
+  const seen = soudanSeenIds();
+  const isField = (cfg.who || "owner") === "field";
+
+  box.innerHTML = rows.map((r) => {
+    const fresh = isField && r.state === "回答済" && seen.indexOf(r.id) < 0;
+    return `
     <div class="sd-card ${r.state === "回答済" ? "done" : ""}" data-id="${esc(r.id)}">
-      <div class="t">${esc(r.at)}　${r.state === "回答済" ? "回答済" : "未回答"}</div>
+      <div class="t">${fresh ? '<span class="nw">NEW</span>' : ""}${esc(r.at)}　${r.state === "回答済" ? "回答済" : "未回答"}</div>
       <div class="q">${esc(r.summary || r.q)}</div>
       ${r.state === "回答済"
         ? `<div class="t">回答：${esc(r.reply)}</div>`
         : `<textarea placeholder="西澤さんへの回答を書いてください"></textarea>
            <button class="snd">回答を送る</button>`}
-    </div>`).join("");
+    </div>`; }).join("");
+
+  // 一覧を見たら、既読にする
+  soudanMarkSeen(rows.map(function (r) { return r.id; }));
+  soudanUnread = isField
+    ? 0
+    : rows.filter(function (r) { return r.state !== "回答済"; }).length;
+  soudanDrawBadge();
 
   box.querySelectorAll(".sd-card .snd").forEach((b) => {
     b.onclick = async () => {
@@ -10598,7 +10689,7 @@ async function soudanDrawList() {
       b.disabled = true; b.textContent = "送信中…";
       try {
         const r = await postToGas(cfg.gas, { action: "soudanReply", id: card.dataset.id, reply: txt }, 30000);
-        if (r && r.ok) { toast("回答を送りました", "西澤さんのLINEへ届きます"); soudanDrawList(); }
+        if (r && r.ok) { toast("回答を送りました", "西澤さんのLINEへ届きます"); soudanDrawList(); soudanCheckUnread(); }
         else { toast("送れませんでした"); b.disabled = false; b.textContent = "回答を送る"; }
       } catch (e) {
         toast("送れませんでした"); b.disabled = false; b.textContent = "回答を送る";
