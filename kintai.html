@@ -2186,7 +2186,7 @@ main.homeflow{padding-bottom:7rem;}
 /* 勤怠カレンダー：スマホでは横スクロールをやめ、7列を画面に収める
    （横スクロールは指が引っかかって動かないという声があったため）
    名前と時刻は点にまとめ、日をタップすると打刻の画面で中身を見る */
-.kt-cal-scroll{max-width:100%;touch-action:pan-x pan-y;overscroll-behavior-x:contain;}
+.kt-cal-scroll{max-width:100%;touch-action:pan-y;overscroll-behavior-x:contain;}
 #page-kt,#page-kt .card{min-width:0;max-width:100%;}
 @media(max-width:768px){
   .kt-cal-scroll{overflow-x:visible;margin:0;padding:0;}
@@ -9226,6 +9226,7 @@ function bindNgListed(host, name, date) {
         showSendBar("⚠️ アフター写真がありません。アフターの欄に写真を入れてください", 5000);
         return;
       }
+      if (!confirm("この要対応を解決済みにしますか？\n（解決した旨がLINEへ通知されます）")) return;
       g.fixed = true; g.fixedAt = today();
       setRep(name, date, { ngs: rr.ngs });
       renderNgEntry(name, date); renderModal(); renderNgBadge();
@@ -10120,10 +10121,8 @@ function boot() {
   addMonthSwipe(document.getElementById("kt-cal"),
     () => { const b = document.getElementById("kt-cal-prev"); if (b) b.click(); },
     () => { const b = document.getElementById("kt-cal-next"); if (b) b.click(); });
-  // 清掃カレンダーも同じように
-  addMonthSwipe(document.getElementById("cal-grid"),
-    () => { const b = document.getElementById("cal-prev"); if (b) b.click(); },
-    () => { const b = document.getElementById("cal-next"); if (b) b.click(); });
+  // 清掃カレンダーは指に追従する専用の処理を上で入れているため、ここでは付けない
+  // （二重に付くと1回のスワイプで2ヶ月進み、表示が崩れます）
   const calPrev = document.getElementById("kt-cal-prev");
   if (calPrev) calPrev.onclick = () => {
     ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 };
