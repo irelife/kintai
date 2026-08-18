@@ -10295,6 +10295,14 @@ function boot() {
 function openFromUrl() {
   try {
     const params = new URLSearchParams(location.search);
+
+    // LINEの相談通知（?soudan=相談ID）から、回答画面を直接開く
+    if (params.get("soudan")) {
+      go("today");
+      setTimeout(() => { try { openSoudan("list"); } catch (e) {} }, 300);
+      return;
+    }
+
     const raw = params.get("open");
     if (!raw) return;
     const sep = raw.lastIndexOf("|");
