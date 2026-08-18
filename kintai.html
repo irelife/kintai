@@ -10155,9 +10155,17 @@ function boot() {
     renderKtTable();
   };
   // 勤怠カレンダー：左右になぞって月を変える
+  //  ※ボタンを .click() で押すと、上の「誤タップ対策」がスワイプ直後のクリックを
+  //    握りつぶしてしまうため、月を直接動かして描き直す。
   addMonthSwipe(document.getElementById("kt-cal"),
-    () => { const b = document.getElementById("kt-cal-prev"); if (b) b.click(); },
-    () => { const b = document.getElementById("kt-cal-next"); if (b) b.click(); });
+    () => {
+      ktMonth = ktMonth.m === 0 ? { y: ktMonth.y - 1, m: 11 } : { y: ktMonth.y, m: ktMonth.m - 1 };
+      renderKtTable();
+    },
+    () => {
+      ktMonth = ktMonth.m === 11 ? { y: ktMonth.y + 1, m: 0 } : { y: ktMonth.y, m: ktMonth.m + 1 };
+      renderKtTable();
+    });
   // 清掃カレンダーは指に追従する専用の処理を上で入れているため、ここでは付けない
   // （二重に付くと1回のスワイプで2ヶ月進み、表示が崩れます）
   const calPrev = document.getElementById("kt-cal-prev");
